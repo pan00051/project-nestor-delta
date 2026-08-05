@@ -114,6 +114,7 @@
 
 ## 最近进展(倒序，最新在上)
 
+- **[运行规则补充]** `RUNBOOK.md` 已新增防死循环规则：遇到难以解决的问题时，不用同一种方式反复尝试；最多尝试三种有实质差异的解决路径，仍失败则提前停止，并把现象、尝试、失败原因、判断和后续方向写进 HANDOFF，等待作者决策。
 - **[规范性审查]** 已检查 `BLUEPRINT.md`、`HANDOFF.md`、`RUNBOOK.md`、`README.md`：当前焦点唯一，Delta repo 边界清楚，里程碑/Sprint 与 README 口径一致。`RUNBOOK.md` 已补充“上下文卫生与记录协议”，要求后续 AI 默认只查 BLUEPRINT/HANDOFF，并把改动、尝试、问题和后续方向沉淀进 HANDOFF。
 - **[蓝图对齐]** `BLUEPRINT.md` 已调整为 Delta repo 专属，不再把当前焦点拉回 Insight；`HANDOFF.md` 已替换为 Delta 工程 Sprint 版本。
 - **[repo 建立]** GitHub repo `pan00051/project-nestor-delta` 已创建并公开，四份文档(BLUEPRINT/HANDOFF/RUNBOOK/README)已提交。README 与蓝图一致。尚无任何建模实现。
