@@ -56,7 +56,7 @@ This repository is only for **Nestor Delta**.
 
 The current focus is not to build everything at once.
 
-The current sprint is **Sprint 0: lock the evaluation protocol and environment**.
+The current sprint is **Sprint 2: generic relation weighting mechanism**.
 
 Before writing modeling code, the project needs to freeze:
 
@@ -68,14 +68,15 @@ Before writing modeling code, the project needs to freeze:
 
 The frozen M0 evaluation protocol is in `EVALUATION.md`.
 
-After that, the first modeling module will be:
+The first reusable capability module is:
 
-- a reusable weighting mechanism,
-- followed by a three-variable prediction workflow.
+- a layer-independent relation weighting mechanism.
+
+Its interface and boundaries are documented in `docs/WEIGHTING.md`.
 
 ## Reproducible Environment
 
-Sprint 1 intentionally uses no third-party runtime dependencies.
+Sprint 2 intentionally uses no third-party runtime dependencies.
 
 From a clean checkout:
 
@@ -84,6 +85,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
+python scripts/run_weights.py
 python -m unittest discover -s tests
 ```
 
@@ -102,11 +104,26 @@ Current test-set results across the five frozen seeds:
 | linear_regression | 0.428163 | 0.381239-0.470460 | 0.540204 | 0.478609-0.592253 |
 | persistence | 0.566021 | 0.508144-0.624679 | 0.703043 | 0.632300-0.789040 |
 
+## Sprint 2 Relation Weight Results
+
+The relation weighting module computes directed lagged Pearson weights. It is standalone and does not perform prediction.
+
+Validation report: `reports/weight_validation_summary.md`.
+
+Current target-source ranking across the five frozen seeds:
+
+| Source | Mean rank | Rank range | Mean score | Score range |
+|---|---:|---:|---:|---:|
+| driver_a | 1.00 | 1-1 | 0.595528 | 0.548573-0.663159 |
+| driver_b | 2.00 | 2-2 | 0.393421 | 0.331254-0.464283 |
+| noise | 3.00 | 3-3 | 0.059127 | 0.020952-0.093188 |
+
 ## Repository Layout
 
 ```text
 .
 ├── data/synthetic/       # Generated synthetic datasets
+├── docs/                 # Module interface notes
 ├── reports/              # Baseline metrics and summaries
 ├── scripts/              # Reproducible command-line entry points
 ├── src/nestor_delta/     # Python package source
@@ -128,4 +145,4 @@ Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
 
 ## Status
 
-Sprint 1 is complete: synthetic data generation and the two required baselines are reproducible under the frozen M0 protocol.
+Sprint 2 is complete: the layer-independent relation weighting mechanism is implemented, documented, and validated independently.

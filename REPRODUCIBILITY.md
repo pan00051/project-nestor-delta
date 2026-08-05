@@ -1,8 +1,8 @@
 # Reproducibility
 
-This file defines how to verify the current environment and Sprint 1 baseline run.
+This file defines how to verify the current environment, Sprint 1 baseline run, and Sprint 2 relation-weight validation.
 
-## Sprint 1 Acceptance Commands
+## Acceptance Commands
 
 Run from a clean checkout:
 
@@ -12,6 +12,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
+python scripts/run_weights.py
 python -m unittest discover -s tests
 ```
 
@@ -24,12 +25,15 @@ Expected result:
 - Per-seed metrics are written to `reports/baseline_metrics.csv`.
 - Aggregate metrics are written to `reports/baseline_summary.md`.
 - Unit tests pass, including deterministic generation and OLS coefficient recovery.
+- Relation-weight details are written to `reports/weight_validation.csv`.
+- Relation-weight summary is written to `reports/weight_validation_summary.md`.
+- Unit tests pass, including deterministic generation, OLS coefficient recovery, relation-weight determinism, and known lag driver ranking.
 
 ## Current Dependency Policy
 
-Sprint 1 has no third-party runtime dependencies.
+Sprint 2 has no third-party runtime dependencies.
 
-The simple linear regression baseline uses a deterministic standard-library OLS implementation. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
+The simple linear regression baseline uses a deterministic standard-library OLS implementation. The relation weighting module also uses only the Python standard library. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
 
 ## Test Policy
 
@@ -46,12 +50,14 @@ Current permanent checks:
 
 ## Output Policy
 
-Sprint 1 writes reproducible generated artifacts.
+Sprint 1 and Sprint 2 write reproducible generated artifacts.
 
 Tracked outputs:
 
 - `reports/baseline_metrics.csv`
 - `reports/baseline_summary.md`
+- `reports/weight_validation.csv`
+- `reports/weight_validation_summary.md`
 
 Regenerated but untracked outputs:
 

@@ -107,14 +107,18 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **Sprint 1 — 数据 + baseline。**
-> Sprint 1 已完成，等待作者验收。不要自动进入 Sprint 2；不要实现通用权重机制、动态权重或忽略值。
+> **Sprint 2 — 通用权重机制(底座)。**
+> Sprint 2 已完成，等待作者验收。不要自动进入 Sprint 3；不要实现动态权重或忽略值。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
-- **[2026-08-06 · S1 验证固化]** 根据外部审查结论，新增标准库 `unittest` 测试：同 seed 生成 CSV 字节一致、OLS 在 seed `11` 训练集上还原已知驱动系数。测试命令为 `python -m unittest discover -s tests`。`EVALUATION.md` 标为 `v1`，`reports/baseline_summary.md` 补充正确性自检说明，`baselines.py` 注明正规方程的数值稳定性取舍。未进入 Sprint 2，未实现权重机制。
+- **[2026-08-06 · Sprint 2 完成]** 已实现层无关的通用关系权重机制：`src/nestor_delta/relation_weights.py`。接口文档写入 `docs/WEIGHTING.md`，明确输入、输出、不负责什么、验证标准。机制输入为任意命名数值历史，输出有向 `source -> target` 的 `RelationWeight(source, target, lag, weight, score, sample_count)`；不做预测、不做业务解释、不做动态变化、不做忽略值。
+- **[2026-08-06 · Sprint 2 验证结果]** 已运行 `scripts/run_weights.py`，在 5 个冻结 synthetic seed 上验证 `target` 的已知驱动信号排序。结果：`driver_a` mean rank `1.00`、range `1-1`、mean score `0.595528`、score range `0.548573-0.663159`；`driver_b` mean rank `2.00`、range `2-2`、mean score `0.393421`、score range `0.331254-0.464283`；`noise` mean rank `3.00`、range `3-3`、mean score `0.059127`、score range `0.020952-0.093188`。明细在 `reports/weight_validation.csv`，汇总在 `reports/weight_validation_summary.md`。
+- **[2026-08-06 · Sprint 2 命令记录]** 已执行：`.venv/bin/python scripts/run_weights.py`、`.venv/bin/python -m unittest discover -s tests`、`.venv/bin/python scripts/run_baselines.py`。baseline 回归数字保持 Sprint 1 原结果。新增测试文件 `tests/test_relation_weights.py`，用标准库 unittest 验证确定性与已知 lag 驱动排序。
+- **[2026-08-06 · Sprint 2 问题与处理]** 本轮没有新增依赖，也没有引入 sklearn/NumPy。权重机制采用 lagged Pearson correlation，作为可复用工程底座，不声称算法创新。未发现需要改变 `EVALUATION.md` 的事项。
+- **[2026-08-06 · S1 验证固化]** 根据外部审查结论，新增标准库 `unittest` 测试：同 seed 生成 CSV 字节一致、OLS 在 seed `11` 训练集上还原已知驱动系数。测试命令为 `python -m unittest discover -s tests`。`EVALUATION.md` 标为 `v1`，`reports/baseline_summary.md` 补充正确性自检说明，`baselines.py` 注明正规方程的数值稳定性取舍。该远端提交已在本轮 rebase 中保留。
 - **[2026-08-06 · Sprint 1 完成]** 已实现合成数据生成管线和两个 baseline：persistence / previous value、simple linear regression。实现文件：`src/nestor_delta/synthetic.py`、`src/nestor_delta/splits.py`、`src/nestor_delta/baselines.py`、`src/nestor_delta/metrics.py`、`src/nestor_delta/reporting.py`；一键入口：`scripts/run_baselines.py`。没有实现通用权重机制、动态权重或忽略值。
 - **[2026-08-06 · Sprint 1 结果]** 已按 `EVALUATION.md` 的 5 seed 协议运行 baseline 并保存报告。test 指标：linear_regression MAE mean `0.428163`、range `0.381239-0.470460`；RMSE mean `0.540204`、range `0.478609-0.592253`。persistence MAE mean `0.566021`、range `0.508144-0.624679`；RMSE mean `0.703043`、range `0.632300-0.789040`。per-seed 表在 `reports/baseline_metrics.csv`，汇总在 `reports/baseline_summary.md`。
 - **[2026-08-06 · Sprint 1 命令记录]** 已执行：`python scripts/run_baselines.py`、`python3 scripts/run_baselines.py`、`.venv/bin/python scripts/run_baselines.py`、`python3 -m compileall src scripts`、`env PYTHONPYCACHEPREFIX=/private/tmp/nestor-delta-pycache python3 -m compileall src scripts`、`wc -l data/synthetic/synthetic_seed_11.csv data/synthetic/synthetic_seed_23.csv data/synthetic/synthetic_seed_37.csv data/synthetic/synthetic_seed_41.csv data/synthetic/synthetic_seed_53.csv`。`python3` 与 `.venv/bin/python` 的 baseline 输出一致。
@@ -136,9 +140,9 @@
 
 ## 下一步(具体、可执行)
 
-1. 验收 Sprint 1 固化项：确认 `python -m unittest discover -s tests`、`reports/baseline_summary.md` 正确性自检说明、`EVALUATION.md v1` 是否满足作品集级别收尾。
-2. 下一步只能是 Sprint 2 的准备工作；不要自动开始 Sprint 2。
-3. Sprint 2 开始前，应先写清通用权重机制的输入、输出、不负责什么，以及验证标准。
+1. 验收 Sprint 2：确认 `docs/WEIGHTING.md` 的接口边界、`tests/test_relation_weights.py` 的最小测试、`reports/weight_validation_summary.md` 的验证结果是否满足通用权重底座要求。
+2. 下一步只能是 Sprint 3 的准备工作；不要自动开始 Sprint 3。
+3. Sprint 3 开始前，应先写清三变量预测流程如何组合 Sprint 1 baseline 与 Sprint 2 权重机制，并沿用 M0 锁定测试集。
 
 ---
 
@@ -152,6 +156,10 @@
 - **Sprint 1 / 指标报告：完成。** 已生成并保存 per-seed 指标表与汇总报告，报告均值和 min-max 波动范围。
 - **Sprint 1 / 一键复现：完成。** README 与 `REPRODUCIBILITY.md` 已记录完整命令。
 - **Sprint 1 / 自动化验证：完成。** 已新增 `python -m unittest discover -s tests` 标准库测试，固化确定性复跑和已知系数还原两个审查验证。
+- **Sprint 2 / 模块接口：完成。** `docs/WEIGHTING.md` 已写清输入、输出、不负责什么和验证标准。
+- **Sprint 2 / 独立实现：完成。** `src/nestor_delta/relation_weights.py` 可独立计算层无关的 lagged relation weights。
+- **Sprint 2 / 最小测试：完成。** `.venv/bin/python -m unittest discover -s tests` 通过。
+- **Sprint 2 / 验证报告：完成。** `reports/weight_validation.csv` 与 `reports/weight_validation_summary.md` 已保存 5 seed 均值和 min-max 波动范围。
 
 ---
 
@@ -171,9 +179,10 @@
 | C2 | 先做通用权重底座，忽略值/动态推后 | 已决 | 遵循“先做最被复用的地基” |
 | C3 | M1 完成即为可交付停止点 | 已决 | M2 为上限，非义务 |
 | C4 | M0 第一版数据使用合成多变量时间序列 | 已决 | 关系可控，便于后续验证权重机制；真实数据后续增强 |
+| C5 | Sprint 2 首版权重机制使用 lagged Pearson correlation | 已决 | 标准库可复现、层无关、足够作为可验证工程底座；不声称算法创新 |
 
 ---
 
 ## 给下一棒的话
 
-> Sprint 1 已完成：数据生成、persistence baseline、simple linear regression baseline、per-seed metrics 和 aggregate summary 都已落地。下一棒不要自动进入 Sprint 2；只能在作者验收后准备 Sprint 2 的接口说明与验证标准。继续严禁提前实现通用权重机制、动态权重或忽略值。
+> Sprint 2 已完成：通用关系权重机制、接口文档、最小测试和 5 seed 验证报告都已落地。下一棒不要自动进入 Sprint 3；只能在作者验收后准备三变量预测流程。继续严禁提前实现动态权重或忽略值。

@@ -4,6 +4,7 @@ __all__ = [
     "baselines",
     "metrics",
     "reporting",
+    "relation_weights",
     "splits",
     "synthetic",
 ]
