@@ -87,6 +87,8 @@ python -m pip install -r requirements-lock.txt
 
 The project requires Python `>=3.9`.
 
+Sprint 0 acceptance commands and expected outputs are listed in `REPRODUCIBILITY.md`.
+
 ## Repository Layout
 
 ```text
@@ -96,6 +98,7 @@ The project requires Python `>=3.9`.
 ├── scripts/              # Reproducible command-line entry points
 ├── src/nestor_delta/     # Python package source
 ├── EVALUATION.md         # Frozen M0 evaluation protocol
+├── REPRODUCIBILITY.md    # Environment verification and output expectations
 ├── requirements-lock.txt # Pinned environment dependencies
 └── pyproject.toml        # Project metadata and Python version boundary
 ```
