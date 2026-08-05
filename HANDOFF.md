@@ -114,6 +114,7 @@
 
 ## 最近进展(倒序，最新在上)
 
+- **[规范性审查]** 已检查 `BLUEPRINT.md`、`HANDOFF.md`、`RUNBOOK.md`、`README.md`：当前焦点唯一，Delta repo 边界清楚，里程碑/Sprint 与 README 口径一致。`RUNBOOK.md` 已补充“上下文卫生与记录协议”，要求后续 AI 默认只查 BLUEPRINT/HANDOFF，并把改动、尝试、问题和后续方向沉淀进 HANDOFF。
 - **[蓝图对齐]** `BLUEPRINT.md` 已调整为 Delta repo 专属，不再把当前焦点拉回 Insight；`HANDOFF.md` 已替换为 Delta 工程 Sprint 版本。
 - **[repo 建立]** GitHub repo `pan00051/project-nestor-delta` 已创建并公开，四份文档(BLUEPRINT/HANDOFF/RUNBOOK/README)已提交。README 与蓝图一致。尚无任何建模实现。
 - **[初始]** 项目蓝图与规则确立(BLUEPRINT.md v1)。目标=可验证作品集；结构=三作品；架构与收敛纪律确立。
@@ -149,4 +150,3 @@
 ## 给下一棒的话
 
 > repo 已建好，但还是“纯文档、零实现”阶段。**不要急着写建模代码，当前焦点是 Sprint 0：把评测协议冻结。** 这是作者最看重、也最容易被跳过的一步，跳过后面所有数字都不可信。作者有反复扩大范围的倾向，请温和但坚定地守住“一次只做一个 Sprint”，并在他想跳去做忽略值/动态/大规模时，提醒他这些已在 M2 或星辰大海里排好队了。
-
