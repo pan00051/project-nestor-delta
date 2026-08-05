@@ -1,0 +1,84 @@
+# Nestor Delta
+
+Nestor Delta is the data-layer module of the Nestor project.
+
+Its goal is to analyze how multiple signals relate to each other over time: which variables seem connected, how strong those connections are, when those relationships change, and which weak signals can be safely ignored so the system stays focused.
+
+This repository is not trying to build a general AI assistant or invent a new algorithm. It is a portfolio-grade engineering project: define the problem clearly, build the module in a modular way, test whether it works, and explain the result honestly.
+
+## What Problem It Solves
+
+Many real-world decisions depend on moving signals:
+
+- market indicators,
+- product metrics,
+- user behavior,
+- operational data,
+- public events,
+- business KPIs.
+
+The hard part is not just seeing that numbers changed. The hard part is understanding which changes matter, which relationships are stable, which ones are drifting, and which signals are too weak or noisy to deserve attention.
+
+Nestor Delta focuses on that data-layer problem.
+
+## Simple Example
+
+Imagine tracking five business metrics every day:
+
+- website visits,
+- trial signups,
+- paid conversions,
+- ad spend,
+- customer complaints.
+
+Nestor Delta asks questions like:
+
+- Which signals are most related to paid conversions?
+- Did that relationship change recently?
+- Are some signals currently too weak to matter?
+- Can the system ignore low-value signals without losing too much accuracy?
+
+The final output should help a later layer of Nestor explain what changed and why.
+
+## Role Inside Nestor
+
+Nestor is designed as three independently deliverable projects:
+
+| Project | Layer | Purpose |
+|---------|-------|---------|
+| Nestor Delta | Data layer | Models changing relationships between variables |
+| Nestor Insight | Information layer | Evaluates event impact and importance |
+| Nestor | Full system | Combines data relationships with event analysis |
+
+This repository is only for **Nestor Delta**.
+
+## Current Focus
+
+The current focus is not to build everything at once.
+
+The next concrete step is to define the first module boundary:
+
+- input,
+- output,
+- what it explicitly does not handle,
+- how to judge whether it is good enough.
+
+The likely first module is either:
+
+- a reusable weighting mechanism, or
+- an ignore-value mechanism for filtering weak relationships.
+
+## Project Rules
+
+This repo uses three operating documents:
+
+- `BLUEPRINT.md`: the project constitution and source of truth.
+- `HANDOFF.md`: current progress, next step, and pending decisions.
+- `RUNBOOK.md`: how the collaboration workflow operates.
+
+Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
+
+## Status
+
+Early project setup. Documentation and boundaries are being established before implementation.
+
