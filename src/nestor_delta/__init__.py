@@ -6,5 +6,6 @@ __all__ = [
     "reporting",
     "relation_weights",
     "splits",
+    "stage1_prediction",
     "synthetic",
 ]

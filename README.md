@@ -86,6 +86,7 @@ source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
 python scripts/run_weights.py
+python scripts/run_stage1.py
 python -m unittest discover -s tests
 ```
 
@@ -118,6 +119,22 @@ Current target-source ranking across the five frozen seeds:
 | driver_b | 2.00 | 2-2 | 0.393421 | 0.331254-0.464283 |
 | noise | 3.00 | 3-3 | 0.059127 | 0.020952-0.093188 |
 
+## Sprint 3 Stage 1 Results
+
+Stage 1 combines Sprint 2 relation weights with Sprint 1 OLS prediction. It selects the top two train-only sources for `target`, then predicts with lagged `target` plus those two weighted source histories.
+
+Report: `reports/stage1_summary.md`.
+
+Current test-set results across the five frozen seeds:
+
+| Method | MAE mean | MAE range | RMSE mean | RMSE range |
+|---|---:|---:|---:|---:|
+| stage1_weighted_three_variable | 0.422277 | 0.375342-0.457150 | 0.532636 | 0.470656-0.589775 |
+| linear_regression | 0.428163 | 0.381239-0.470460 | 0.540204 | 0.478609-0.592253 |
+| persistence | 0.566021 | 0.508144-0.624679 | 0.703043 | 0.632300-0.789040 |
+
+Mean improvement: Stage 1 is `25.40%` lower MAE than persistence and `1.37%` lower MAE than the Sprint 1 linear regression baseline.
+
 ## Repository Layout
 
 ```text
@@ -145,4 +162,4 @@ Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
 
 ## Status
 
-Sprint 2 is complete: the layer-independent relation weighting mechanism is implemented, documented, and validated independently.
+Sprint 3 is complete: the weighted three-variable Stage 1 prediction workflow is implemented and evaluated under the frozen M0 protocol.

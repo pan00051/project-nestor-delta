@@ -13,6 +13,7 @@ source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
 python scripts/run_weights.py
+python scripts/run_stage1.py
 python -m unittest discover -s tests
 ```
 
@@ -27,13 +28,16 @@ Expected result:
 - Unit tests pass, including deterministic generation and OLS coefficient recovery.
 - Relation-weight details are written to `reports/weight_validation.csv`.
 - Relation-weight summary is written to `reports/weight_validation_summary.md`.
+- Stage 1 metrics are written to `reports/stage1_metrics.csv`.
+- Stage 1 selected sources are written to `reports/stage1_selected_sources.csv`.
+- Stage 1 summary is written to `reports/stage1_summary.md`.
 - Unit tests pass, including deterministic generation, OLS coefficient recovery, relation-weight determinism, and known lag driver ranking.
 
 ## Current Dependency Policy
 
 Sprint 2 has no third-party runtime dependencies.
 
-The simple linear regression baseline uses a deterministic standard-library OLS implementation. The relation weighting module also uses only the Python standard library. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
+The simple linear regression baseline uses a deterministic standard-library OLS implementation. The relation weighting and Stage 1 prediction modules also use only the Python standard library. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
 
 ## Test Policy
 
@@ -58,6 +62,9 @@ Tracked outputs:
 - `reports/baseline_summary.md`
 - `reports/weight_validation.csv`
 - `reports/weight_validation_summary.md`
+- `reports/stage1_metrics.csv`
+- `reports/stage1_selected_sources.csv`
+- `reports/stage1_summary.md`
 
 Regenerated but untracked outputs:
 
