@@ -108,12 +108,17 @@
 ## 当前焦点(同一时间只允许一个)
 
 > **Sprint 0 — 锁定评测协议 + 环境。**
-> 先别写任何建模代码。第一步是把“标尺”钉死：任务、数据、指标、baseline 四项冻结进 `EVALUATION.md`。
+> 评测协议与基础环境已建立，等待验收或进入 Sprint 1 的明确指令。未进入 Sprint 1，未写 baseline 或建模核心。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-06 · Sprint 0 完成]** 已新增 `EVALUATION.md`，冻结 M0 的任务定义、数据方案、指标与 baseline 清单。数据选择已按本轮指令/协议冻结为“合成多变量时间序列”第一版：5 个固定 seed(`11/23/37/41/53`)、每条 600 行、70/15/15 时间切分、一步预测 `target`。指标冻结为 MAE/RMSE，并要求多 seed 报均值与 min-max 波动范围。
+- **[2026-08-06 · 环境与结构]** 已新增 `pyproject.toml`、`requirements-lock.txt`、`src/nestor_delta/`、`scripts/`、`data/synthetic/`、`reports/`。Sprint 0 环境刻意保持无第三方运行依赖，仅要求 Python `>=3.9`；README 已加入从 clean checkout 重建环境的命令。
+- **[2026-08-06 · 本轮命令记录]** 已执行：`git remote add origin https://github.com/pan00051/project-nestor-delta.git`、`git fetch origin main`、`git checkout -B main origin/main`、`sed -n '1,260p' BLUEPRINT.md`、`sed -n '1,260p' HANDOFF.md`、`python3 -m venv .venv`、`.venv/bin/python -m pip install -r requirements-lock.txt`、`.venv/bin/python --version`。本轮只完成 Sprint 0 文件与文档，不运行 baseline 数字。
+- **[2026-08-06 · 验证结果]** 本机 Python 为 `3.9.6`；虚拟环境创建成功；`requirements-lock.txt` 安装成功且无第三方依赖。pip 提示用户 cache 目录不可写并自动禁用缓存，不影响环境重建。
+- **[2026-08-06 · 遇到的问题]** 当前 Codex 可写目录最初是空 git repo，remote 未配置；已按用户给定 GitHub repo 设置 `origin` 并检出 `origin/main`。部分 `.git` 操作受沙箱限制，已通过授权执行。用户消息在 `...` 处截断，因此本轮只按 repo 权威文件推进 Sprint 0，未凭旧上下文扩展到 Sprint 1。
 - **[运行规则补充]** `RUNBOOK.md` 已新增防死循环规则：遇到难以解决的问题时，不用同一种方式反复尝试；最多尝试三种有实质差异的解决路径，仍失败则提前停止，并把现象、尝试、失败原因、判断和后续方向写进 HANDOFF，等待作者决策。
 - **[规范性审查]** 已检查 `BLUEPRINT.md`、`HANDOFF.md`、`RUNBOOK.md`、`README.md`：当前焦点唯一，Delta repo 边界清楚，里程碑/Sprint 与 README 口径一致。`RUNBOOK.md` 已补充“上下文卫生与记录协议”，要求后续 AI 默认只查 BLUEPRINT/HANDOFF，并把改动、尝试、问题和后续方向沉淀进 HANDOFF。
 - **[蓝图对齐]** `BLUEPRINT.md` 已调整为 Delta repo 专属，不再把当前焦点拉回 Insight；`HANDOFF.md` 已替换为 Delta 工程 Sprint 版本。
@@ -124,9 +129,10 @@
 
 ## 下一步(具体、可执行)
 
-1. 完成 Sprint 0：起草并冻结 `EVALUATION.md`(任务/数据/指标/baseline)。
-2. 决定 Sprint 0 用什么数据起步(见待决事项 D4)。
-3. 搭好 repo 目录与可复现环境。
+1. 验收 Sprint 0：确认 `EVALUATION.md` 中任务/数据/指标/baseline 四项是否作为 M0 标尺冻结。
+2. 若验收通过，下一步才进入 Sprint 1：实现合成数据生成管线。
+3. Sprint 1 只实现两个 baseline：persistence / previous value，以及 simple linear regression；运行 5 个固定 seed，输出 per-seed 指标、均值和 min-max 波动范围。
+4. Sprint 1 完成后停止，等待验收；不要自动进入 Sprint 2。
 
 ---
 
@@ -134,7 +140,7 @@
 
 - **D1：(已解决)** 本 repo 做 Delta；Delta 内第一个建模模块 = 通用权重机制(Sprint 2)，忽略值推后到 M2。
 - **D2：** repo 结构：三作品各独立 repo + 总纲，还是分散？可推迟。
-- **D4(新，当前最相关)：** Sprint 0 的数据用**公开真实数据集**(更有说服力)还是**合成数据**(更可控、便于验证机制)？建议：先合成把机制跑通，再上真实数据增强说服力。等作者定。
+- **D4：(已解决)** Sprint 0 第一版数据采用**合成多变量时间序列**。理由：关系可控、便于验证机制、可复现；真实数据可在合成 baseline 稳定后作为增强说服力的后续项，不属于 Sprint 0/1 必做。
 
 ---
 
@@ -145,9 +151,10 @@
 | C1 | 预测内核优先用统计/时序方法，LLM 只放外围 | 倾向未定 | 见 BLUEPRINT 第 7 节 |
 | C2 | 先做通用权重底座，忽略值/动态推后 | 已决 | 遵循“先做最被复用的地基” |
 | C3 | M1 完成即为可交付停止点 | 已决 | M2 为上限，非义务 |
+| C4 | M0 第一版数据使用合成多变量时间序列 | 已决 | 关系可控，便于后续验证权重机制；真实数据后续增强 |
 
 ---
 
 ## 给下一棒的话
 
-> repo 已建好，但还是“纯文档、零实现”阶段。**不要急着写建模代码，当前焦点是 Sprint 0：把评测协议冻结。** 这是作者最看重、也最容易被跳过的一步，跳过后面所有数字都不可信。作者有反复扩大范围的倾向，请温和但坚定地守住“一次只做一个 Sprint”，并在他想跳去做忽略值/动态/大规模时，提醒他这些已在 M2 或星辰大海里排好队了。
+> Sprint 0 已完成基础交付：`EVALUATION.md`、环境边界和目录结构。下一棒若收到明确指令，可以进入 Sprint 1：写合成数据管线和两个 baseline，并严格按 `EVALUATION.md` 的 5 seed 协议报告均值与 min-max。不要进入 Sprint 2；不要实现通用权重机制、动态权重或忽略值。

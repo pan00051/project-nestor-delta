@@ -66,10 +66,39 @@ Before writing modeling code, the project needs to freeze:
 - the baseline methods,
 - the reproducible development environment.
 
+The frozen M0 evaluation protocol is in `EVALUATION.md`.
+
 After that, the first modeling module will be:
 
 - a reusable weighting mechanism,
 - followed by a three-variable prediction workflow.
+
+## Reproducible Environment
+
+Sprint 0 intentionally uses no third-party runtime dependencies.
+
+From a clean checkout:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-lock.txt
+```
+
+The project requires Python `>=3.9`.
+
+## Repository Layout
+
+```text
+.
+├── data/synthetic/       # Sprint 1 generated synthetic datasets
+├── reports/              # Sprint 1 baseline metrics and summaries
+├── scripts/              # Reproducible command-line entry points
+├── src/nestor_delta/     # Python package source
+├── EVALUATION.md         # Frozen M0 evaluation protocol
+├── requirements-lock.txt # Pinned environment dependencies
+└── pyproject.toml        # Project metadata and Python version boundary
+```
 
 ## Project Rules
 
@@ -83,4 +112,4 @@ Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
 
 ## Status
 
-Early project setup. Documentation and boundaries are being established before implementation.
+Sprint 0 groundwork is in place: the evaluation protocol and reproducible environment boundary are defined before implementation.
