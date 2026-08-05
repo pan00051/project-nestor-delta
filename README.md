@@ -56,17 +56,20 @@ This repository is only for **Nestor Delta**.
 
 The current focus is not to build everything at once.
 
-The next concrete step is to define the first module boundary:
+The current sprint is **Sprint 0: lock the evaluation protocol and environment**.
 
-- input,
-- output,
-- what it explicitly does not handle,
-- how to judge whether it is good enough.
+Before writing modeling code, the project needs to freeze:
 
-The likely first module is either:
+- the task definition,
+- the dataset,
+- the metrics,
+- the baseline methods,
+- the reproducible development environment.
 
-- a reusable weighting mechanism, or
-- an ignore-value mechanism for filtering weak relationships.
+After that, the first modeling module will be:
+
+- a reusable weighting mechanism,
+- followed by a three-variable prediction workflow.
 
 ## Project Rules
 
@@ -81,4 +84,3 @@ Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
 ## Status
 
 Early project setup. Documentation and boundaries are being established before implementation.
-
