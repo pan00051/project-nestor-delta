@@ -84,6 +84,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
+python -m unittest discover -s tests
 ```
 
 The project requires Python `>=3.9`.

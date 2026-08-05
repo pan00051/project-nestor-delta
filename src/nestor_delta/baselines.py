@@ -17,6 +17,8 @@ def fit_linear_regression(features: Sequence[Sequence[float]], labels: Sequence[
     if not features:
         raise ValueError("features must not be empty")
 
+    # Normal equations are deterministic and dependency-free for this small Sprint 1
+    # design matrix. Revisit QR/SVD if later sprints add many features or scaling.
     feature_count = len(features[0])
     xtx = [[0.0 for _ in range(feature_count)] for _ in range(feature_count)]
     xty = [0.0 for _ in range(feature_count)]

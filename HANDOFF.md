@@ -114,6 +114,7 @@
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-06 · S1 验证固化]** 根据外部审查结论，新增标准库 `unittest` 测试：同 seed 生成 CSV 字节一致、OLS 在 seed `11` 训练集上还原已知驱动系数。测试命令为 `python -m unittest discover -s tests`。`EVALUATION.md` 标为 `v1`，`reports/baseline_summary.md` 补充正确性自检说明，`baselines.py` 注明正规方程的数值稳定性取舍。未进入 Sprint 2，未实现权重机制。
 - **[2026-08-06 · Sprint 1 完成]** 已实现合成数据生成管线和两个 baseline：persistence / previous value、simple linear regression。实现文件：`src/nestor_delta/synthetic.py`、`src/nestor_delta/splits.py`、`src/nestor_delta/baselines.py`、`src/nestor_delta/metrics.py`、`src/nestor_delta/reporting.py`；一键入口：`scripts/run_baselines.py`。没有实现通用权重机制、动态权重或忽略值。
 - **[2026-08-06 · Sprint 1 结果]** 已按 `EVALUATION.md` 的 5 seed 协议运行 baseline 并保存报告。test 指标：linear_regression MAE mean `0.428163`、range `0.381239-0.470460`；RMSE mean `0.540204`、range `0.478609-0.592253`。persistence MAE mean `0.566021`、range `0.508144-0.624679`；RMSE mean `0.703043`、range `0.632300-0.789040`。per-seed 表在 `reports/baseline_metrics.csv`，汇总在 `reports/baseline_summary.md`。
 - **[2026-08-06 · Sprint 1 命令记录]** 已执行：`python scripts/run_baselines.py`、`python3 scripts/run_baselines.py`、`.venv/bin/python scripts/run_baselines.py`、`python3 -m compileall src scripts`、`env PYTHONPYCACHEPREFIX=/private/tmp/nestor-delta-pycache python3 -m compileall src scripts`、`wc -l data/synthetic/synthetic_seed_11.csv data/synthetic/synthetic_seed_23.csv data/synthetic/synthetic_seed_37.csv data/synthetic/synthetic_seed_41.csv data/synthetic/synthetic_seed_53.csv`。`python3` 与 `.venv/bin/python` 的 baseline 输出一致。
@@ -135,7 +136,7 @@
 
 ## 下一步(具体、可执行)
 
-1. 验收 Sprint 1：确认 `reports/baseline_metrics.csv` 和 `reports/baseline_summary.md` 是否满足 baseline 参照零点要求。
+1. 验收 Sprint 1 固化项：确认 `python -m unittest discover -s tests`、`reports/baseline_summary.md` 正确性自检说明、`EVALUATION.md v1` 是否满足作品集级别收尾。
 2. 下一步只能是 Sprint 2 的准备工作；不要自动开始 Sprint 2。
 3. Sprint 2 开始前，应先写清通用权重机制的输入、输出、不负责什么，以及验证标准。
 
@@ -150,6 +151,7 @@
 - **Sprint 1 / baseline：完成。** persistence 与 simple linear regression 均已实现并运行。
 - **Sprint 1 / 指标报告：完成。** 已生成并保存 per-seed 指标表与汇总报告，报告均值和 min-max 波动范围。
 - **Sprint 1 / 一键复现：完成。** README 与 `REPRODUCIBILITY.md` 已记录完整命令。
+- **Sprint 1 / 自动化验证：完成。** 已新增 `python -m unittest discover -s tests` 标准库测试，固化确定性复跑和已知系数还原两个审查验证。
 
 ---
 

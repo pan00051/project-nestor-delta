@@ -1,7 +1,8 @@
-# Nestor Delta Evaluation Protocol
+# Nestor Delta Evaluation Protocol v1
 
 > Status: frozen for M0 Sprint 0.
 > Scope: this protocol defines the measurement ground for Sprint 1 baselines and later M1 work. Changes after Sprint 0 require an explicit protocol update and must be recorded in `HANDOFF.md`.
+> Version: `v1`, covering Sprint 0 and Sprint 1. Any change that would invalidate existing baseline comparisons must create a new protocol version.
 
 ## 1. Task Definition
 

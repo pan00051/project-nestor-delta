@@ -12,6 +12,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
+python -m unittest discover -s tests
 ```
 
 Expected result:
@@ -22,12 +23,26 @@ Expected result:
 - Synthetic CSV files are generated under `data/synthetic/`.
 - Per-seed metrics are written to `reports/baseline_metrics.csv`.
 - Aggregate metrics are written to `reports/baseline_summary.md`.
+- Unit tests pass, including deterministic generation and OLS coefficient recovery.
 
 ## Current Dependency Policy
 
 Sprint 1 has no third-party runtime dependencies.
 
 The simple linear regression baseline uses a deterministic standard-library OLS implementation. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
+
+## Test Policy
+
+The test suite is standard-library only and can be run with:
+
+```bash
+python -m unittest discover -s tests
+```
+
+Current permanent checks:
+
+- same-seed synthetic generation produces identical CSV bytes;
+- the linear regression baseline recovers the known synthetic drivers on the frozen seed `11` training split within documented tolerance.
 
 ## Output Policy
 
