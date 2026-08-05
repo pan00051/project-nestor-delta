@@ -75,7 +75,7 @@ After that, the first modeling module will be:
 
 ## Reproducible Environment
 
-Sprint 0 intentionally uses no third-party runtime dependencies.
+Sprint 1 intentionally uses no third-party runtime dependencies.
 
 From a clean checkout:
 
@@ -83,18 +83,30 @@ From a clean checkout:
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
+python scripts/run_baselines.py
 ```
 
 The project requires Python `>=3.9`.
 
-Sprint 0 acceptance commands and expected outputs are listed in `REPRODUCIBILITY.md`.
+Acceptance commands and expected outputs are listed in `REPRODUCIBILITY.md`.
+
+## Sprint 1 Baseline Results
+
+The baseline report is saved in `reports/baseline_summary.md`.
+
+Current test-set results across the five frozen seeds:
+
+| Baseline | MAE mean | MAE range | RMSE mean | RMSE range |
+|---|---:|---:|---:|---:|
+| linear_regression | 0.428163 | 0.381239-0.470460 | 0.540204 | 0.478609-0.592253 |
+| persistence | 0.566021 | 0.508144-0.624679 | 0.703043 | 0.632300-0.789040 |
 
 ## Repository Layout
 
 ```text
 .
-├── data/synthetic/       # Sprint 1 generated synthetic datasets
-├── reports/              # Sprint 1 baseline metrics and summaries
+├── data/synthetic/       # Generated synthetic datasets
+├── reports/              # Baseline metrics and summaries
 ├── scripts/              # Reproducible command-line entry points
 ├── src/nestor_delta/     # Python package source
 ├── EVALUATION.md         # Frozen M0 evaluation protocol
@@ -115,4 +127,4 @@ Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
 
 ## Status
 
-Sprint 0 groundwork is in place: the evaluation protocol and reproducible environment boundary are defined before implementation.
+Sprint 1 is complete: synthetic data generation and the two required baselines are reproducible under the frozen M0 protocol.

@@ -5,6 +5,4 @@ __pycache__/
 
 # Sprint 1 generated artifacts; keep directory placeholders tracked.
 data/synthetic/*.csv
-reports/*.csv
-reports/*.md
 !reports/.gitkeep

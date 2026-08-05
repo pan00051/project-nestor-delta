@@ -1,8 +1,8 @@
 # Reproducibility
 
-This file defines how to verify the Sprint 0 environment and what output is expected at this stage.
+This file defines how to verify the current environment and Sprint 1 baseline run.
 
-## Sprint 0 Acceptance Commands
+## Sprint 1 Acceptance Commands
 
 Run from a clean checkout:
 
@@ -11,27 +11,37 @@ python3 --version
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
+python scripts/run_baselines.py
 ```
 
-Expected Sprint 0 result:
+Expected result:
 
 - Python version is `>=3.9`.
 - Virtual environment creation succeeds.
 - `requirements-lock.txt` installs successfully.
-- No baseline metrics are generated in Sprint 0.
+- Synthetic CSV files are generated under `data/synthetic/`.
+- Per-seed metrics are written to `reports/baseline_metrics.csv`.
+- Aggregate metrics are written to `reports/baseline_summary.md`.
 
 ## Current Dependency Policy
 
-Sprint 0 has no third-party runtime dependencies.
+Sprint 1 has no third-party runtime dependencies.
 
-If Sprint 1 introduces a package such as NumPy for deterministic OLS, the dependency must be pinned in `requirements-lock.txt` before baseline numbers are reported.
+The simple linear regression baseline uses a deterministic standard-library OLS implementation. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
 
 ## Output Policy
 
-Sprint 0 is documentation and environment groundwork only.
+Sprint 1 writes reproducible generated artifacts.
 
-The following outputs are intentionally deferred to Sprint 1:
+Tracked outputs:
 
-- generated synthetic CSV files;
-- per-seed baseline metrics;
-- aggregate baseline summary with mean and min-max range.
+- `reports/baseline_metrics.csv`
+- `reports/baseline_summary.md`
+
+Regenerated but untracked outputs:
+
+- `data/synthetic/synthetic_seed_11.csv`
+- `data/synthetic/synthetic_seed_23.csv`
+- `data/synthetic/synthetic_seed_37.csv`
+- `data/synthetic/synthetic_seed_41.csv`
+- `data/synthetic/synthetic_seed_53.csv`

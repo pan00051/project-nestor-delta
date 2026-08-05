@@ -107,13 +107,17 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **Sprint 0 — 锁定评测协议 + 环境。**
-> 评测协议与基础环境已建立并完成加严，等待最终验收或进入 Sprint 1 的明确指令。未进入 Sprint 1，未写 baseline 或建模核心。
+> **Sprint 1 — 数据 + baseline。**
+> Sprint 1 已完成，等待作者验收。不要自动进入 Sprint 2；不要实现通用权重机制、动态权重或忽略值。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-06 · Sprint 1 完成]** 已实现合成数据生成管线和两个 baseline：persistence / previous value、simple linear regression。实现文件：`src/nestor_delta/synthetic.py`、`src/nestor_delta/splits.py`、`src/nestor_delta/baselines.py`、`src/nestor_delta/metrics.py`、`src/nestor_delta/reporting.py`；一键入口：`scripts/run_baselines.py`。没有实现通用权重机制、动态权重或忽略值。
+- **[2026-08-06 · Sprint 1 结果]** 已按 `EVALUATION.md` 的 5 seed 协议运行 baseline 并保存报告。test 指标：linear_regression MAE mean `0.428163`、range `0.381239-0.470460`；RMSE mean `0.540204`、range `0.478609-0.592253`。persistence MAE mean `0.566021`、range `0.508144-0.624679`；RMSE mean `0.703043`、range `0.632300-0.789040`。per-seed 表在 `reports/baseline_metrics.csv`，汇总在 `reports/baseline_summary.md`。
+- **[2026-08-06 · Sprint 1 命令记录]** 已执行：`python scripts/run_baselines.py`、`python3 scripts/run_baselines.py`、`.venv/bin/python scripts/run_baselines.py`、`python3 -m compileall src scripts`、`env PYTHONPYCACHEPREFIX=/private/tmp/nestor-delta-pycache python3 -m compileall src scripts`、`wc -l data/synthetic/synthetic_seed_11.csv data/synthetic/synthetic_seed_23.csv data/synthetic/synthetic_seed_37.csv data/synthetic/synthetic_seed_41.csv data/synthetic/synthetic_seed_53.csv`。`python3` 与 `.venv/bin/python` 的 baseline 输出一致。
+- **[2026-08-06 · Sprint 1 问题与处理]** 第一次执行 `python scripts/run_baselines.py` 失败，因为当前 shell 未激活 venv 且系统没有 `python` 命令；按 README 激活 venv 后可使用 `python`，未激活时使用 `python3 scripts/run_baselines.py`。第一次执行 `python3 -m compileall src scripts` 失败，因为 macOS Python 试图写入不可用的用户 cache；已用 `PYTHONPYCACHEPREFIX=/private/tmp/nestor-delta-pycache` 重跑并通过。
 - **[2026-08-06 · Sprint 0 加严]** 已按验收反馈补强 `EVALUATION.md`：冻结合成数据生成公式、噪声分布、随机数抽样顺序、初始滞后值、无标准化策略、CSV 精度、600 行的 train/validation/test 精确边界、5-step lag 的监督样本归属规则、persistence 与 OLS baseline 的实现细节、以及禁止数据泄漏规则。未写建模代码。
 - **[2026-08-06 · 环境可验]** 已新增 `REPRODUCIBILITY.md`，列出 Sprint 0 验收命令与预期结果，并明确 Sprint 0 不产生 baseline 数字。README 已链接该文件。本轮已再次执行 `python3 --version`、`python3 -m venv .venv`、`.venv/bin/python -m pip install -r requirements-lock.txt`；结果为 Python `3.9.6`，venv 创建成功，依赖安装成功且无第三方依赖。pip cache 目录不可写警告仍存在，但不影响复现。
 - **[2026-08-06 · Sprint 0 完成]** 已新增 `EVALUATION.md`，冻结 M0 的任务定义、数据方案、指标与 baseline 清单。数据选择已按本轮指令/协议冻结为“合成多变量时间序列”第一版：5 个固定 seed(`11/23/37/41/53`)、每条 600 行、70/15/15 时间切分、一步预测 `target`。指标冻结为 MAE/RMSE，并要求多 seed 报均值与 min-max 波动范围。
@@ -131,9 +135,9 @@
 
 ## 下一步(具体、可执行)
 
-1. 若作者确认 Sprint 0 最终验收通过，下一步才进入 Sprint 1：实现合成数据生成管线。
-2. Sprint 1 只实现两个 baseline：persistence / previous value，以及 simple linear regression；运行 5 个固定 seed，输出 per-seed 指标、均值和 min-max 波动范围。
-3. Sprint 1 完成后停止，等待验收；不要自动进入 Sprint 2。
+1. 验收 Sprint 1：确认 `reports/baseline_metrics.csv` 和 `reports/baseline_summary.md` 是否满足 baseline 参照零点要求。
+2. 下一步只能是 Sprint 2 的准备工作；不要自动开始 Sprint 2。
+3. Sprint 2 开始前，应先写清通用权重机制的输入、输出、不负责什么，以及验证标准。
 
 ---
 
@@ -142,7 +146,10 @@
 - **Sprint 0 / `EVALUATION.md`：完成。** 任务、数据、指标、baseline、切分边界、数据公式、baseline 实现细节和防泄漏规则已冻结。
 - **Sprint 0 / 环境可重建：完成。** 已在 Python `3.9.6` 验证：`python3 -m venv .venv` 与 `.venv/bin/python -m pip install -r requirements-lock.txt` 成功。
 - **Sprint 0 / 输出边界：完成。** 明确 Sprint 0 不产生 baseline 数字；baseline 指标留到 Sprint 1。
-- **Sprint 1：未开始。** 尚未实现数据生成器、baseline 或指标报告。
+- **Sprint 1 / 数据管线：完成。** `python scripts/run_baselines.py` 会生成 5 个固定 seed 的合成 CSV；每个文件 601 行(header + 600 data rows)。
+- **Sprint 1 / baseline：完成。** persistence 与 simple linear regression 均已实现并运行。
+- **Sprint 1 / 指标报告：完成。** 已生成并保存 per-seed 指标表与汇总报告，报告均值和 min-max 波动范围。
+- **Sprint 1 / 一键复现：完成。** README 与 `REPRODUCIBILITY.md` 已记录完整命令。
 
 ---
 
@@ -167,4 +174,4 @@
 
 ## 给下一棒的话
 
-> Sprint 0 已完成基础交付：`EVALUATION.md`、环境边界和目录结构。下一棒若收到明确指令，可以进入 Sprint 1：写合成数据管线和两个 baseline，并严格按 `EVALUATION.md` 的 5 seed 协议报告均值与 min-max。不要进入 Sprint 2；不要实现通用权重机制、动态权重或忽略值。
+> Sprint 1 已完成：数据生成、persistence baseline、simple linear regression baseline、per-seed metrics 和 aggregate summary 都已落地。下一棒不要自动进入 Sprint 2；只能在作者验收后准备 Sprint 2 的接口说明与验证标准。继续严禁提前实现通用权重机制、动态权重或忽略值。

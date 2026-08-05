@@ -1,0 +1,11 @@
+baseline,seed,split,mae,rmse,sample_count
+persistence,11,test,0.5081436336,0.6323002416,90
+linear_regression,11,test,0.4106688451,0.5150187377,90
+persistence,23,test,0.5512376167,0.6717065201,90
+linear_regression,23,test,0.3812393565,0.4786089004,90
+persistence,37,test,0.5354772546,0.6704054931,90
+linear_regression,37,test,0.4704600453,0.5699638808,90
+persistence,41,test,0.6246792842,0.7890400974,90
+linear_regression,41,test,0.4508794074,0.5922532780,90
+persistence,53,test,0.6105666202,0.7517629842,90
+linear_regression,53,test,0.4275678638,0.5451764275,90
