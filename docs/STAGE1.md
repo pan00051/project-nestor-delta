@@ -28,9 +28,16 @@ Stage 1 does not:
 
 - modify the Sprint 2 weighting mechanism;
 - use validation or test rows to choose weights;
+- treat relation weights as causal effects;
 - tune dynamic weights;
 - introduce ignore values;
 - perform causal or event attribution.
+
+## Interpretation Note
+
+Sprint 2 weights are marginal pairwise correlations. Stage 1 uses them for source selection and feature scaling only. The final OLS coefficients remain prediction coefficients learned on train samples; they should not be interpreted as the same quantity as the relation weights.
+
+Because the relation weights search several lags and keep the strongest absolute score, weak unrelated signals can have a small non-zero score. Stage 1 avoids turning that into an ignore-value rule: it selects exactly the top two train-only sources for this fixed workflow and leaves threshold design to a later sprint.
 
 ## Outputs
 

@@ -114,6 +114,7 @@
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-06 · S2 审查反馈落实]** 作者提交 S1 修订与 S2 审查结论：merge 干净、S1 修订达标、S2 通过且无阻断问题。本轮仅处理非阻断文档改进：`docs/WEIGHTING.md` 已明确 Sprint 2 的 `weight` 是边际 pairwise correlation，不是 OLS partial coefficient / 净效应；并记录多 lag 取最大绝对相关会抬高 noise floor，未来 S5 忽略阈值必须高于观测噪声地板。`docs/STAGE1.md` 已补充 Stage 1 只把 relation weights 用于选源与特征缩放，不把它解释为因果或最终回归系数。
 - **[2026-08-06 · Sprint 3 完成]** 已实现 Stage 1 三变量预测工作流：`src/nestor_delta/stage1_prediction.py`。一键入口：`scripts/run_stage1.py`。方法：每个 seed 只用 train rows 计算 Sprint 2 relation weights，选择 `target` 的 top-2 non-target sources，再用 lagged `target` + 两个加权 source histories 训练标准库 OLS。未修改 Sprint 2 权重机制，未实现动态权重或忽略值。
 - **[2026-08-06 · Sprint 3 结果]** 已按 M0 锁定协议运行 5 个 seed，结果保存在 `reports/stage1_metrics.csv`、`reports/stage1_selected_sources.csv`、`reports/stage1_summary.md`。test 指标：stage1_weighted_three_variable MAE mean `0.422277`、range `0.375342-0.457150`；RMSE mean `0.532636`、range `0.470656-0.589775`。对比：persistence MAE mean `0.566021` / RMSE mean `0.703043`；linear_regression MAE mean `0.428163` / RMSE mean `0.540204`。Stage 1 mean MAE 比 persistence 低 `25.40%`，比 Sprint 1 linear regression 低 `1.37%`；mean RMSE 分别低 `24.24%` 和 `1.40%`。
 - **[2026-08-06 · Sprint 3 命令记录]** 已执行：`.venv/bin/python scripts/run_stage1.py`、`.venv/bin/python -m unittest discover -s tests`、`.venv/bin/python scripts/run_baselines.py`、`.venv/bin/python scripts/run_weights.py`。完整测试目前为 7 tests 通过。baseline 与 weight 验证数字保持稳定。
@@ -146,7 +147,7 @@
 ## 下一步(具体、可执行)
 
 1. 验收 Sprint 3：确认 `docs/STAGE1.md`、`scripts/run_stage1.py`、`reports/stage1_summary.md` 和测试是否满足 M1 Stage 1 交付要求。
-2. 等作者给 Sprint 2 并行审查意见；若 S2 需要修改，先判断是否影响 Sprint 3 的 selected sources 或指标，并重新运行 `scripts/run_stage1.py`。
+2. S1/S2 审查已通过；若还有 S2 后续建议，先判断是否影响 Sprint 3 的 selected sources 或指标，并重新运行 `scripts/run_stage1.py`。
 3. 下一步只能是 Sprint 4 的准备工作或 M1 收尾 writeup；不要自动开始 Sprint 4。
 4. Sprint 4 属于动态权重变化，必须在作者明确验收 M1 后再启动。
 
@@ -166,6 +167,7 @@
 - **Sprint 2 / 独立实现：完成。** `src/nestor_delta/relation_weights.py` 可独立计算层无关的 lagged relation weights。
 - **Sprint 2 / 最小测试：完成。** `.venv/bin/python -m unittest discover -s tests` 通过。
 - **Sprint 2 / 验证报告：完成。** `reports/weight_validation.csv` 与 `reports/weight_validation_summary.md` 已保存 5 seed 均值和 min-max 波动范围。
+- **Sprint 2 / 审查反馈：完成。** 已补充 marginal correlation vs partial OLS coefficient、multiple-lag noise floor 两项解释，不改代码。
 - **Sprint 3 / 三变量预测：完成。** `src/nestor_delta/stage1_prediction.py` 已组合 Sprint 2 权重和 Sprint 1 OLS，在 locked test split 上预测 `target`。
 - **Sprint 3 / 指标报告：完成。** `reports/stage1_metrics.csv`、`reports/stage1_selected_sources.csv`、`reports/stage1_summary.md` 已保存 5 seed 指标、选源记录、均值和 min-max。
 - **Sprint 3 / 验证：完成。** `.venv/bin/python -m unittest discover -s tests` 通过 7 tests；Stage 1 mean MAE/RMSE 均优于 persistence 和 Sprint 1 linear regression。
@@ -190,9 +192,10 @@
 | C4 | M0 第一版数据使用合成多变量时间序列 | 已决 | 关系可控，便于后续验证权重机制；真实数据后续增强 |
 | C5 | Sprint 2 首版权重机制使用 lagged Pearson correlation | 已决 | 标准库可复现、层无关、足够作为可验证工程底座；不声称算法创新 |
 | C6 | Sprint 3 使用 train-only top-2 source selection + weighted lagged OLS | 已决 | 组合 S1/S2，不修改权重机制；mean MAE/RMSE 小幅优于 S1 linear baseline |
+| C7 | Sprint 2 `weight` 解释为 marginal signed correlation | 已决 | 不等同于 OLS partial coefficient；多 lag 取最大会产生非零 noise floor |
 
 ---
 
 ## 给下一棒的话
 
-> Sprint 3 已完成：Stage 1 三变量预测、writeup、报告和测试都已落地。作者正在并行审查 Sprint 2，若有 S2 修改建议，先判断是否影响 Stage 1 并重跑报告。不要自动进入 Sprint 4；继续严禁提前实现动态权重或忽略值。
+> Sprint 3 已完成：Stage 1 三变量预测、writeup、报告和测试都已落地。S1/S2 审查已通过，非阻断说明已补进 `docs/WEIGHTING.md` 和 `docs/STAGE1.md`。不要自动进入 Sprint 4；继续严禁提前实现动态权重或忽略值。

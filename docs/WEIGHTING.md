@@ -42,6 +42,16 @@ Interpretation:
 - `score` is `abs(weight)` and is used for ranking relation strength.
 - `lag` is the lag that produced the strongest absolute correlation.
 
+## Statistical Interpretation Notes
+
+The Sprint 2 weight is a marginal pairwise correlation, not a partial or controlled effect.
+
+This means it should not be compared one-to-one with Sprint 1 OLS coefficients. For example, the synthetic data can produce a `driver_a -> target` relation weight near `0.60`, while the frozen generation formula uses a direct coefficient of `0.35`. That is expected: pairwise correlation includes shared history and indirect paths, while an OLS coefficient estimates a net effect after other features are included.
+
+For the same reason, `weight` should be read as a signed relation score for ranking and feature construction, not as a causal coefficient or final prediction coefficient.
+
+The current implementation searches multiple lags and keeps the largest absolute correlation. This creates a small multiple-comparison bias: a pure noise variable will often receive a non-zero best score because one of the searched lags is randomly strongest. In the Sprint 2 validation report, `noise` has a mean score near `0.06` rather than exactly `0.00`. That does not affect the current ranking because the real drivers are well separated, but it matters for any future ignore-value threshold: a useful threshold must sit above the observed noise floor, not merely above zero.
+
 ## What It Does Not Do
 
 The module does not:
