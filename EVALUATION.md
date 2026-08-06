@@ -423,3 +423,78 @@ Across both tracks and five fixed seeds:
 - repeated runs produce identical fixture data, retention reports, metrics, and summaries.
 
 S5 does not implement upstream candidate skipping, new trained threshold models, S5+ behavior, or any modification to S0-S4 frozen logic.
+
+## 10. Additive Sprint 6 Real Data Case Protocol v1
+
+> Status: frozen for Sprint 6 on 2026-08-06.
+> Scope: this is an additive real-data runner protocol. It does not replace the controlled S0-S5 mechanism validations and does not introduce public uploads, dashboards, or API connectors.
+
+### Purpose
+
+S6 lets the author run Delta on manually prepared real CSV cases. The goal is to support exploratory real-data storytelling after the core mechanisms have already been validated on controlled data.
+
+S6 does not decide which public datasets to use. It only defines the input contract and deterministic analysis path once a case CSV exists.
+
+### Input Contract
+
+Each case has:
+
+- one local CSV;
+- one JSON config;
+- one target column;
+- one date column;
+- an author-defined candidate signal pool;
+- fixed monthly frequency;
+- fixed train/test date boundaries;
+- a fixed lag window;
+- a fixed maximum selected signal count.
+
+The CSV must already be cleaned, aligned to contiguous monthly `YYYY-MM` rows, and numeric for every target/candidate column. Missing-value handling, API fetching, source-specific joins, interpolation, sorting, and dashboard rendering are out of scope.
+
+The JSON config must include all required fields and no unknown fields. Unknown frequency values, duplicate signals, invalid date boundaries, missing values, non-finite numeric values, malformed dates, duplicate dates, and monthly gaps must fail deterministically with a specific error.
+
+### Selection Discipline
+
+The author may define the candidate pool but must not manually rank candidates.
+
+The runner must:
+
+- compute relation ranking automatically;
+- use train rows only for ranking, selection, and fitted coefficients;
+- use test rows only for out-of-sample evaluation;
+- ensure CSV column order does not affect ranking or selected signals;
+- report the full ranking, not only the selected signals.
+
+Ranking order is deterministic: relation score descending, then signal name, then lag.
+
+If real-data feature columns are collinear, the runner removes lower-ranked overlapping signals first and continues fitting. This backoff is deterministic and must not look at test metrics. If no selected signal satisfies numerical stability requirements, the runner reports baseline-only output and must not fabricate Delta coefficients or metrics.
+
+### Required Outputs
+
+For each case, the runner writes:
+
+```text
+relation_ranking.csv
+prediction_metrics.csv
+predictions_vs_actual.csv
+resource_tradeoff.csv
+summary.md
+```
+
+These outputs are intentionally chart-friendly. Manual charting is allowed; dashboard development is not part of S6.
+
+### Interpretation Boundary
+
+S6 reports co-movement and out-of-sample predictive usefulness. It must not present retained signals as the real-world reason a target moved.
+
+Good wording:
+
+```text
+These signals moved with the target in the training window and were useful in this out-of-sample test.
+```
+
+Bad wording:
+
+```text
+These are the true real-world drivers.
+```

@@ -115,13 +115,16 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **S5 — 忽略值 / 资源自适应：实现及工程验收完成，待作者验收/提交。**
-> 当前只做 S5 收尾与作者验收；不要自动进入 S5 之后的工作。
+> **S6 — 真实数据案例 Runner：框架实现完成，等待作者准备真实案例 CSV。**
+> 当前只做本地 CSV + config 的离线分析框架；不要做用户上传、API 接入、dashboard 或自动清洗。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-06 · S6 真实数据框架完成]** 新增 `real_data.py`、`real_case_analysis.py` 和一键入口 `scripts/run_real_case.py`。S6 输入为作者手工准备并已对齐的本地 CSV + JSON config；输出 `relation_ranking.csv`、`prediction_metrics.csv`、`predictions_vs_actual.csv`、`resource_tradeoff.csv` 和 `summary.md`，方便后续手动画图。
+- **[2026-08-06 · S6 边界与防自欺]** 候选池可由作者定义，但 ranking/selection 必须由 train-only 数据自动生成；CSV 列顺序不代表优先级，loader 会把候选变量规范化排序。若真实数据候选共线导致 OLS 奇异，runner 会优先删除与更高排名信号重叠的低排名者；降到 0 个稳定信号时只保留 baseline。S6 只报告 co-movement / predictive usefulness，不抓 API、不做 dashboard、不自动清洗。
+- **[2026-08-06 · S6 验证]** 新增 `docs/REAL_DATA_CASE_RUNNER.md`，`EVALUATION.md` 追加 S6 协议。新增 8 项测试覆盖报告输出、候选列顺序不影响 CSV 产物、未来 test 区间篡改不影响 train-only ranking/selection/系数、完整/部分/零稳定信号共线降级、坏 config 和脏 CSV 清晰失败。
 - **[2026-08-06 · S5 资源自适应完成]** 新增层无关资源阈值模块 `resource_adaptive_ignore.py`、组合预测模块 `resource_adaptive_prediction.py`、高维压力夹具 `synthetic_resource_stress.py` 与冻结常量 `s5_config.py`。S5 使用双轨验收：原 S4 冻结数据作为 correctness regression，新增 15 候选变量 stress fixture 验证资源曲线；未修改 S0-S4 冻结代码和旧报告。
 - **[2026-08-06 · S5 阈值与边界]** `budget_ratio` 五档固定为 `1.00/0.75/0.50/0.25/0.00`，阈值按 `0.06/0.17/0.28/0.39/0.50` 单调上升。`0.06` 仅表述为当前冻结合成数据 + 多 lag 最大相关的 benchmark noise floor，不表述为通用真实数据阈值。资源指标统一命名为 `downstream_compute_proxy` / `downstream_memory_proxy`，因为当前仍先计算所有候选关系，不声称 end-to-end compute reduction。
 - **[2026-08-06 · S5 五 seed 结果]** 高维 `resource_stress` 轨：`budget_ratio=0.75` 时 retained mean `7.60`、downstream compute/memory proxy 均下降 `41.56%`，MAE mean `0.517833`、相对 full-budget MAE loss `4.11%`；`0.50` 时 proxy 下降 `73.00%`、MAE loss `55.23%`；`0.25` 时 proxy 下降 `84.49%`、MAE loss `81.77%`；`0.00` 时 proxy 下降 `98.46%`、MAE loss `137.57%`。S4 correctness 轨在 `0.75` 时仅下降 `13.33%`、MAE loss `0.14%`，并保留 `driver_a/driver_b`、阻断 `noise`。
@@ -175,9 +178,9 @@
 
 ## 下一步(具体、可执行)
 
-1. 等待作者验收 S5；验收时重点看：双轨口径、downstream-only 命名、`0.06` 噪声地板表述、以及资源/质量曲线是否足够作品集表达。
-2. 作者验收后提交本轮 S5 改动。
-3. 不自动进入 S5 之后的工作，不启动真实资源探针、上游候选跳过或新模型。
+1. 作者准备第一份真实案例 CSV：统一频率、数值列、无缺失；同时写 `case.json` 指定 target、candidate_signals、train/test 边界。
+2. 用 `python scripts/run_real_case.py cases/<case_name>/case.json` 跑出 S6 五份报告，再人工制图和判断故事是否成立。
+3. 不启动 API 抓取、用户上传、dashboard 或自动清洗；抓数脚本如果要做，应作为 S6 之后的 helper，不绑死分析框架。
 
 ---
 
@@ -206,6 +209,7 @@
 - **S3.1 / 报告与文档：完成并验收。** 四份 tracked report 与 `docs/TRUST_GATING.md` 已生成；MAE/RMSE 均报告五 seed mean 与 min-max。
 - **Sprint 4 / 动态权重漂移：完成并验收。** 作者已独立复核防泄漏、五 seed 漂移追踪和 120 行窗口冻结；动态 mean MAE/RMSE 分别比静态低 `7.52%/6.38%`。
 - **Sprint 5 / 忽略值与资源自适应：实现及工程验收完成。** 双轨验收已跑通；高维 stress 轨轻度压缩 downstream proxy 下降 `41.56%`、MAE loss `4.11%`，更高压力展示完整 tradeoff；待作者验收与提交。
+- **Sprint 6 / 真实数据案例 Runner：框架实现完成。** 可读取作者准备的本地 CSV + config，自动输出 ranking、预测、资源 tradeoff 和 summary；等待真实案例数据输入。
 
 ---
 
@@ -231,9 +235,10 @@
 | C8 | S3.1 使用 OLS 前静态信任度门控 | 已决 | trust 与方向分离；`0.15/0.50` 分段线性准入；源先合成为共享关系信号，确保 OLS 不能抵消相对准入 |
 | C9 | S4 使用 120 行因果滑窗重复调用 Sprint 2 静态权重 | 已决 | 新漂移数据独立冻结；train-only 选源/拟合；测试按 `t-1` 截止 prequential 更新；不含 S5 忽略逻辑 |
 | C10 | S5 使用双轨验收与 downstream-only 资源 proxy | 已决 | S4 冻结数据只做 correctness regression；新增高维 stress fixture 验证资源曲线；当前仍先算全量关系，因此只声明 downstream compute/memory proxy reduction |
+| C11 | S6 只做本地真实案例 runner | 已决 | 作者准备 CSV 和 config；runner 自动 ranking/selection 并输出 CSV 报告；不做 API、dashboard、上传、自动清洗或因果声明 |
 
 ---
 
 ## 给下一棒的话
 
-> S5 已实现并通过工程验收：双轨验收、五档预算阈值、downstream-only proxy、S4 correctness regression 和高维 resource stress fixture 都已落地。当前等待作者验收与提交；不要自动进入 S5 之后的工作。
+> S6 框架已实现：现在可以把作者准备好的真实 CSV + config 丢给 `scripts/run_real_case.py`，输出五份报告供手动画图。下一步是准备第一份真实案例数据；不要把 S6 扩成 API 接入、用户上传或 dashboard。

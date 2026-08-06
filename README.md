@@ -67,6 +67,7 @@ Each capability is an independent, testable module built on the one before it, w
 - **Trust gating** — an irreversible pre-model filter that makes the relationship weights actually influence the prediction (see the story above).
 - **Dynamic drift tracking** — a causal sliding window that lets the weights adapt as relationships change over time, using only past observations.
 - **Resource-adaptive ignore** — a single `budget_ratio` control lifts the ignore threshold under pressure, pruning weak relationships to save downstream computation.
+- **Real-data case runner** — accepts an author-prepared CSV and config, then outputs ranking, prediction, and trade-off CSV files for manual charting.
 
 ---
 
@@ -90,6 +91,14 @@ python scripts/run_trust_gating.py
 python scripts/run_dynamic_weights.py
 python -m unittest discover -s tests
 ```
+
+For an author-prepared real-data case:
+
+```bash
+python scripts/run_real_case.py cases/<case_name>/case.json
+```
+
+The real-data runner does not fetch APIs, clean raw datasets, or turn retained signals into real-world claims. It only analyzes a local CSV that has already been aligned.
 
 ---
 
