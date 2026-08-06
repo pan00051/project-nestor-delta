@@ -1,0 +1,20 @@
+{
+  "candidate_signals": [
+    "unemployment_rate",
+    "consumer_confidence",
+    "industrial_production",
+    "hicp"
+  ],
+  "case_name": "spain_retail_eurostat_2008_2025",
+  "csv": "data.csv",
+  "date_column": "date",
+  "frequency": "monthly",
+  "lag_window": 2,
+  "max_selected_signals": 4,
+  "notes": "Eurostat Spain monthly snapshot for 2008-01 through 2025-12. Target is seasonally and calendar adjusted retail sales volume (G47, 2021=100). Candidate signals are seasonally adjusted unemployment, seasonally adjusted consumer confidence, seasonally and calendar adjusted industrial production (2021=100), and the all-items HICP index (2025=100). An external Case Builder enforced the exact 216-month axis with no missing rows, deletion, interpolation, or imputation; clean CSV SHA-256 is a8c01df041db4d835baf83a459ae65194a4d5c9bca157753d56cd6259d106445. Eurostat marked the retail and industrial source snapshots provisional. Results are co-movement and out-of-sample predictive usefulness only.",
+  "output_dir": "../../reports/spain_retail_eurostat_2008_2025",
+  "seasonal_period": 0,
+  "target": "retail_volume",
+  "test_start": "2024-01",
+  "train_end": "2023-12"
+}
