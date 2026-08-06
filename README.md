@@ -56,15 +56,7 @@ This repository is only for **Nestor Delta**.
 
 The current focus is not to build everything at once.
 
-The current sprint is **Sprint 2: generic relation weighting mechanism**.
-
-Before writing modeling code, the project needs to freeze:
-
-- the task definition,
-- the dataset,
-- the metrics,
-- the baseline methods,
-- the reproducible development environment.
+The current sprint is **Sprint 4: static trust-gating prediction**.
 
 The frozen M0 evaluation protocol is in `EVALUATION.md`.
 
@@ -87,6 +79,7 @@ python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
 python scripts/run_weights.py
 python scripts/run_stage1.py
+python scripts/run_trust_gating.py
 python -m unittest discover -s tests
 ```
 
@@ -135,6 +128,19 @@ Current test-set results across the five frozen seeds:
 
 Mean improvement: Stage 1 is `25.40%` lower MAE than persistence and `1.37%` lower MAE than the Sprint 1 linear regression baseline.
 
+## Sprint 4 Trust-Gating Results
+
+Trust gating applies signed, piecewise-linear source admissions before OLS and combines admitted sources into shared relation signals. This prevents OLS from independently undoing each source's trust value.
+
+Report: `reports/trust_gating_summary.md`. Interface and rationale: `docs/TRUST_GATING.md`.
+
+| Mode | MAE mean | MAE range | RMSE mean | RMSE range |
+|---|---:|---:|---:|---:|
+| sprint3_ols | 0.422277 | 0.375342-0.457150 | 0.532636 | 0.470656-0.589775 |
+| trust_gated_ols | 0.454786 | 0.415817-0.492024 | 0.568517 | 0.518068-0.634403 |
+
+The gated mode is less accurate on this fixed dataset, which is reported as the trade-off. Its purpose is verified separately: changing only weak-source `driver_b` trust to `1.0` changes gated predictions by `0.0774200737` on average, while noise remains blocked and the frozen Sprint 3 OLS mode remains unchanged to 10 decimal places.
+
 ## Repository Layout
 
 ```text
@@ -162,4 +168,4 @@ Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
 
 ## Status
 
-Sprint 3 is complete: the weighted three-variable Stage 1 prediction workflow is implemented and evaluated under the frozen M0 protocol.
+Sprint 4 trust gating is implemented and evaluated under the frozen M0 protocol. Dynamic weighting has not started.

@@ -1,0 +1,11 @@
+mode,seed,perturbation,mean_abs_prediction_delta,max_abs_prediction_delta,sample_count
+sprint3_ols,11,driver_b_unit_trust,0.0000000000,0.0000000000,90
+trust_gated_ols,11,driver_b_unit_trust,0.1490365891,0.4632157500,90
+sprint3_ols,23,driver_b_unit_trust,0.0000000000,0.0000000000,90
+trust_gated_ols,23,driver_b_unit_trust,0.0081728375,0.0291020826,90
+sprint3_ols,37,driver_b_unit_trust,0.0000000000,0.0000000000,90
+trust_gated_ols,37,driver_b_unit_trust,0.1567707161,0.4992091662,90
+sprint3_ols,41,driver_b_unit_trust,0.0000000000,0.0000000000,90
+trust_gated_ols,41,driver_b_unit_trust,0.0481707766,0.1906286443,90
+sprint3_ols,53,driver_b_unit_trust,0.0000000000,0.0000000000,90
+trust_gated_ols,53,driver_b_unit_trust,0.0249494494,0.0735984426,90

@@ -1,6 +1,6 @@
 # Reproducibility
 
-This file defines how to verify the current environment, Sprint 1 baseline run, and Sprint 2 relation-weight validation.
+This file defines how to verify the environment and all completed static evaluation workflows through trust gating.
 
 ## Acceptance Commands
 
@@ -14,6 +14,7 @@ python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
 python scripts/run_weights.py
 python scripts/run_stage1.py
+python scripts/run_trust_gating.py
 python -m unittest discover -s tests
 ```
 
@@ -31,13 +32,14 @@ Expected result:
 - Stage 1 metrics are written to `reports/stage1_metrics.csv`.
 - Stage 1 selected sources are written to `reports/stage1_selected_sources.csv`.
 - Stage 1 summary is written to `reports/stage1_summary.md`.
-- Unit tests pass, including deterministic generation, OLS coefficient recovery, relation-weight determinism, and known lag driver ranking.
+- Trust-gating metrics, admissions, sensitivity checks, and summary are written under `reports/trust_gating_*`.
+- Unit tests pass, including deterministic generation, OLS coefficient recovery, relation-weight determinism, known lag driver ranking, trust-gate correctness, and prediction sensitivity.
 
 ## Current Dependency Policy
 
-Sprint 2 has no third-party runtime dependencies.
+The completed project through static Sprint 4 trust gating has no third-party runtime dependencies.
 
-The simple linear regression baseline uses a deterministic standard-library OLS implementation. The relation weighting and Stage 1 prediction modules also use only the Python standard library. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
+The simple linear regression baseline uses a deterministic standard-library OLS implementation. Relation weighting, Stage 1 prediction, and trust gating also use only the Python standard library. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
 
 ## Test Policy
 
@@ -65,6 +67,10 @@ Tracked outputs:
 - `reports/stage1_metrics.csv`
 - `reports/stage1_selected_sources.csv`
 - `reports/stage1_summary.md`
+- `reports/trust_gating_metrics.csv`
+- `reports/trust_gating_admissions.csv`
+- `reports/trust_gating_sensitivity.csv`
+- `reports/trust_gating_summary.md`
 
 Regenerated but untracked outputs:
 
