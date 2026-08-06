@@ -13,11 +13,15 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from nestor_delta.real_case_analysis import run_real_case_analysis  # noqa: E402
+from nestor_delta.real_case_analysis import (  # noqa: E402
+    fit_real_case_predictor_with_backoff,
+    run_real_case_analysis,
+)
 from nestor_delta.real_data import (  # noqa: E402
     load_real_case_config,
     load_real_case_data,
 )
+from nestor_delta.relation_weights import RelationWeight  # noqa: E402
 
 
 class RealCaseRunnerTests(unittest.TestCase):
@@ -103,6 +107,39 @@ class RealCaseRunnerTests(unittest.TestCase):
             self.assertEqual(result.fit_status, "fit_after_collinearity_backoff")
             self.assertEqual(len(result.selected_weights), 1)
             self.assertEqual(len(result.dropped_collinear_sources), 2)
+
+    def test_exact_collinearity_is_pruned_before_scale_sensitive_fit(self) -> None:
+        rows = []
+        target = 0.0
+        for index in range(40):
+            signal_a = float(index + 1) * 100.0
+            signal_b = 2.0 * signal_a
+            target = 0.4 * target + 0.7 * signal_a + float((index * index) % 7)
+            rows.append(
+                {
+                    "target": target,
+                    "signal_a": signal_a,
+                    "signal_b": signal_b,
+                }
+            )
+
+        selected = (
+            RelationWeight("signal_a", "target", 1, 0.789, 0.789, 30),
+            RelationWeight("signal_b", "target", 1, 0.1237, 0.1237, 30),
+        )
+        result = fit_real_case_predictor_with_backoff(
+            rows,
+            range(2, 30),
+            selected,
+            "target",
+            2,
+        )
+
+        self.assertEqual(result.fit_status, "fit_after_collinearity_backoff")
+        self.assertEqual(
+            [weight.source for weight in result.selected_weights], ["signal_a"]
+        )
+        self.assertEqual(result.dropped_collinear_sources, ("signal_b",))
 
     def test_no_stable_signal_keeps_baseline_only(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

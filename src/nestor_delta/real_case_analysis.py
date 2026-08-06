@@ -167,9 +167,20 @@ def fit_real_case_predictor_with_backoff(
     lag_window: int,
 ) -> RealCaseModel:
     """Fit with fewer selected signals if real data is collinear."""
+    train_label_rows = tuple(train_label_rows)
     selected_weights = tuple(selected_weights)
     active = selected_weights
     dropped: List[str] = []
+
+    while len(active) > 1:
+        drop_index = _collinear_lower_rank_index(
+            rows, train_label_rows, active, lag_window
+        )
+        if drop_index is None:
+            break
+        dropped.append(active[drop_index].source)
+        active = active[:drop_index] + active[drop_index + 1 :]
+
     while active:
         try:
             model = fit_real_case_predictor(rows, train_label_rows, active, target, lag_window)
@@ -184,8 +195,10 @@ def fit_real_case_predictor_with_backoff(
             if "singular or ill-conditioned" not in str(exc):
                 raise
             drop_index = _collinear_lower_rank_index(
-                rows, tuple(train_label_rows), active, lag_window
+                rows, train_label_rows, active, lag_window
             )
+            if drop_index is None:
+                drop_index = len(active) - 1
             dropped.append(active[drop_index].source)
             active = active[:drop_index] + active[drop_index + 1 :]
     return RealCaseModel(
@@ -277,7 +290,7 @@ def _collinear_lower_rank_index(
     train_label_rows: Tuple[int, ...],
     selected_weights: Sequence[RelationWeight],
     lag_window: int,
-) -> int:
+) -> int | None:
     vectors = [
         _source_history_vector(rows, train_label_rows, weight, lag_window)
         for weight in selected_weights
@@ -286,7 +299,7 @@ def _collinear_lower_rank_index(
         for right_index in range(left_index + 1, len(vectors)):
             if _vectors_collinear(vectors[left_index], vectors[right_index]):
                 return right_index
-    return len(selected_weights) - 1
+    return None
 
 
 def _source_history_vector(
