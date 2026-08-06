@@ -1,6 +1,6 @@
 # Trust-Gating Prediction Mode
 
-> Status: Sprint 4 static trust-gating implementation note.
+> Status: S3.1 static trust-gating implementation note; complete and accepted.
 
 ## Purpose
 

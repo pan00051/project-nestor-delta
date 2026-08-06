@@ -56,7 +56,7 @@ This repository is only for **Nestor Delta**.
 
 The current focus is not to build everything at once.
 
-The current sprint is **Sprint 4: static trust-gating prediction**.
+**S3.1 (static trust-gating prediction) is complete and accepted.** The true Sprint 4, dynamic weight drift, has not started.
 
 The frozen M0 evaluation protocol is in `EVALUATION.md`.
 
@@ -128,7 +128,7 @@ Current test-set results across the five frozen seeds:
 
 Mean improvement: Stage 1 is `25.40%` lower MAE than persistence and `1.37%` lower MAE than the Sprint 1 linear regression baseline.
 
-## Sprint 4 Trust-Gating Results
+## S3.1 Static Trust-Gating Results
 
 Trust gating applies signed, piecewise-linear source admissions before OLS and combines admitted sources into shared relation signals. This prevents OLS from independently undoing each source's trust value.
 
@@ -168,4 +168,4 @@ Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
 
 ## Status
 
-Sprint 4 trust gating is implemented and evaluated under the frozen M0 protocol. Dynamic weighting has not started.
+S3.1 static trust gating is implemented, evaluated, and accepted under the frozen M0 protocol. Sprint 4 dynamic weight drift has not started.

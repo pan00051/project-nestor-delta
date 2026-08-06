@@ -21,8 +21,8 @@
 | 里程碑 | 名称 | 内容 | 是否可交付点 |
 |--------|------|------|--------------|
 | **M0** | 地基 | 评测协议 + 数据 + baseline，让一切可测、可复现 | 内部里程碑 |
-| **M1** | MVP 核心 | 通用权重机制 + 三变量预测(Stage 1) | ✅ **第一个可写进简历的完整作品** |
-| **M2** | 深度/差异化(上限) | 信任度门控 + 动态权重变化(Stage 2)+ 忽略值/资源自适应(Stage 3) | ✅ 增强版作品 |
+| **M1** | MVP 核心 | 通用权重机制 + 三变量预测(Stage 1) + 静态信任度门控(S3.1) | ✅ **第一个可写进简历的完整作品** |
+| **M2** | 深度/差异化(上限) | 动态权重漂移(S4) + 忽略值/资源自适应(S5) | ✅ 增强版作品 |
 | — | 星辰大海(不做) | 大规模导入、视角切换、动态二级分组(Stage 4) | ❌ 一年内不碰，见 BLUEPRINT 第 6 节 |
 
 **关键：做完 M1 就可以停下来交付。M2 是加分项，不是义务。** 一次只推进一个 Sprint。
@@ -84,23 +84,26 @@
   - [ ] 全流程一键复现。
   - [ ] 一篇简短 writeup(方法 + 结果表 + 诚实的局限)。
 
+**S3.1 — 静态信任度门控(已完成并验收)**
+- 目标：把 Sprint 2 权重的绝对值作为信任度，在 OLS 前决定源信号准入强度；保留 Sprint 3 OLS 模式作为并列对照，证明权重数值会实际改变门控模式预测。
+- 机制边界：静态、确定性、分段线性门控；源按方向与准入系数合成为共享关系信号后再交给 OLS。不得回改 Sprint 3，不包含动态权重或资源自适应。
+- 验收：
+  - [x] 门控是独立模块，组合 Sprint 2/Sprint 3 接口，未修改既有冻结逻辑。
+  - [x] 噪声源被阻断、弱源保留正确方向与非零准入；同 seed 复跑一致。
+  - [x] 五 seed 已报告 OLS 与门控 MAE/RMSE，并用反事实证明门控模式对权重数值敏感、OLS 模式对独立非零缩放不敏感。
+
 > ✅ **到此为止，Delta 已是一个可写进简历的完整作品。** 叙事：“构建了一个多变量关系分析模块，当前实现了三变量关系加权与预测，并规划了通向动态漂移与资源自适应的路径。” 可以在这里停下来收尾，也可以继续 M2。
 
 ---
 
 ### M2 · 深度 / 差异化(上限，非必须)
 
-**Sprint 4 — 静态信任度门控预测(Stage 2 路线)(顺利约 1-2 周)**
-- 目标：把 Sprint 2 权重的绝对值作为信任度，在 OLS 前决定源信号准入强度；保留 Sprint 3 OLS 模式作为并列对照，证明权重数值会实际改变门控模式预测。
-- 机制边界：静态、确定性、分段线性门控；源按方向与准入系数合成为共享关系信号后再交给 OLS。不得回改 Sprint 3，不得混入动态权重或资源自适应。
+**Sprint 4 — 动态权重漂移能力(Stage 2)(尚未开始，顺利约 2-3 周)**
+- 目标：把“动态变化”做成一个层无关的通用能力模块，让权重随时间漂移被追踪；可选：根据权重历史预测其短期变化。
+- 对应领域：在线时间序列 / 概念漂移(concept drift)。
 - 验收：
-  - [ ] 门控是独立模块，组合 Sprint 2/Sprint 3 接口，**未修改**既有冻结逻辑(开闭原则)。
-  - [ ] 噪声源被阻断、弱源保留正确方向与非零准入；同 seed 复跑一致。
-  - [ ] 五 seed 报告 OLS 与门控 MAE/RMSE，并用反事实证明门控模式对权重数值敏感、OLS 模式对独立非零缩放不敏感。
-
-**后续独立能力 — 动态权重变化(尚未开始)**
-- 目标仍是让权重随时间漂移被追踪，并保持层无关、不开改 Sprint 2。
-- 该能力不属于本次静态门控实现，启动前需作者明确指令与单独验收标准。
+  - [ ] 动态变化是层无关的独立模块，被权重机制复用，未修改 Sprint 2 或 S3.1 的既有逻辑。
+  - [ ] 在含漂移的数据上，动态版本优于静态版本，差距可量化。
 
 **Sprint 5 — 忽略值 / 资源自适应(Stage 3)(顺利约 2-3 周)**
 - 目标：实现“忽略值”，剪掉过弱的关系；算力吃紧时自动拉高忽略值(相当于约分省算力)。**这是作者最有原创感的设计，也是差异化亮点。**
@@ -112,21 +115,22 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **Sprint 4 — 静态信任度门控预测(Stage 2 路线)。**
-> Sprint 4 实现与五 seed 验证已完成，等待作者验收。当前不得继续实现动态权重、自动阈值、资源自适应或其他 Sprint 5 内容。
+> **S3.1 — 静态信任度门控：已完成并验收。**
+> Sprint 序列已恢复为 S3(选择) → S3.1(静态门控，权重数值生效) → S4(动态漂移)。真正的 S4 尚未开始；不要自动实现动态权重、自动阈值或资源自适应。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
-- **[2026-08-06 · Sprint 4 信任度门控完成]** 新增层无关门控模块 `src/nestor_delta/trust_gating.py` 和组合预测模块 `src/nestor_delta/trust_gated_prediction.py`。接口提供 `ols` / `trust_gated` 两种并列模式；`ols` 直接委托冻结的 Sprint 3 实现，门控模式使用 train-only Sprint 2 权重，不修改 S0-S3 代码或报告。
-- **[2026-08-06 · Sprint 4 机制决策]** 单纯把每个独立源列乘以非零准入系数仍会被无约束 OLS 抵消，因此门控层先按 `direction * admission` 合成每个 lag 的共享关系信号，再交给 OLS。默认分段线性规则固定为：trust `<=0.15` 时准入 `0`，trust `>=0.50` 时准入 `1`，中间线性插值。`0.15` 仅依据五 seed train-only noise score 上界 `0.147512` 确定，未依据 validation/test 指标调参。
-- **[2026-08-06 · Sprint 4 五 seed 结果]** `scripts/run_trust_gating.py` 已生成 `reports/trust_gating_metrics.csv`、`trust_gating_admissions.csv`、`trust_gating_sensitivity.csv`、`trust_gating_summary.md`。`sprint3_ols` MAE mean `0.422277`、range `0.375342-0.457150`，RMSE mean `0.532636`、range `0.470656-0.589775`；`trust_gated_ols` MAE mean `0.454786`、range `0.415817-0.492024`，RMSE mean `0.568517`、range `0.518068-0.634403`。门控精度低于 S3 OLS：mean MAE 高 `7.70%`、RMSE 高 `6.74%`，按要求诚实报告，不要求门控必胜。
-- **[2026-08-06 · Sprint 4 准入与敏感性]** 五 seed 中 `driver_a` admission 恒为 `1.0`；`driver_b` 保持负方向，mean admission `0.687608`、range `0.384004-0.954034`；`noise` 五次均为 `0.0`。只将弱源 `driver_b` trust 改为 `1.0`、保持 noise 阻断并重新拟合后，S3 OLS mean absolute prediction delta 为 `0.0000000000`，门控模式为 `0.0774200737`、range `0.0081728375-0.1567707161`，证明连续准入比例在新模式中实际生效。
-- **[2026-08-06 · Sprint 4 测试与命令]** 新增 `tests/test_trust_gating.py`，覆盖分段线性边界、五 seed 噪声阻断、弱源方向与折扣准入、同 seed 确定性、门控权重敏感性、S3 独立缩放不变性。已执行 `.venv/bin/python scripts/run_baselines.py`、`.venv/bin/python scripts/run_weights.py`、`.venv/bin/python scripts/run_stage1.py`、两次 `.venv/bin/python scripts/run_trust_gating.py`、`.venv/bin/python -m unittest discover -s tests`（12 tests 通过）、`env PYTHONPYCACHEPREFIX=/private/tmp/nestor-delta-pycache python3 -m compileall src scripts tests`、`git diff --check`。四份门控报告连续两次 SHA-256 完全一致；S0-S3 冻结文件 `git diff --numstat` 为空。
-- **[2026-08-06 · Sprint 4 尝试与问题]** 初始 `ignore_threshold=0.10` 在 seed `37` 的 train-only noise score `0.147512` 上不能阻断噪声，因此改为紧邻 train-only 噪声上界的固定值 `0.15`。曾探查“每 lag 共享信号”和“只用每源最佳 lag 的单一共享信号”；最终选择每 lag 共享信号，因为它与 Sprint 3 的五步历史输入更一致。另做 `0.10-0.40` 阈值诊断但未据 test 误差选默认值；没有阈值调参声明。
-- **[2026-08-06 · Sprint 4 输出格式问题]** 首次暂存检查发现 Python `csv` 默认 CRLF 会被 `git diff --cached --check` 标为 trailing whitespace。未修改冻结的 Sprint 1 writer；仅在新 S4 三个 CSV writer 中显式固定 `lineterminator="\n"`，重新生成后检查通过。
-- **[2026-08-06 · Sprint 4 文档]** 新增 `docs/TRUST_GATING.md`，说明接口、门函数、为何必须在 OLS 前合并信号、验证与边界。`BLUEPRINT.md` 已留慢变量痕迹：Sprint 4 先验证静态信任度门控，动态权重仍是后续独立能力。
+- **[2026-08-06 · 编号纠正与验收]** commit `d86a4c8` 的 message 将静态门控误标为 S4；该 commit 实际只实现静态信任度门控，按项目定义属于 **S3.1**。本轮仅更正 `BLUEPRINT.md`、`HANDOFF.md`、`README.md`、`docs/TRUST_GATING.md` 的编号，不改代码、测试或报告。已用 `rg` 核对 S3.1/S4 语义并执行 `git diff --check`；纯文档变更不复跑数值测试。S3.1 已完成并验收；真正的 S4 是动态权重漂移，尚未开始。
+- **[2026-08-06 · S3.1 信任度门控完成]** 新增层无关门控模块 `src/nestor_delta/trust_gating.py` 和组合预测模块 `src/nestor_delta/trust_gated_prediction.py`。接口提供 `ols` / `trust_gated` 两种并列模式；`ols` 直接委托冻结的 Sprint 3 实现，门控模式使用 train-only Sprint 2 权重，不修改 S0-S3 代码或报告。
+- **[2026-08-06 · S3.1 机制决策]** 单纯把每个独立源列乘以非零准入系数仍会被无约束 OLS 抵消，因此门控层先按 `direction * admission` 合成每个 lag 的共享关系信号，再交给 OLS。默认分段线性规则固定为：trust `<=0.15` 时准入 `0`，trust `>=0.50` 时准入 `1`，中间线性插值。`0.15` 仅依据五 seed train-only noise score 上界 `0.147512` 确定，未依据 validation/test 指标调参。
+- **[2026-08-06 · S3.1 五 seed 结果]** `scripts/run_trust_gating.py` 已生成 `reports/trust_gating_metrics.csv`、`trust_gating_admissions.csv`、`trust_gating_sensitivity.csv`、`trust_gating_summary.md`。`sprint3_ols` MAE mean `0.422277`、range `0.375342-0.457150`，RMSE mean `0.532636`、range `0.470656-0.589775`；`trust_gated_ols` MAE mean `0.454786`、range `0.415817-0.492024`，RMSE mean `0.568517`、range `0.518068-0.634403`。门控精度低于 S3 OLS：mean MAE 高 `7.70%`、RMSE 高 `6.74%`，按要求诚实报告，不要求门控必胜。
+- **[2026-08-06 · S3.1 准入与敏感性]** 五 seed 中 `driver_a` admission 恒为 `1.0`；`driver_b` 保持负方向，mean admission `0.687608`、range `0.384004-0.954034`；`noise` 五次均为 `0.0`。只将弱源 `driver_b` trust 改为 `1.0`、保持 noise 阻断并重新拟合后，S3 OLS mean absolute prediction delta 为 `0.0000000000`，门控模式为 `0.0774200737`、range `0.0081728375-0.1567707161`，证明连续准入比例在新模式中实际生效。
+- **[2026-08-06 · S3.1 测试与命令]** 新增 `tests/test_trust_gating.py`，覆盖分段线性边界、五 seed 噪声阻断、弱源方向与折扣准入、同 seed 确定性、门控权重敏感性、S3 独立缩放不变性。已执行 `.venv/bin/python scripts/run_baselines.py`、`.venv/bin/python scripts/run_weights.py`、`.venv/bin/python scripts/run_stage1.py`、两次 `.venv/bin/python scripts/run_trust_gating.py`、`.venv/bin/python -m unittest discover -s tests`（12 tests 通过）、`env PYTHONPYCACHEPREFIX=/private/tmp/nestor-delta-pycache python3 -m compileall src scripts tests`、`git diff --check`。四份门控报告连续两次 SHA-256 完全一致；S0-S3 冻结文件 `git diff --numstat` 为空。
+- **[2026-08-06 · S3.1 尝试与问题]** 初始 `ignore_threshold=0.10` 在 seed `37` 的 train-only noise score `0.147512` 上不能阻断噪声，因此改为紧邻 train-only 噪声上界的固定值 `0.15`。曾探查“每 lag 共享信号”和“只用每源最佳 lag 的单一共享信号”；最终选择每 lag 共享信号，因为它与 Sprint 3 的五步历史输入更一致。另做 `0.10-0.40` 阈值诊断但未据 test 误差选默认值；没有阈值调参声明。
+- **[2026-08-06 · S3.1 输出格式问题]** 首次暂存检查发现 Python `csv` 默认 CRLF 会被 `git diff --cached --check` 标为 trailing whitespace。未修改冻结的 Sprint 1 writer；仅在新 S3.1 三个 CSV writer 中显式固定 `lineterminator="\n"`，重新生成后检查通过。
+- **[2026-08-06 · S3.1 文档]** 新增 `docs/TRUST_GATING.md`，说明接口、门函数、为何必须在 OLS 前合并信号、验证与边界。`BLUEPRINT.md` 已留慢变量痕迹：S3.1 验证静态信任度门控；真正的 S4 动态权重仍是后续独立能力。
 - **[2026-08-06 · S2 审查反馈落实]** 作者提交 S1 修订与 S2 审查结论：merge 干净、S1 修订达标、S2 通过且无阻断问题。本轮仅处理非阻断文档改进：`docs/WEIGHTING.md` 已明确 Sprint 2 的 `weight` 是边际 pairwise correlation，不是 OLS partial coefficient / 净效应；并记录多 lag 取最大绝对相关会抬高 noise floor，未来 S5 忽略阈值必须高于观测噪声地板。`docs/STAGE1.md` 已补充 Stage 1 只把 relation weights 用于选源与特征缩放，不把它解释为因果或最终回归系数。
 - **[2026-08-06 · Sprint 3 完成]** 已实现 Stage 1 三变量预测工作流：`src/nestor_delta/stage1_prediction.py`。一键入口：`scripts/run_stage1.py`。方法：每个 seed 只用 train rows 计算 Sprint 2 relation weights，选择 `target` 的 top-2 non-target sources，再用 lagged `target` + 两个加权 source histories 训练标准库 OLS。未修改 Sprint 2 权重机制，未实现动态权重或忽略值。
 - **[2026-08-06 · Sprint 3 结果]** 已按 M0 锁定协议运行 5 个 seed，结果保存在 `reports/stage1_metrics.csv`、`reports/stage1_selected_sources.csv`、`reports/stage1_summary.md`。test 指标：stage1_weighted_three_variable MAE mean `0.422277`、range `0.375342-0.457150`；RMSE mean `0.532636`、range `0.470656-0.589775`。对比：persistence MAE mean `0.566021` / RMSE mean `0.703043`；linear_regression MAE mean `0.428163` / RMSE mean `0.540204`。Stage 1 mean MAE 比 persistence 低 `25.40%`，比 Sprint 1 linear regression 低 `1.37%`；mean RMSE 分别低 `24.24%` 和 `1.40%`。
@@ -159,10 +163,10 @@
 
 ## 下一步(具体、可执行)
 
-1. 验收 Sprint 4：确认 `docs/TRUST_GATING.md`、`scripts/run_trust_gating.py`、四份 `reports/trust_gating_*` 产物与新增测试。
-2. 验收时重点确认“共享关系信号”是否符合作者对 OLS 前门控的意图，以及 `0.15/0.50` 固定门函数是否接受。
-3. 验收前停止；不要自动进入动态权重、自动阈值、资源自适应或 Sprint 5。
-4. 若作者验收并要求继续，下一步只能单独定义动态权重能力的输入、输出、漂移数据和验收标准，不在当前实现中顺手扩展。
+1. S3.1 已完成并由作者验收，本轮只完成编号纠正。
+2. 真正的 Sprint 4 是动态权重漂移，目前尚未开始。
+3. 停止并等待作者明确启动 S4；不要自动实现动态权重、自动阈值、资源自适应或 Sprint 5。
+4. 若作者要求开始 S4，先单独冻结动态权重能力的输入、输出、漂移数据和验收标准。
 
 ---
 
@@ -184,11 +188,12 @@
 - **Sprint 3 / 三变量预测：完成。** `src/nestor_delta/stage1_prediction.py` 已组合 Sprint 2 权重和 Sprint 1 OLS，在 locked test split 上预测 `target`。
 - **Sprint 3 / 指标报告：完成。** `reports/stage1_metrics.csv`、`reports/stage1_selected_sources.csv`、`reports/stage1_summary.md` 已保存 5 seed 指标、选源记录、均值和 min-max。
 - **Sprint 3 / 验证：完成。** `.venv/bin/python -m unittest discover -s tests` 通过 7 tests；Stage 1 mean MAE/RMSE 均优于 persistence 和 Sprint 1 linear regression。
-- **Sprint 4 / 独立门控模块：完成。** `trust_gating.py` 提供可配置分段线性准入与共享信号合成；冻结的 S0-S3 实现未修改。
-- **Sprint 4 / 可切换预测：完成。** `fit_prediction_mode` 支持 `ols` 与 `trust_gated`；一键脚本同时运行并对照两种模式。
-- **Sprint 4 / 正确性与确定性：完成。** 12 tests 通过；noise 五 seed 全阻断，弱 driver 保留负方向与非零折扣准入，同 seed 复跑一致。
-- **Sprint 4 / 数值生效证明：完成。** `driver_b` unit-trust 反事实下 OLS delta 为 `0.0000000000`，门控 delta mean `0.0774200737`、range `0.0081728375-0.1567707161`，且 noise 始终阻断。
-- **Sprint 4 / 报告与文档：完成。** 四份 tracked report 与 `docs/TRUST_GATING.md` 已生成；MAE/RMSE 均报告五 seed mean 与 min-max。
+- **S3.1 / 独立门控模块：完成并验收。** `trust_gating.py` 提供可配置分段线性准入与共享信号合成；冻结的 S0-S3 实现未修改。
+- **S3.1 / 可切换预测：完成并验收。** `fit_prediction_mode` 支持 `ols` 与 `trust_gated`；一键脚本同时运行并对照两种模式。
+- **S3.1 / 正确性与确定性：完成并验收。** 12 tests 通过；noise 五 seed 全阻断，弱 driver 保留负方向与非零折扣准入，同 seed 复跑一致。
+- **S3.1 / 数值生效证明：完成并验收。** `driver_b` unit-trust 反事实下 OLS delta 为 `0.0000000000`，门控 delta mean `0.0774200737`、range `0.0081728375-0.1567707161`，且 noise 始终阻断。
+- **S3.1 / 报告与文档：完成并验收。** 四份 tracked report 与 `docs/TRUST_GATING.md` 已生成；MAE/RMSE 均报告五 seed mean 与 min-max。
+- **Sprint 4 / 动态权重漂移：尚未开始。** 不得把 S3.1 的静态门控误记为动态权重能力。
 
 ---
 
@@ -211,10 +216,10 @@
 | C5 | Sprint 2 首版权重机制使用 lagged Pearson correlation | 已决 | 标准库可复现、层无关、足够作为可验证工程底座；不声称算法创新 |
 | C6 | Sprint 3 使用 train-only top-2 source selection + weighted lagged OLS | 已决 | 组合 S1/S2，不修改权重机制；mean MAE/RMSE 小幅优于 S1 linear baseline |
 | C7 | Sprint 2 `weight` 解释为 marginal signed correlation | 已决 | 不等同于 OLS partial coefficient；多 lag 取最大会产生非零 noise floor |
-| C8 | Sprint 4 使用 OLS 前静态信任度门控 | 已决 | trust 与方向分离；`0.15/0.50` 分段线性准入；源先合成为共享关系信号，确保 OLS 不能抵消相对准入 |
+| C8 | S3.1 使用 OLS 前静态信任度门控 | 已决 | trust 与方向分离；`0.15/0.50` 分段线性准入；源先合成为共享关系信号，确保 OLS 不能抵消相对准入 |
 
 ---
 
 ## 给下一棒的话
 
-> Sprint 4 静态信任度门控已实现并完成五 seed 对照。核心结果不是精度胜出，而是仅增强弱源 trust 时，权重敏感性从 OLS 的 `0` 变为门控的 `0.0774200737`，同时五次阻断 noise、保留弱 driver。等待作者验收；不要自动进入动态权重、自动阈值或资源自适应。
+> S3.1 静态信任度门控已实现、完成五 seed 对照并由作者验收。核心结果不是精度胜出，而是仅增强弱源 trust 时，权重敏感性从 OLS 的 `0` 变为门控的 `0.0774200737`，同时五次阻断 noise、保留弱 driver。真正的 S4 是动态权重漂移，尚未开始；等待作者明确启动。
