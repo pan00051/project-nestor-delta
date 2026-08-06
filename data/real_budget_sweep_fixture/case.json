@@ -1,0 +1,31 @@
+{
+  "candidate_signals": [
+    "strong_1",
+    "strong_2",
+    "strong_3",
+    "medium_1",
+    "medium_2",
+    "medium_3",
+    "medium_4",
+    "weak_1",
+    "weak_2",
+    "weak_3",
+    "weak_4",
+    "noise_1",
+    "noise_2",
+    "noise_3",
+    "noise_4"
+  ],
+  "case_name": "frozen_real_budget_sweep_acceptance",
+  "csv": "real_budget_sweep_case.csv",
+  "date_column": "date",
+  "frequency": "monthly",
+  "lag_window": 5,
+  "max_selected_signals": 5,
+  "notes": "Synthetic acceptance fixture derived mechanically from the first 216 rows of frozen S5 resource_stress_seed_227.csv; not a real-world result.",
+  "output_dir": "../../reports",
+  "seasonal_period": 0,
+  "target": "target",
+  "test_start": "2024-01",
+  "train_end": "2023-12"
+}

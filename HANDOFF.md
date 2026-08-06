@@ -115,13 +115,16 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **S6 — 真实数据案例 Runner：框架实现完成，等待作者准备真实案例 CSV。**
-> 当前只做本地 CSV + config 的离线分析框架；不要做用户上传、API 接入、dashboard 或自动清洗。
+> **S6 加法连接器 — 真实案例预算扫描：实现及工程验收完成，等待作者验收。**
+> 当前只验收 S5 过滤是否真正控制 S6 OLS 输入；不改冻结 S5/S6，不做 Case Builder、API、dashboard、上传或自动清洗。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-06 · 真实案例预算扫描连接器完成]** 新增 `real_budget_sweep.py` 和 `scripts/run_real_budget_sweep.py`，组合冻结的 S5/S6 接口：train-only 关系计算 → 五档压力阈值 → 排名上限 → 共线降级 → 冻结全部五档模型 → 统一 test 评估。未修改任何 S0-S6 已有代码、协议、数据或报告。
+- **[2026-08-06 · 连接器报告与诚实边界]** 新增 `real_budget_sweep_metrics.csv`、`real_budget_sweep_predictions.csv`、`real_budget_sweep_summary.md`。资源 proxy 使用 cap 后、共线回退前的准入数量；零信号档只保留 persistence baseline，Delta 栏为空。summary 明确 `0.06` 仅为 S5 合成基准压力参数、真实数据趋势/季节性可抬高分数、五档不从 test 中挑赢家、结果只表示 co-movement / predictive usefulness。
+- **[2026-08-06 · 连接器验收夹具与测试]** 新增 216 行冻结月度夹具，机械派生自 S5 seed 227 的前 216 行；五档 threshold 后数量为 `15/5/4/2/0`，cap 后与实际 OLS 数量为 `5/5/4/2/0`。新增 6 项测试覆盖 test 全量篡改不改五档模型签名、列序无关、精确/近似共线、零信号 baseline-only、门控/proxy 单调和报告字节复现；全套 38 tests 通过。
 - **[2026-08-06 · S6 真实数据框架完成]** 新增 `real_data.py`、`real_case_analysis.py` 和一键入口 `scripts/run_real_case.py`。S6 输入为作者手工准备并已对齐的本地 CSV + JSON config；输出 `relation_ranking.csv`、`prediction_metrics.csv`、`predictions_vs_actual.csv`、`resource_tradeoff.csv` 和 `summary.md`，方便后续手动画图。
 - **[2026-08-06 · S6 边界与防自欺]** 候选池可由作者定义，但 ranking/selection 必须由 train-only 数据自动生成；CSV 列顺序不代表优先级，loader 会把候选变量规范化排序。若真实数据候选共线导致 OLS 奇异，runner 会优先删除与更高排名信号重叠的低排名者；降到 0 个稳定信号时只保留 baseline。S6 只报告 co-movement / predictive usefulness，不抓 API、不做 dashboard、不自动清洗。
 - **[2026-08-06 · S6 验证]** 新增 `docs/REAL_DATA_CASE_RUNNER.md`，`EVALUATION.md` 追加 S6 协议。新增 8 项测试覆盖报告输出、候选列顺序不影响 CSV 产物、未来 test 区间篡改不影响 train-only ranking/selection/系数、完整/部分/零稳定信号共线降级、坏 config 和脏 CSV 清晰失败。
@@ -178,9 +181,9 @@
 
 ## 下一步(具体、可执行)
 
-1. 作者准备第一份真实案例 CSV：统一频率、数值列、无缺失；同时写 `case.json` 指定 target、candidate_signals、train/test 边界。
-2. 用 `python scripts/run_real_case.py cases/<case_name>/case.json` 跑出 S6 五份报告，再人工制图和判断故事是否成立。
-3. 不启动 API 抓取、用户上传、dashboard 或自动清洗；抓数脚本如果要做，应作为 S6 之后的 helper，不绑死分析框架。
+1. 等待作者独立验收真实案例预算扫描连接器，重点复核五档 train-only 模型签名、零信号空 Delta、列序无关和三份报告字节复现。
+2. 验收后再由独立 Case Builder 准备第一份真实 CSV；连接器只消费既有 S6 `case.json`，不负责抓取或清洗。
+3. 不根据 test 五档结果挑赢家，不把 `0.06` 称为真实噪声线，不启动 API、上传或 dashboard。
 
 ---
 
@@ -210,6 +213,7 @@
 - **Sprint 4 / 动态权重漂移：完成并验收。** 作者已独立复核防泄漏、五 seed 漂移追踪和 120 行窗口冻结；动态 mean MAE/RMSE 分别比静态低 `7.52%/6.38%`。
 - **Sprint 5 / 忽略值与资源自适应：实现及工程验收完成。** 双轨验收已跑通；高维 stress 轨轻度压缩 downstream proxy 下降 `41.56%`、MAE loss `4.11%`，更高压力展示完整 tradeoff；待作者验收与提交。
 - **Sprint 6 / 真实数据案例 Runner：框架实现完成。** 可读取作者准备的本地 CSV + config，自动输出 ranking、预测、资源 tradeoff 和 summary；等待真实案例数据输入。
+- **S6 加法连接器 / 真实案例预算扫描：实现及工程验收完成。** S5 阈值已真正控制进入 S6 OLS 的候选集合；五档模型先全量 train-only 冻结，再统一 test 评估；等待作者独立验收。
 
 ---
 
@@ -236,9 +240,10 @@
 | C9 | S4 使用 120 行因果滑窗重复调用 Sprint 2 静态权重 | 已决 | 新漂移数据独立冻结；train-only 选源/拟合；测试按 `t-1` 截止 prequential 更新；不含 S5 忽略逻辑 |
 | C10 | S5 使用双轨验收与 downstream-only 资源 proxy | 已决 | S4 冻结数据只做 correctness regression；新增高维 stress fixture 验证资源曲线；当前仍先算全量关系，因此只声明 downstream compute/memory proxy reduction |
 | C11 | S6 只做本地真实案例 runner | 已决 | 作者准备 CSV 和 config；runner 自动 ranking/selection 并输出 CSV 报告；不做 API、dashboard、上传、自动清洗或因果声明 |
+| C12 | 用独立薄连接器把 S5 过滤接入 S6 OLS | 已决 | 不改冻结 S5/S6；五档先按 threshold 过滤、再 cap、再共线降级；proxy 按 cap 后数量；全部模型冻结后才统一 test 评估，且不从 test 中挑赢家 |
 
 ---
 
 ## 给下一棒的话
 
-> S6 框架已实现：现在可以把作者准备好的真实 CSV + config 丢给 `scripts/run_real_case.py`，输出五份报告供手动画图。下一步是准备第一份真实案例数据；不要把 S6 扩成 API 接入、用户上传或 dashboard。
+> 真实案例预算扫描连接器已实现并通过 38 tests：它只组合冻结 S5/S6，使五档阈值真正控制 OLS 输入。当前停在作者验收点；验收前不启动 Case Builder 或真实数据抓取，也不根据 test 曲线选择赢家。
