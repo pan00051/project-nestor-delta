@@ -98,12 +98,12 @@
 
 ### M2 · 深度 / 差异化(上限，非必须)
 
-**Sprint 4 — 动态权重漂移能力(Stage 2)(尚未开始，顺利约 2-3 周)**
+**Sprint 4 — 动态权重漂移能力(Stage 2)(实现及工程验收完成，待作者验收/提交)**
 - 目标：把“动态变化”做成一个层无关的通用能力模块，让权重随时间漂移被追踪；可选：根据权重历史预测其短期变化。
 - 对应领域：在线时间序列 / 概念漂移(concept drift)。
 - 验收：
-  - [ ] 动态变化是层无关的独立模块，被权重机制复用，未修改 Sprint 2 或 S3.1 的既有逻辑。
-  - [ ] 在含漂移的数据上，动态版本优于静态版本，差距可量化。
+  - [x] 动态变化是层无关的独立模块，被权重机制复用，未修改 Sprint 2 或 S3.1 的既有逻辑。
+  - [x] 在含漂移的数据上，动态版本优于静态版本，差距可量化。
 
 **Sprint 5 — 忽略值 / 资源自适应(Stage 3)(顺利约 2-3 周)**
 - 目标：实现“忽略值”，剪掉过弱的关系；算力吃紧时自动拉高忽略值(相当于约分省算力)。**这是作者最有原创感的设计，也是差异化亮点。**
@@ -115,12 +115,19 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **S3.1 — 静态信任度门控：已完成并验收。**
-> Sprint 序列已恢复为 S3(选择) → S3.1(静态门控，权重数值生效) → S4(动态漂移)。真正的 S4 尚未开始；不要自动实现动态权重、自动阈值或资源自适应。
+> **S4 — 动态权重漂移：实现及工程验收完成，待作者验收/提交。**
+> 当前只做 S4 收尾。不要自动启动动态窗口调参、资源自适应或 Sprint 5。
 
 ---
 
 ## 最近进展(倒序，最新在上)
+
+- **[2026-08-06 · S4 动态权重完成]** 新增平行漂移生成器 `synthetic_drift.py`、S4 独立常量、层无关滚动封装 `dynamic_weights.py` 和数据层对照预测 `dynamic_prediction.py`。`relation_weights.py` 与 S0-S3.1 冻结实现均未修改。
+- **[2026-08-06 · S4 冻结数据]** 新 seed 为 `101/103/107/109/113`；`driver_a` lag-1 系数在 `0-419` 恒为 `0.15`，在 `420-599` 线性升至 `0.65`。主数据保持原五列，真相写入独立 sidecar；公式、随机顺序、窗口和 prequential 防泄漏规则已追加到 `EVALUATION.md` 独立 S4 小节。
+- **[2026-08-06 · S4 机制与防泄漏]** 固定 120 行滑窗，在时点 `t` 只把 `t-120..t-1` 喂给 Sprint 2 静态权重函数。静态/动态模式使用相同 train-only top-2 源和训练标签 `120-419`；OLS 训练后冻结，测试中只更新关系权重，当前标签只可用于后续时点。
+- **[2026-08-06 · S4 五 seed 结果]** `driver_a -> target` 动态权重从测试起点到终点五次均向已知正漂移方向上升。动态 MAE mean `0.506484`、range `0.463798-0.572600`，静态 MAE mean `0.547689`、range `0.490096-0.624914`，降低 `7.52%`；动态 RMSE mean `0.640280`、range `0.580674-0.715281`，静态 RMSE mean `0.683878`、range `0.636739-0.768990`，降低 `6.38%`。
+- **[2026-08-06 · S4 产出]** 一键入口为 `scripts/run_dynamic_weights.py`；tracked 报告为 `reports/dynamic_weight_metrics.csv`、`dynamic_weight_trajectory.csv`、`dynamic_weight_tracking.csv`、`dynamic_weight_summary.md`；接口说明为 `docs/DYNAMIC_WEIGHTS.md`。新增 4 项标准库测试覆盖公式、字节确定性、当前/未来行排除和核心五 seed 验收。
+- **[2026-08-06 · S4 回归验证]** 已复跑 `run_baselines.py`、`run_weights.py`、`run_stage1.py`、`run_trust_gating.py`、`run_dynamic_weights.py`；`python3 -m unittest discover -s tests` 共 16 tests 通过，`compileall` 与 `git diff --check` 通过。S0-S3.1 冻结模块和旧报告均无 diff；四份 S4 报告连续两次 SHA-256 完全一致。
 
 - **[2026-08-06 · 编号纠正与验收]** commit `d86a4c8` 的 message 将静态门控误标为 S4；该 commit 实际只实现静态信任度门控，按项目定义属于 **S3.1**。本轮仅更正 `BLUEPRINT.md`、`HANDOFF.md`、`README.md`、`docs/TRUST_GATING.md` 的编号，不改代码、测试或报告。已用 `rg` 核对 S3.1/S4 语义并执行 `git diff --check`；纯文档变更不复跑数值测试。S3.1 已完成并验收；真正的 S4 是动态权重漂移，尚未开始。
 - **[2026-08-06 · S3.1 信任度门控完成]** 新增层无关门控模块 `src/nestor_delta/trust_gating.py` 和组合预测模块 `src/nestor_delta/trust_gated_prediction.py`。接口提供 `ols` / `trust_gated` 两种并列模式；`ols` 直接委托冻结的 Sprint 3 实现，门控模式使用 train-only Sprint 2 权重，不修改 S0-S3 代码或报告。
@@ -163,10 +170,9 @@
 
 ## 下一步(具体、可执行)
 
-1. S3.1 已完成并由作者验收，本轮只完成编号纠正。
-2. 真正的 Sprint 4 是动态权重漂移，目前尚未开始。
-3. 停止并等待作者明确启动 S4；不要自动实现动态权重、自动阈值、资源自适应或 Sprint 5。
-4. 若作者要求开始 S4，先单独冻结动态权重能力的输入、输出、漂移数据和验收标准。
+1. 复跑完整验收并核对 S0-S3.1 旧报告未变化。
+2. 等待作者验收 S4；验收后提交本轮改动。
+3. 不自动启动 S5、资源自适应、忽略阈值或动态窗口调参。
 
 ---
 
@@ -193,7 +199,7 @@
 - **S3.1 / 正确性与确定性：完成并验收。** 12 tests 通过；noise 五 seed 全阻断，弱 driver 保留负方向与非零折扣准入，同 seed 复跑一致。
 - **S3.1 / 数值生效证明：完成并验收。** `driver_b` unit-trust 反事实下 OLS delta 为 `0.0000000000`，门控 delta mean `0.0774200737`、range `0.0081728375-0.1567707161`，且 noise 始终阻断。
 - **S3.1 / 报告与文档：完成并验收。** 四份 tracked report 与 `docs/TRUST_GATING.md` 已生成；MAE/RMSE 均报告五 seed mean 与 min-max。
-- **Sprint 4 / 动态权重漂移：尚未开始。** 不得把 S3.1 的静态门控误记为动态权重能力。
+- **Sprint 4 / 动态权重漂移：实现及工程验收完成。** 五 seed 权重方向 `5/5` 正确；动态 mean MAE/RMSE 分别比静态低 `7.52%/6.38%`；待作者验收与提交。
 
 ---
 
@@ -217,9 +223,10 @@
 | C6 | Sprint 3 使用 train-only top-2 source selection + weighted lagged OLS | 已决 | 组合 S1/S2，不修改权重机制；mean MAE/RMSE 小幅优于 S1 linear baseline |
 | C7 | Sprint 2 `weight` 解释为 marginal signed correlation | 已决 | 不等同于 OLS partial coefficient；多 lag 取最大会产生非零 noise floor |
 | C8 | S3.1 使用 OLS 前静态信任度门控 | 已决 | trust 与方向分离；`0.15/0.50` 分段线性准入；源先合成为共享关系信号，确保 OLS 不能抵消相对准入 |
+| C9 | S4 使用 120 行因果滑窗重复调用 Sprint 2 静态权重 | 已决 | 新漂移数据独立冻结；train-only 选源/拟合；测试按 `t-1` 截止 prequential 更新；不含 S5 忽略逻辑 |
 
 ---
 
 ## 给下一棒的话
 
-> S3.1 静态信任度门控已实现、完成五 seed 对照并由作者验收。核心结果不是精度胜出，而是仅增强弱源 trust 时，权重敏感性从 OLS 的 `0` 变为门控的 `0.0774200737`，同时五次阻断 noise、保留弱 driver。真正的 S4 是动态权重漂移，尚未开始；等待作者明确启动。
+> S4 已实现并通过工程验收：平行冻结漂移数据不碰旧数据，120 行因果滑窗在外层复用 Sprint 2 静态权重，五 seed 权重方向全部追对，动态 mean MAE/RMSE 比静态低 `7.52%/6.38%`。当前等待作者验收与提交；不要自动进入 S5。

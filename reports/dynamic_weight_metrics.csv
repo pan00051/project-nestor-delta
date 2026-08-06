@@ -1,0 +1,11 @@
+baseline,seed,split,mae,rmse,sample_count
+static_weights,101,test_prequential,0.6249143083,0.7689899630,90
+dynamic_weights,101,test_prequential,0.5726000123,0.7152811988,90
+static_weights,103,test_prequential,0.5694767569,0.6978621542,90
+dynamic_weights,103,test_prequential,0.5175754289,0.6377686752,90
+static_weights,107,test_prequential,0.4900955174,0.6367389626,90
+dynamic_weights,107,test_prequential,0.4637984803,0.6158678950,90
+static_weights,109,test_prequential,0.5418282471,0.6635316446,90
+dynamic_weights,109,test_prequential,0.4667295269,0.5806736501,90
+static_weights,113,test_prequential,0.5121310744,0.6522696336,90
+dynamic_weights,113,test_prequential,0.5117162790,0.6518106526,90

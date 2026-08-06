@@ -9,4 +9,4 @@ dependencies = []
 [tool.nestor_delta]
 evaluation_protocol = "EVALUATION.md"
 current_milestone = "M1"
-current_sprint = "Sprint 3"
+current_sprint = "Sprint 4"

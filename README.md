@@ -56,7 +56,7 @@ This repository is only for **Nestor Delta**.
 
 The current focus is not to build everything at once.
 
-**S3.1 (static trust-gating prediction) is complete and accepted.** The true Sprint 4, dynamic weight drift, has not started.
+**Sprint 4 dynamic weight drift is implemented and has passed its engineering acceptance checks.** It adds a parallel known-drift benchmark without changing the frozen S0-S3.1 data or logic.
 
 The frozen M0 evaluation protocol is in `EVALUATION.md`.
 
@@ -80,6 +80,7 @@ python scripts/run_baselines.py
 python scripts/run_weights.py
 python scripts/run_stage1.py
 python scripts/run_trust_gating.py
+python scripts/run_dynamic_weights.py
 python -m unittest discover -s tests
 ```
 
@@ -141,11 +142,25 @@ Report: `reports/trust_gating_summary.md`. Interface and rationale: `docs/TRUST_
 
 The gated mode is less accurate on this fixed dataset, which is reported as the trade-off. Its purpose is verified separately: changing only weak-source `driver_b` trust to `1.0` changes gated predictions by `0.0774200737` on average, while noise remains blocked and the frozen Sprint 3 OLS mode remains unchanged to 10 decimal places.
 
+## Sprint 4 Dynamic Weight Results
+
+Sprint 4 wraps the frozen static relation-weight mechanism in a 120-row causal sliding window. Its separate synthetic benchmark holds the `driver_a` lag-1 coefficient at `0.15` through train, then increases it linearly to `0.65` through validation and test.
+
+Report: `reports/dynamic_weight_summary.md`. Interface and leakage boundary: `docs/DYNAMIC_WEIGHTS.md`.
+
+| Mode | MAE mean | MAE range | RMSE mean | RMSE range |
+|---|---:|---:|---:|---:|
+| dynamic_weights | 0.506484 | 0.463798-0.572600 | 0.640280 | 0.580674-0.715281 |
+| static_weights | 0.547689 | 0.490096-0.624914 | 0.683878 | 0.636739-0.768990 |
+
+The dynamic `driver_a -> target` weight moves upward from test start to test end for all five frozen drift seeds. Dynamic weights reduce mean MAE by `7.52%` and mean RMSE by `6.38%` versus the static comparator.
+
 ## Repository Layout
 
 ```text
 .
-├── data/synthetic/       # Generated synthetic datasets
+├── data/synthetic/       # Original generated synthetic datasets
+├── data/synthetic_drift/ # Parallel S4 drift data and truth sidecars
 ├── docs/                 # Module interface notes
 ├── reports/              # Baseline metrics and summaries
 ├── scripts/              # Reproducible command-line entry points
@@ -168,4 +183,4 @@ Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
 
 ## Status
 
-S3.1 static trust gating is implemented, evaluated, and accepted under the frozen M0 protocol. Sprint 4 dynamic weight drift has not started.
+Sprint 4 dynamic weight drift is implemented and reproducibly meets its frozen tracking and prediction criteria. Sprint 5 resource-adaptive ignore values have not started.

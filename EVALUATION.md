@@ -218,3 +218,95 @@ The following are out of scope until their assigned sprint:
 - dynamic weight change: Sprint 4;
 - ignore value or resource-adaptive pruning: Sprint 5;
 - event-impact analysis, causal attribution, or Nestor Insight integration: outside this repo.
+
+## 8. Additive Sprint 4 Drift Protocol v1
+
+> Status: frozen for Sprint 4 on 2026-08-06.
+> Scope: this is a parallel drift benchmark for S4 only. It does not amend Sections 1-7, change the original seeds or data, or invalidate any S0-S3.1 report.
+
+### Frozen Drift Data
+
+Sprint 4 adds one CSV per seed under `data/synthetic_drift/` with the same model-input columns and order as the original data:
+
+```text
+step,target,driver_a,driver_b,noise
+```
+
+Frozen settings:
+
+- Seeds: `101`, `103`, `107`, `109`, `113`.
+- Series length: `600` rows.
+- Split rows and test label rows: unchanged from Sections 1-2.
+- Random generator, shock distributions, initial values, and per-step draw order: exactly the same as the original frozen generator.
+- Only the lag-1 `driver_a` coefficient changes; `driver_b` remains `-0.25` at lag 2 and all other terms remain fixed.
+
+The known coefficient trajectory is:
+
+```text
+coef_a(t) = 0.15
+            for 0 <= t <= 419
+
+coef_a(t) = 0.15 + 0.50 * (t - 420) / 179
+            for 420 <= t <= 599
+```
+
+For every row `t` from `0` through `599`:
+
+```text
+eps_a      ~ Normal(0.0, 0.80)
+eps_b      ~ Normal(0.0, 0.80)
+eps_noise  ~ Normal(0.0, 1.00)
+eps_target ~ Normal(0.0, 0.50)
+
+driver_a[t] = 0.65 * driver_a[t - 1] + eps_a
+driver_b[t] = 0.55 * driver_b[t - 1] + eps_b
+noise[t]    = eps_noise
+target[t]   = 0.55 * target[t - 1]
+              + coef_a(t) * driver_a[t - 1]
+              - 0.25 * driver_b[t - 2]
+              + eps_target
+```
+
+The generator must also write a truth sidecar for each seed:
+
+```text
+data/synthetic_drift/synthetic_drift_truth_seed_<seed>.csv
+step,coef_driver_a_lag1
+```
+
+Truth columns are never model inputs. They exist only for audit and validation. Numeric output uses stable precision of 10 decimal places.
+
+### Frozen Dynamic-Weight Rule
+
+S4 uses a fixed-width causal sliding window. It does not modify `relation_weights.py`:
+
+- Window size: `120` rows, selected before S4 result generation without validation/test tuning.
+- At label step `t`, call the existing static lagged Pearson mechanism on rows `t-120` through `t-1`.
+- The current row `t` and all future rows are excluded from that weight.
+- Candidate variables and maximum lag remain the frozen `FEATURE_COLUMNS` and lag window `5`.
+- Source selection is fixed to the train-only top two target sources and never changes during validation/test.
+
+The static comparator computes one set of weights from train rows `0-419` and holds them fixed. Both prediction modes use the same train-only selected sources and the same OLS feature shape: target history plus one shared signed weighted-source signal for each of five lags. The shared signal makes relative relation weights numerically operative instead of allowing independent OLS columns to cancel simple scaling.
+
+The rolling window needs a complete warm-up. For this S4 comparison, both static and dynamic OLS models therefore fit on the same train label rows `120-419`. OLS coefficients are fit once and never updated after training.
+
+### Prequential Leakage Rule
+
+S4 test evaluation is chronological and prequential:
+
+1. Predict label row `t` using fitted OLS coefficients and relation weights computed only from rows through `t-1`.
+2. Evaluate the prediction against `target[t]`.
+3. After evaluation, row `t` becomes an observed historical row that may be used when predicting a later step.
+
+No current or future label enters its own prediction, no OLS coefficient is refit after train, and no validation/test metric selects the window or another parameter. This online rule applies only to the additive S4 benchmark; it does not change the original static test protocol or reports.
+
+### S4 Acceptance Criteria
+
+Across all five frozen drift seeds:
+
+- the `driver_a -> target` dynamic relation weight at test end moves upward from its test-start value, matching the known positive coefficient drift direction;
+- mean test MAE and mean test RMSE for dynamic weights are lower than for the frozen static-weight comparator;
+- reports include every seed, mean, and min-max ranges, plus an auditable per-step truth/static/dynamic trajectory;
+- repeated runs produce identical data, trajectories, metrics, and summaries.
+
+S4 does not implement ignore-value thresholds, resource adaptation, window tuning, dynamic source count, or S5 behavior.
