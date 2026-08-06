@@ -21,6 +21,12 @@ Scope: a fixed five-tier pressure scan connecting S5 relation filtering to the S
 | 0.25 | 0.39 | 4 | 2 | 2 | 2 | -0.03% | `fit` |
 | 0.00 | 0.50 | 4 | 2 | 2 | 2 | -0.03% | `fit` |
 
+## Observed Result
+
+- The full four-signal tiers (`budget_ratio` 1.00 and 0.75) overfit: their test MAE is approximately 63% worse than persistence. Consumer confidence and HICP showed spurious in-sample co-movement that did not hold out of sample.
+- At `budget_ratio` 0.50, 0.25, and 0.00, the higher threshold removes consumer confidence and HICP while retaining the two stronger co-moving signals, industrial production and unemployment. The resulting test MAE difference is approximately -0.03%, which is effectively level with persistence and must not be interpreted as beating the baseline.
+- In this fixed, pre-frozen sweep, the ignore-threshold mechanism therefore acts as an overfitting guard: increasing pressure removes the harmful signals and moves the model from substantial out-of-sample overfit back to approximate parity with persistence. This is an observed result for this case, not a causal claim or a universally selected operating point.
+
 ## Interpretation Boundary
 
 - All five budget tiers were fixed before evaluation. This report does not select or announce a winning tier from test results.
