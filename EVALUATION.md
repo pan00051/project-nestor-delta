@@ -310,3 +310,116 @@ Across all five frozen drift seeds:
 - repeated runs produce identical data, trajectories, metrics, and summaries.
 
 S4 does not implement ignore-value thresholds, resource adaptation, window tuning, dynamic source count, or S5 behavior.
+
+## 9. Additive Sprint 5 Resource-Adaptive Ignore Protocol v1
+
+> Status: frozen for Sprint 5 on 2026-08-06.
+> Scope: this is an additive S5 protocol. It does not amend Sections 1-8, change S0-S4 data or reports, or claim end-to-end compute reduction.
+
+### Two-Track Acceptance
+
+S5 uses two separate tracks:
+
+- `s4_correctness_regression`: the frozen S4 drift data remains a low-dimensional correctness regression. It checks that adaptive ignoring preserves known drivers, removes weak/noisy relations as pressure rises, and does not introduce leakage or S0-S4 behavior regressions.
+- `resource_stress`: a new frozen high-dimensional fixture checks resource adaptation when many candidate signals exist. It is the only track used to demonstrate a clear downstream resource-compression curve.
+
+The low-dimensional S4 track is not expected to prove large-scale resource savings. The high-dimensional fixture does not replace S4.
+
+### Resource Stress Fixture
+
+S5 adds deterministic CSV files under `data/synthetic_resource_stress/`.
+
+Frozen settings:
+
+- Seeds: `211`, `223`, `227`, `229`, `233`.
+- Series length: `600` rows.
+- Label splits: train `5-419`, test `510-599`.
+- Lag window: `5`.
+- Candidate sources: `15` total, with `3` strong, `4` medium, `4` weak, and `4` noise variables.
+
+The stress fixture intentionally uses a relation-strength ladder rather than mostly pure noise. Generation effect strengths are:
+
+```text
+strong:  0.75, -0.65,  0.55
+medium:  0.48, -0.42,  0.36, -0.30
+weak:    0.25, -0.20,  0.15, -0.10
+noise:   no target effect
+```
+
+Noise scores are evaluated through the same Sprint 2 max-over-lag relation mechanism, so random noise may appear above zero. This is the benchmark noise-floor issue S5 is designed to expose and handle; `0.06` must not be described as a universal threshold for real data.
+
+### Adaptive Threshold
+
+S5 defines downstream resource pressure through `budget_ratio`.
+
+```text
+budget_ratio = 1.00 means full downstream budget
+budget_ratio = 0.00 means maximum pressure
+```
+
+Frozen constants:
+
+```text
+BENCHMARK_NOISE_FLOOR = 0.06
+MAX_PRESSURE_THRESHOLD = 0.50
+```
+
+Threshold rule:
+
+```text
+threshold = BENCHMARK_NOISE_FLOOR
+            + (1.0 - budget_ratio)
+            * (MAX_PRESSURE_THRESHOLD - BENCHMARK_NOISE_FLOOR)
+```
+
+Frozen scan:
+
+| budget_ratio | threshold |
+|---:|---:|
+| `1.00` | `0.06` |
+| `0.75` | `0.17` |
+| `0.50` | `0.28` |
+| `0.25` | `0.39` |
+| `0.00` | `0.50` |
+
+### Downstream Resource Proxies
+
+S5 still computes all candidate relation weights before filtering. Therefore resource metrics must be named as downstream estimates:
+
+```text
+downstream_compute_proxy =
+    retained_relation_count
+    * downstream_lag_count
+    * effective_row_count
+
+downstream_memory_proxy =
+    retained_feature_count
+    * materialized_lag_count
+    * effective_row_count
+
+estimated_memory_bytes =
+    downstream_memory_proxy
+    * bytes_per_value
+```
+
+Relative reduction is always measured against `budget_ratio = 1.00` within the same seed and track:
+
+```text
+reduction = 1 - proxy_at_current_budget / proxy_at_full_budget
+```
+
+Wall-clock runtime may be reported later as a diagnostic, but it is not an acceptance metric.
+
+### S5 Acceptance Criteria
+
+Across both tracks and five fixed seeds:
+
+- threshold rises monotonically as `budget_ratio` falls;
+- retained relation count is monotonic non-increasing within each seed;
+- downstream compute and memory proxies are monotonic non-increasing within each seed;
+- weak and noisy relations are pruned before stronger retained relations in the stress fixture;
+- every budget reports resource reduction and MAE/RMSE quality loss against the full-budget comparator;
+- threshold decisions use train-only relation weights and never use current or future labels;
+- repeated runs produce identical fixture data, retention reports, metrics, and summaries.
+
+S5 does not implement upstream candidate skipping, new trained threshold models, S5+ behavior, or any modification to S0-S4 frozen logic.

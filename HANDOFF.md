@@ -105,23 +105,27 @@
   - [x] 动态变化是层无关的独立模块，被权重机制复用，未修改 Sprint 2 或 S3.1 的既有逻辑。
   - [x] 在含漂移的数据上，动态版本优于静态版本，差距可量化。
 
-**Sprint 5 — 忽略值 / 资源自适应(Stage 3)(顺利约 2-3 周)**
+**Sprint 5 — 忽略值 / 资源自适应(Stage 3)(实现及工程验收完成，待作者验收/提交)**
 - 目标：实现“忽略值”，剪掉过弱的关系；算力吃紧时自动拉高忽略值(相当于约分省算力)。**这是作者最有原创感的设计，也是差异化亮点。**
 - 验收(这条指标最能进作品集)：
-  - [ ] 能证明：开启忽略值后**算力/内存下降 X%，而预测精度只下降 Y%**(X、Y 为实测)。
-  - [ ] 忽略值作为独立能力接入，未破坏前面模块。
+  - [x] 能证明：开启忽略值后**算力/内存下降 X%，而预测精度只下降 Y%**(X、Y 为实测)。
+  - [x] 忽略值作为独立能力接入，未破坏前面模块。
 
 ---
 
 ## 当前焦点(同一时间只允许一个)
 
-> **S5 — 忽略值 / 资源自适应：下一焦点，尚未启动。**
-> S4 已完成作者验收并进入收尾提交；下一轮才允许进入 S5。当前不要实现资源自适应、忽略阈值或相关调参。
+> **S5 — 忽略值 / 资源自适应：实现及工程验收完成，待作者验收/提交。**
+> 当前只做 S5 收尾与作者验收；不要自动进入 S5 之后的工作。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-06 · S5 资源自适应完成]** 新增层无关资源阈值模块 `resource_adaptive_ignore.py`、组合预测模块 `resource_adaptive_prediction.py`、高维压力夹具 `synthetic_resource_stress.py` 与冻结常量 `s5_config.py`。S5 使用双轨验收：原 S4 冻结数据作为 correctness regression，新增 15 候选变量 stress fixture 验证资源曲线；未修改 S0-S4 冻结代码和旧报告。
+- **[2026-08-06 · S5 阈值与边界]** `budget_ratio` 五档固定为 `1.00/0.75/0.50/0.25/0.00`，阈值按 `0.06/0.17/0.28/0.39/0.50` 单调上升。`0.06` 仅表述为当前冻结合成数据 + 多 lag 最大相关的 benchmark noise floor，不表述为通用真实数据阈值。资源指标统一命名为 `downstream_compute_proxy` / `downstream_memory_proxy`，因为当前仍先计算所有候选关系，不声称 end-to-end compute reduction。
+- **[2026-08-06 · S5 五 seed 结果]** 高维 `resource_stress` 轨：`budget_ratio=0.75` 时 retained mean `7.60`、downstream compute/memory proxy 均下降 `41.56%`，MAE mean `0.517833`、相对 full-budget MAE loss `4.11%`；`0.50` 时 proxy 下降 `73.00%`、MAE loss `55.23%`；`0.25` 时 proxy 下降 `84.49%`、MAE loss `81.77%`；`0.00` 时 proxy 下降 `98.46%`、MAE loss `137.57%`。S4 correctness 轨在 `0.75` 时仅下降 `13.33%`、MAE loss `0.14%`，并保留 `driver_a/driver_b`、阻断 `noise`。
+- **[2026-08-06 · S5 验证]** 一键入口为 `scripts/run_resource_adaptive_ignore.py`；tracked 报告为 `reports/resource_adaptive_metrics.csv`、`resource_adaptive_retention.csv`、`resource_adaptive_summary.md`；接口说明为 `docs/RESOURCE_ADAPTIVE_IGNORE.md`，协议追加到 `EVALUATION.md` S5 小节。新增 7 项标准库测试覆盖阈值表、downstream proxy 公式、S4 低维防回归、高维单调保留/资源下降、弱信号先剪、防泄漏和 fixture 字节确定性。已复跑 S0-S5 全脚本；S0-S4 旧报告 SHA-256 与复跑前完全一致；`python -m unittest discover -s tests` 共 23 tests 通过，`compileall` 与 `git diff --check` 通过。
 - **[2026-08-06 · S4 作者验收与收尾]** 作者已独立复核并验收 S4：防泄漏用篡改未来数据验证通过、5/5 种子追踪漂移已复现、120 行窗口冻结确认。本轮复跑完整验收，S0-S3.1 旧报告 SHA-256 与复跑前完全一致，`run_dynamic_weights.py` 复现动态 mean MAE/RMSE 相对静态降低 `7.52%/6.38%`；16 tests、compileall 与 `git diff --check` 通过。S4 标记为完成并验收；当前焦点切换到 S5，但本轮不启动 S5。
 - **[2026-08-06 · S4 动态权重完成]** 新增平行漂移生成器 `synthetic_drift.py`、S4 独立常量、层无关滚动封装 `dynamic_weights.py` 和数据层对照预测 `dynamic_prediction.py`。`relation_weights.py` 与 S0-S3.1 冻结实现均未修改。
 - **[2026-08-06 · S4 冻结数据]** 新 seed 为 `101/103/107/109/113`；`driver_a` lag-1 系数在 `0-419` 恒为 `0.15`，在 `420-599` 线性升至 `0.65`。主数据保持原五列，真相写入独立 sidecar；公式、随机顺序、窗口和 prequential 防泄漏规则已追加到 `EVALUATION.md` 独立 S4 小节。
@@ -171,9 +175,9 @@
 
 ## 下一步(具体、可执行)
 
-1. 开始 S5 前，先锁定忽略值 / 资源自适应的完成定义：要量化的算力/内存指标、允许的精度下降口径、以及对照模式。
-2. 设计 S5 时保持独立能力接入，不回改 S0-S4 冻结逻辑。
-3. 不把 S5 做成 S3.1 阈值调参；S5 必须证明资源下降 X% 与精度下降 Y% 的权衡。
+1. 等待作者验收 S5；验收时重点看：双轨口径、downstream-only 命名、`0.06` 噪声地板表述、以及资源/质量曲线是否足够作品集表达。
+2. 作者验收后提交本轮 S5 改动。
+3. 不自动进入 S5 之后的工作，不启动真实资源探针、上游候选跳过或新模型。
 
 ---
 
@@ -201,6 +205,7 @@
 - **S3.1 / 数值生效证明：完成并验收。** `driver_b` unit-trust 反事实下 OLS delta 为 `0.0000000000`，门控 delta mean `0.0774200737`、range `0.0081728375-0.1567707161`，且 noise 始终阻断。
 - **S3.1 / 报告与文档：完成并验收。** 四份 tracked report 与 `docs/TRUST_GATING.md` 已生成；MAE/RMSE 均报告五 seed mean 与 min-max。
 - **Sprint 4 / 动态权重漂移：完成并验收。** 作者已独立复核防泄漏、五 seed 漂移追踪和 120 行窗口冻结；动态 mean MAE/RMSE 分别比静态低 `7.52%/6.38%`。
+- **Sprint 5 / 忽略值与资源自适应：实现及工程验收完成。** 双轨验收已跑通；高维 stress 轨轻度压缩 downstream proxy 下降 `41.56%`、MAE loss `4.11%`，更高压力展示完整 tradeoff；待作者验收与提交。
 
 ---
 
@@ -225,9 +230,10 @@
 | C7 | Sprint 2 `weight` 解释为 marginal signed correlation | 已决 | 不等同于 OLS partial coefficient；多 lag 取最大会产生非零 noise floor |
 | C8 | S3.1 使用 OLS 前静态信任度门控 | 已决 | trust 与方向分离；`0.15/0.50` 分段线性准入；源先合成为共享关系信号，确保 OLS 不能抵消相对准入 |
 | C9 | S4 使用 120 行因果滑窗重复调用 Sprint 2 静态权重 | 已决 | 新漂移数据独立冻结；train-only 选源/拟合；测试按 `t-1` 截止 prequential 更新；不含 S5 忽略逻辑 |
+| C10 | S5 使用双轨验收与 downstream-only 资源 proxy | 已决 | S4 冻结数据只做 correctness regression；新增高维 stress fixture 验证资源曲线；当前仍先算全量关系，因此只声明 downstream compute/memory proxy reduction |
 
 ---
 
 ## 给下一棒的话
 
-> S4 已完成并通过作者验收：平行冻结漂移数据不碰旧数据，120 行因果滑窗在外层复用 Sprint 2 静态权重，五 seed 权重方向全部追对，动态 mean MAE/RMSE 比静态低 `7.52%/6.38%`。当前焦点已切到 S5；下一棒先定义 S5 的资源/精度验收口径，不要把它做成 S3.1 的阈值调参。
+> S5 已实现并通过工程验收：双轨验收、五档预算阈值、downstream-only proxy、S4 correctness regression 和高维 resource stress fixture 都已落地。当前等待作者验收与提交；不要自动进入 S5 之后的工作。

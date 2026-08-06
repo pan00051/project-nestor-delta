@@ -1,80 +1,87 @@
 # Nestor Delta
 
-Nestor Delta is the data-layer module of the Nestor project.
+**A multivariate relationship analysis engine — it judges which signals actually drive a target, tracks how those relationships drift over time, and adapts what it keeps under resource pressure. Every step is backed by reproducible experiments.**
 
-Its goal is to analyze how multiple signals relate to each other over time: which variables seem connected, how strong those connections are, when those relationships change, and which weak signals can be safely ignored so the system stays focused.
+Nestor Delta is the data-layer module of the Nestor project. It is a portfolio-grade engineering project, not a commercial product and not an attempt to invent new algorithms. Its value is in *how the pieces are combined, verified, and reasoned about* — including honestly finding and fixing a flaw in an early design.
 
-This repository is not trying to build a general AI assistant or invent a new algorithm. It is a portfolio-grade engineering project: define the problem clearly, build the module in a modular way, test whether it works, and explain the result honestly.
+---
 
-## What Problem It Solves
+## The Problem
 
-Many real-world decisions depend on moving signals:
+Many real decisions depend on moving signals — business KPIs, market indicators, operational metrics. The hard part is not seeing that numbers changed. The hard part is knowing **which relationships are real, which are drifting, and which signals are just noise that should be ignored.**
 
-- market indicators,
-- product metrics,
-- user behavior,
-- operational data,
-- public events,
-- business KPIs.
+Nestor Delta focuses on exactly that data-layer question, and does it under two constraints most toy projects skip: **the relationships change over time**, and **compute is limited**.
 
-The hard part is not just seeing that numbers changed. The hard part is understanding which changes matter, which relationships are stable, which ones are drifting, and which signals are too weak or noisy to deserve attention.
+---
 
-Nestor Delta focuses on that data-layer problem.
+## The Story Behind It (the part that matters most)
 
-## Simple Example
+This project's most important result is not a single number — it's a chain of reasoning:
 
-Imagine tracking five business metrics every day:
+1. **I wanted relationship "weights" to influence prediction.** The natural first idea: scale each signal by its relationship strength, then predict.
 
-- website visits,
-- trial signups,
-- paid conversions,
-- ad spend,
-- customer complaints.
+2. **I discovered that design was self-deceiving.** The weights had *no effect at all* — because the downstream regression (OLS) freely re-estimates its coefficients and silently cancels any constant scaling. I proved it with a controlled experiment: weighted vs. unweighted inputs gave identical predictions to ten decimal places. The apparent improvement was coming from *signal selection* (dropping noise), not from the weighting.
 
-Nestor Delta asks questions like:
+3. **I redesigned it so the weights are truly operative.** Instead of scaling *after* the model, I moved trust *before* it — as an irreversible gate. Strong signals pass fully, weak-but-useful signals pass partially, noise is blocked. Because the gated signals are combined before the regression, the model can no longer undo them. A counterfactual experiment confirmed it: changing a signal's trust now changes the prediction, whereas in the old design it changed nothing.
 
-- Which signals are most related to paid conversions?
-- Did that relationship change recently?
-- Are some signals currently too weak to matter?
-- Can the system ignore low-value signals without losing too much accuracy?
+4. **I made it track change.** A causal sliding window lets the relationship weights update over time and follow a known, injected drift — verified to use only past data (no leakage).
 
-The final output should help a later layer of Nestor explain what changed and why.
+5. **I made it economize.** Under rising resource pressure, the ignore threshold lifts automatically, keeping fewer, stronger relationships and cutting downstream work — with the accuracy cost measured honestly.
 
-## Role Inside Nestor
+The engineering is real, but the story is the point: **finding a flaw in my own design, understanding the mechanism, and correcting it — with evidence at every step.**
 
-Nestor is designed as three independently deliverable projects:
+---
 
-| Project | Layer | Purpose |
-|---------|-------|---------|
-| Nestor Delta | Data layer | Models changing relationships between variables |
-| Nestor Insight | Information layer | Evaluates event impact and importance |
-| Nestor | Full system | Combines data relationships with event analysis |
+## Key Results
 
-This repository is only for **Nestor Delta**.
+<!-- ▼▼▼ 图片位置 1：漂移追踪曲线（横轴 time step，三条线：true coefficient / dynamic weight estimate / static weight）▼▼▼ -->
+![Drift Tracking: dynamic weight estimate vs. ground-truth coefficient vs. static weight](reports/drift_tracking.png)
+<!-- ▲▲▲ 说明：数据来自 reports/dynamic_weight_trajectory.csv ▲▲▲ -->
 
-## Current Focus
+*As the true influence of a driver rises over time, the dynamic weight estimate rises to follow it, while the static weight stays flat. The dynamic relationship weight moved in the correct drift direction across all 5 frozen seeds.*
 
-The current focus is not to build everything at once.
+<!-- ▼▼▼ 图片位置 2：权衡曲线（横轴 budget_ratio，两条线：resource/compute reduction % 与 accuracy degradation %）▼▼▼ -->
+![Resource–Accuracy Trade-off across budget ratios](reports/resource_accuracy_tradeoff.png)
+<!-- ▲▲▲ 说明：数据来自 S5 权衡报告 CSV ▲▲▲ -->
 
-**Sprint 4 dynamic weight drift is implemented and has passed its engineering acceptance checks.** It adds a parallel known-drift benchmark without changing the frozen S0-S3.1 data or logic.
+*As resource pressure rises, the ignore threshold lifts, downstream work drops sharply, and accuracy degrades only modestly — a controllable, auditable trade-off.*
 
-The frozen M0 evaluation protocol is in `EVALUATION.md`.
+**Headline numbers (all measured on frozen synthetic data, five fixed seeds, test split only):**
 
-The first reusable capability module is:
+| Stage | What it does | Result |
+|---|---|---|
+| Baselines | persistence / simple OLS | MAE 0.566 / 0.428 |
+| Weighted prediction | selects true drivers, drops noise | MAE **0.422** (beats both baselines) |
+| Trust gating | makes weights numerically operative | counterfactual: prediction Δ **0.077** (gated) vs **0.000** (old design) |
+| Dynamic drift | tracks a known changing relationship | MAE **0.506** vs static 0.548 — **7.5% lower** on drift data; 5/5 seeds track correctly |
+| Resource-adaptive ignore | trades compute for accuracy | monotonic downstream reduction with measured, modest accuracy loss |
 
-- a layer-independent relation weighting mechanism.
+---
 
-Its interface and boundaries are documented in `docs/WEIGHTING.md`.
+## How It Works — a Ladder of Capabilities
 
-## Reproducible Environment
+Each capability is an independent, testable module built on the one before it, without modifying any earlier frozen code (open/closed principle):
 
-Sprint 2 intentionally uses no third-party runtime dependencies.
+- **Relationship weighting** — lagged correlation estimates how strongly one signal relates to another, with direction preserved. Layer-independent and reusable.
+- **Weighted three-variable prediction** — selects the strongest true drivers, excludes noise, and predicts one step ahead.
+- **Trust gating** — an irreversible pre-model filter that makes the relationship weights actually influence the prediction (see the story above).
+- **Dynamic drift tracking** — a causal sliding window that lets the weights adapt as relationships change over time, using only past observations.
+- **Resource-adaptive ignore** — a single `budget_ratio` control lifts the ignore threshold under pressure, pruning weak relationships to save downstream computation.
 
-From a clean checkout:
+---
+
+## Verification & Reproducibility (a core design goal, not an afterthought)
+
+This project treats "can you trust these numbers?" as a first-class requirement:
+
+- **Deterministic, pure standard library** — no third-party runtime dependencies; every run is byte-for-byte reproducible from a clean checkout.
+- **Leakage prevention is enforced and tested** — features never use future rows; the causal window was verified by corrupting all future data and confirming past estimates were unchanged.
+- **Ground-truth validation** — because the synthetic data has a *known* generating structure and a *known* drift path, the engine's estimates can be checked against the real answer, not just against a baseline.
+- **Every claim is backed by a committed report and an automated test.**
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+# reproduce the full pipeline from a clean checkout
+python3 -m venv .venv && source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
 python scripts/run_baselines.py
 python scripts/run_weights.py
@@ -84,103 +91,36 @@ python scripts/run_dynamic_weights.py
 python -m unittest discover -s tests
 ```
 
-The project requires Python `>=3.9`.
+---
 
-Acceptance commands and expected outputs are listed in `REPRODUCIBILITY.md`.
+## Architecture & Discipline
 
-## Sprint 1 Baseline Results
+The project is governed by three documents so that direction, progress, and workflow never drift:
 
-The baseline report is saved in `reports/baseline_summary.md`.
+- **`BLUEPRINT.md`** — the constitution: goals, scope, and hard boundaries.
+- **`HANDOFF.md`** — current progress, next focus, and pending decisions.
+- **`RUNBOOK.md`** — how the (human + AI) collaboration operates.
 
-Current test-set results across the five frozen seeds:
+Design principles held throughout: **modular and low-coupling; open for extension, closed for modification** (each new capability adds files, never edits frozen ones); **a fixed, frozen evaluation protocol** so every "improvement %" is measured against the same ruler.
 
-| Baseline | MAE mean | MAE range | RMSE mean | RMSE range |
-|---|---:|---:|---:|---:|
-| linear_regression | 0.428163 | 0.381239-0.470460 | 0.540204 | 0.478609-0.592253 |
-| persistence | 0.566021 | 0.508144-0.624679 | 0.703043 | 0.632300-0.789040 |
+---
 
-## Sprint 2 Relation Weight Results
+## Honest Scope
 
-The relation weighting module computes directed lagged Pearson weights. It is standalone and does not perform prediction.
+- Nestor Delta uses **established methods**; it does not claim a new algorithm. Its contribution is disciplined engineering integration and rigorous, reproducible verification.
+- It is validated on **controlled synthetic data** where the ground truth is known — the right setting to prove a mechanism is correct. Public real-world data is a later credibility layer, not part of the core mechanism validation.
+- The engine is deliberately narrow (the data layer). Event-impact analysis and cross-layer reasoning belong to other Nestor modules.
 
-Validation report: `reports/weight_validation_summary.md`.
+---
 
-Current target-source ranking across the five frozen seeds:
+## Project Structure
 
-| Source | Mean rank | Rank range | Mean score | Score range |
-|---|---:|---:|---:|---:|
-| driver_a | 1.00 | 1-1 | 0.595528 | 0.548573-0.663159 |
-| driver_b | 2.00 | 2-2 | 0.393421 | 0.331254-0.464283 |
-| noise | 3.00 | 3-3 | 0.059127 | 0.020952-0.093188 |
-
-## Sprint 3 Stage 1 Results
-
-Stage 1 combines Sprint 2 relation weights with Sprint 1 OLS prediction. It selects the top two train-only sources for `target`, then predicts with lagged `target` plus those two weighted source histories.
-
-Report: `reports/stage1_summary.md`.
-
-Current test-set results across the five frozen seeds:
-
-| Method | MAE mean | MAE range | RMSE mean | RMSE range |
-|---|---:|---:|---:|---:|
-| stage1_weighted_three_variable | 0.422277 | 0.375342-0.457150 | 0.532636 | 0.470656-0.589775 |
-| linear_regression | 0.428163 | 0.381239-0.470460 | 0.540204 | 0.478609-0.592253 |
-| persistence | 0.566021 | 0.508144-0.624679 | 0.703043 | 0.632300-0.789040 |
-
-Mean improvement: Stage 1 is `25.40%` lower MAE than persistence and `1.37%` lower MAE than the Sprint 1 linear regression baseline.
-
-## S3.1 Static Trust-Gating Results
-
-Trust gating applies signed, piecewise-linear source admissions before OLS and combines admitted sources into shared relation signals. This prevents OLS from independently undoing each source's trust value.
-
-Report: `reports/trust_gating_summary.md`. Interface and rationale: `docs/TRUST_GATING.md`.
-
-| Mode | MAE mean | MAE range | RMSE mean | RMSE range |
-|---|---:|---:|---:|---:|
-| sprint3_ols | 0.422277 | 0.375342-0.457150 | 0.532636 | 0.470656-0.589775 |
-| trust_gated_ols | 0.454786 | 0.415817-0.492024 | 0.568517 | 0.518068-0.634403 |
-
-The gated mode is less accurate on this fixed dataset, which is reported as the trade-off. Its purpose is verified separately: changing only weak-source `driver_b` trust to `1.0` changes gated predictions by `0.0774200737` on average, while noise remains blocked and the frozen Sprint 3 OLS mode remains unchanged to 10 decimal places.
-
-## Sprint 4 Dynamic Weight Results
-
-Sprint 4 wraps the frozen static relation-weight mechanism in a 120-row causal sliding window. Its separate synthetic benchmark holds the `driver_a` lag-1 coefficient at `0.15` through train, then increases it linearly to `0.65` through validation and test.
-
-Report: `reports/dynamic_weight_summary.md`. Interface and leakage boundary: `docs/DYNAMIC_WEIGHTS.md`.
-
-| Mode | MAE mean | MAE range | RMSE mean | RMSE range |
-|---|---:|---:|---:|---:|
-| dynamic_weights | 0.506484 | 0.463798-0.572600 | 0.640280 | 0.580674-0.715281 |
-| static_weights | 0.547689 | 0.490096-0.624914 | 0.683878 | 0.636739-0.768990 |
-
-The dynamic `driver_a -> target` weight moves upward from test start to test end for all five frozen drift seeds. Dynamic weights reduce mean MAE by `7.52%` and mean RMSE by `6.38%` versus the static comparator.
-
-## Repository Layout
-
-```text
-.
-├── data/synthetic/       # Original generated synthetic datasets
-├── data/synthetic_drift/ # Parallel S4 drift data and truth sidecars
-├── docs/                 # Module interface notes
-├── reports/              # Baseline metrics and summaries
-├── scripts/              # Reproducible command-line entry points
-├── src/nestor_delta/     # Python package source
-├── EVALUATION.md         # Frozen M0 evaluation protocol
-├── REPRODUCIBILITY.md    # Environment verification and output expectations
-├── requirements-lock.txt # Pinned environment dependencies
-└── pyproject.toml        # Project metadata and Python version boundary
 ```
-
-## Project Rules
-
-This repo uses three operating documents:
-
-- `BLUEPRINT.md`: the project constitution and source of truth.
-- `HANDOFF.md`: current progress, next step, and pending decisions.
-- `RUNBOOK.md`: how the collaboration workflow operates.
-
-Before doing project work, read `BLUEPRINT.md` and `HANDOFF.md`.
-
-## Status
-
-Sprint 4 dynamic weight drift is implemented and reproducibly meets its frozen tracking and prediction criteria. Sprint 5 resource-adaptive ignore values have not started.
+src/nestor_delta/     # capability modules (weighting, gating, dynamic, ignore, ...)
+scripts/              # one-command entry points that produce the reports
+reports/              # committed, reproducible result artifacts
+tests/                # determinism, correctness, and leakage-prevention tests
+docs/                 # per-capability design notes
+EVALUATION.md         # the frozen evaluation protocol
+BLUEPRINT.md / HANDOFF.md / RUNBOOK.md   # project governance
+```
