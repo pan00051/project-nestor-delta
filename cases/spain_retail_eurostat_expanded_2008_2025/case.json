@@ -1,0 +1,28 @@
+{
+  "candidate_signals": [
+    "unemployment_rate",
+    "consumer_confidence",
+    "industrial_production",
+    "hicp",
+    "industry_confidence",
+    "construction_confidence",
+    "economic_sentiment",
+    "employment_expectations",
+    "industry_employment_expectations",
+    "construction_production",
+    "retail_employment",
+    "industrial_turnover"
+  ],
+  "case_name": "spain_retail_eurostat_expanded_2008_2025",
+  "csv": "data.csv",
+  "date_column": "date",
+  "frequency": "monthly",
+  "lag_window": 2,
+  "max_selected_signals": 12,
+  "notes": "Exploratory expansion of the frozen Eurostat Spain retail case. Eight additional monthly Spain series were fixed before this run; all cover 2008-01 through 2025-12 with no deletion, interpolation, or imputation. The 2024-2025 test period was already observed in the original case, so any improvement here is exploratory and requires a new untouched period for confirmation. Results describe co-movement and out-of-sample predictive usefulness, not causation. Clean CSV SHA-256: 38c5d92976c0769f3e75c2e04d625118214bb8c3327d8d4e850f6f58c813b01f.",
+  "output_dir": "../../reports/spain_retail_eurostat_expanded_2008_2025",
+  "seasonal_period": 0,
+  "target": "retail_volume",
+  "test_start": "2024-01",
+  "train_end": "2023-12"
+}

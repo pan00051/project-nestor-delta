@@ -1,0 +1,65 @@
+{
+  "base_case": "cases/spain_retail_eurostat_2008_2025",
+  "clean_csv_sha256": "38c5d92976c0769f3e75c2e04d625118214bb8c3327d8d4e850f6f58c813b01f",
+  "decision_boundary": "Candidate pool, lag_window=2, max_selected_signals=12, and all five budget tiers were fixed before evaluating the expanded case.",
+  "experiment_status": "Exploratory: the 2024-2025 evaluation period was seen in the prior case.",
+  "missing_value_policy": "Reject any missing month; no filling or interpolation.",
+  "series": [
+    {
+      "dataset": "ei_bssi_m_r2",
+      "filters": "freq=M&indic=BS-ICI-BAL&s_adj=SA&geo=ES",
+      "name": "industry_confidence",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bssi_m_r2?lang=en&freq=M&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2025-12",
+      "updated": "2026-07-30T11:00:00+0200"
+    },
+    {
+      "dataset": "ei_bssi_m_r2",
+      "filters": "freq=M&indic=BS-CCI-BAL&s_adj=SA&geo=ES",
+      "name": "construction_confidence",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bssi_m_r2?lang=en&freq=M&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2025-12",
+      "updated": "2026-07-30T11:00:00+0200"
+    },
+    {
+      "dataset": "ei_bssi_m_r2",
+      "filters": "freq=M&indic=BS-ESI-I&s_adj=SA&geo=ES",
+      "name": "economic_sentiment",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bssi_m_r2?lang=en&freq=M&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2025-12",
+      "updated": "2026-07-30T11:00:00+0200"
+    },
+    {
+      "dataset": "ei_bsee_m_r2",
+      "filters": "freq=M&indic=BS-EEI-I&s_adj=SA&unit=INX&geo=ES",
+      "name": "employment_expectations",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bsee_m_r2?lang=en&freq=M&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2025-12",
+      "updated": "2026-07-30T11:00:00+0200"
+    },
+    {
+      "dataset": "ei_bsee_m_r2",
+      "filters": "freq=M&indic=BS-IEME-BAL&s_adj=SA&unit=BAL&geo=ES",
+      "name": "industry_employment_expectations",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bsee_m_r2?lang=en&freq=M&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2025-12",
+      "updated": "2026-07-30T11:00:00+0200"
+    },
+    {
+      "dataset": "sts_copr_m",
+      "filters": "freq=M&indic_bt=PRD&nace_r2=F&s_adj=SCA&unit=I21&geo=ES",
+      "name": "construction_production",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/sts_copr_m?lang=en&freq=M&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2025-12",
+      "updated": "2026-08-15T11:00:00+0200"
+    },
+    {
+      "dataset": "sts_trlb_m",
+      "filters": "freq=M&indic_bt=EMP&nace_r2=G47&s_adj=SCA&unit=I21&geo=ES",
+      "name": "retail_employment",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/sts_trlb_m?lang=en&freq=M&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2025-12",
+      "updated": "2026-08-15T11:00:00+0200"
+    },
+    {
+      "dataset": "sts_intv_m",
+      "filters": "freq=M&indic_bt=NETTUR&nace_r2=B_C&s_adj=SCA&unit=I21&geo=ES",
+      "name": "industrial_turnover",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/sts_intv_m?lang=en&freq=M&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2025-12",
+      "updated": "2026-08-15T11:00:00+0200"
+    }
+  ]
+}

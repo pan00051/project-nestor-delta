@@ -1,0 +1,51 @@
+{
+  "actual_ols_sources": [
+    "unemployment_rate",
+    "retail_employment",
+    "industrial_turnover",
+    "construction_production",
+    "domestic_energy_producer_prices"
+  ],
+  "baseline_guard_applied": false,
+  "best_delta_actual_ols_sources": [
+    "unemployment_rate",
+    "retail_employment",
+    "industrial_turnover",
+    "construction_production",
+    "domestic_energy_producer_prices"
+  ],
+  "best_delta_fit_status": "fit",
+  "best_delta_validation_mae": 1.0914926603479043,
+  "case_name": "spain_industrial_shock_2008_2021",
+  "final_mode": "delta",
+  "fit_status": "fit",
+  "lag_window": 3,
+  "mae_change_vs_persistence_pct": -7.107007629965567,
+  "max_selected_signals": 5,
+  "model_coefficients": [
+    23.782879726470433,
+    0.39527263939302143,
+    2.006605395240297,
+    -0.5804525490120115,
+    0.182441221198365,
+    -0.004522859662386396,
+    -0.05182473389247461,
+    0.18288223029460568,
+    -1.0172522695622304,
+    2.304519527415355,
+    0.06684060835348023,
+    -0.014075284904880867,
+    0.042134153503637514,
+    0.3004135429174845,
+    -0.7070015285693378,
+    -1.6793233444941373,
+    -0.37647873245134944,
+    0.0007500270087766008,
+    0.00317786317076753
+  ],
+  "relation_threshold": 0.5,
+  "selection_rule": "lowest validation MAE; ties prefer fewer actual OLS signals, higher threshold, shorter lag, lower max_selected_signals, then source names",
+  "test_evaluated": false,
+  "validation_mae": 1.0914926603479043,
+  "validation_persistence_mae": 1.1749999999999996
+}

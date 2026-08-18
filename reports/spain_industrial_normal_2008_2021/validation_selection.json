@@ -1,0 +1,21 @@
+{
+  "actual_ols_sources": [],
+  "baseline_guard_applied": true,
+  "best_delta_actual_ols_sources": [
+    "unemployment_rate"
+  ],
+  "best_delta_fit_status": "fit",
+  "best_delta_validation_mae": 0.7457589900567848,
+  "case_name": "spain_industrial_normal_2008_2021",
+  "final_mode": "baseline_only",
+  "fit_status": "baseline_only_validation_guard",
+  "lag_window": 1,
+  "mae_change_vs_persistence_pct": 0.0,
+  "max_selected_signals": 1,
+  "model_coefficients": [],
+  "relation_threshold": 0.5,
+  "selection_rule": "lowest validation MAE; ties prefer fewer actual OLS signals, higher threshold, shorter lag, lower max_selected_signals, then source names",
+  "test_evaluated": false,
+  "validation_mae": 0.7208333333333314,
+  "validation_persistence_mae": 0.7208333333333314
+}

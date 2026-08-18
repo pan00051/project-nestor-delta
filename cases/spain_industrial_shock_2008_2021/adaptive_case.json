@@ -1,0 +1,54 @@
+{
+  "candidate_signals": [
+    "unemployment_rate",
+    "consumer_confidence",
+    "hicp",
+    "industry_confidence",
+    "construction_confidence",
+    "economic_sentiment",
+    "employment_expectations",
+    "industry_employment_expectations",
+    "construction_production",
+    "retail_employment",
+    "industrial_turnover",
+    "order_book_assessment",
+    "production_expectations",
+    "domestic_energy_producer_prices",
+    "services_confidence"
+  ],
+  "case_name": "spain_industrial_shock_2008_2021",
+  "csv": "data.csv",
+  "date_column": "date",
+  "frequency": "monthly",
+  "lag_windows": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "max_selected_signals": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "notes": "Validation-only adaptive parameter search. The true consumer confidence series BS-CSMCI-BAL replaces the mislabeled frozen retail-case column; services confidence BS-SCI-BAL is the fifteenth unique signal. Test data must not be evaluated until validation selection receives author approval. Clean CSV SHA-256: 368bcd3e4b709d125c049431c5ade7d70397d23e95f5f118cab22050233f3570.",
+  "output_dir": "../../reports/spain_industrial_shock_2008_2021",
+  "relation_thresholds": [
+    0.06,
+    0.17,
+    0.28,
+    0.39,
+    0.5
+  ],
+  "target": "industrial_production",
+  "test_end": "2021-12",
+  "test_start": "2020-01",
+  "train_end": "2017-12",
+  "train_start": "2008-01",
+  "validation_end": "2019-12",
+  "validation_start": "2018-01"
+}

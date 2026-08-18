@@ -1,0 +1,2 @@
+case_name,final_mode,relation_threshold,lag_window,max_selected_signals,actual_ols_signal_count,actual_ols_sources,dropped_collinear_sources,fit_status,persistence_mae,persistence_rmse,delta_mae,delta_rmse,mae_change_vs_persistence_pct,test_sample_count,parameters_adjusted_after_test
+spain_industrial_normal_2008_2021,baseline_only,0.5000000000,1,1,0,,,baseline_only_validation_guard,1.1125000000,1.4145081595,,,,48,false

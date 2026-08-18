@@ -1,0 +1,2 @@
+case_name,final_mode,relation_threshold,lag_window,max_selected_signals,actual_ols_signal_count,actual_ols_sources,dropped_collinear_sources,fit_status,persistence_mae,persistence_rmse,delta_mae,delta_rmse,mae_change_vs_persistence_pct,test_sample_count,parameters_adjusted_after_test
+spain_industrial_shock_2008_2021,delta,0.5000000000,3,5,5,unemployment_rate;retail_employment;industrial_turnover;construction_production;construction_confidence,,fit,4.0958333333,7.3266920685,4.4902624193,8.6498071962,9.6300082028,24,false

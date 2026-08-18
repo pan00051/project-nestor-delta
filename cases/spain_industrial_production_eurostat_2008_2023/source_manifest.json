@@ -1,0 +1,54 @@
+{
+  "case_name": "spain_industrial_production_eurostat_2008_2023",
+  "clean_csv_sha256": "ce541159b3aa8a8eeb4c3bcfe34b09e1b5e0717b8b0537ad9f48a1ec67db30da",
+  "coverage": {
+    "end": "2023-12",
+    "frequency": "monthly",
+    "months": 192,
+    "start": "2008-01"
+  },
+  "honesty_boundary": "Requested and actual scopes are not silently treated as equivalent. The order-book survey substitution is a substantive semantic change.",
+  "missing_value_policy": "Reject any missing month; no filling or interpolation.",
+  "series": [
+    {
+      "actual_scope": "sts_inpr_m; nace_r2=C; s_adj=SCA; unit=I15; geo=ES",
+      "dataset_updated": "2026-08-14T11:00:00+0200",
+      "name": "industrial_production",
+      "requested_scope": "sts_inpr_m; nace_r2=C; s_adj=SCA; unit=I15; geo=ES",
+      "semantic_difference": "No substitution. This is the target manufacturing production volume index.",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/sts_inpr_m?lang=en&freq=M&nace_r2=C&s_adj=SCA&unit=I15&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2023-12"
+    },
+    {
+      "actual_scope": "ei_bsin_m_r2; indic=BS-IOB; s_adj=SA; unit=BAL; geo=ES",
+      "dataset_updated": "2026-07-30T11:00:00+0200",
+      "name": "order_book_assessment",
+      "requested_scope": "sts_inot_m; nace_r2=C; s_adj=SCA; unit=I15; geo=ES",
+      "semantic_difference": "SUBSTANTIVE CHANGE: the requested series was a quantitative index of actual industrial new orders. The used series is a seasonally adjusted survey balance of managers' assessment of current order-book levels. It measures sentiment about order books, not the quantity of new orders, and must not be interpreted as an equivalent replacement.",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bsin_m_r2?lang=en&freq=M&indic=BS-IOB&s_adj=SA&unit=BAL&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2023-12"
+    },
+    {
+      "actual_scope": "ei_bsin_m_r2; indic=BS-IPE; s_adj=SA; unit=BAL; geo=ES",
+      "dataset_updated": "2026-07-30T11:00:00+0200",
+      "name": "production_expectations",
+      "requested_scope": "ei_bsin_m_r2; indic=BS-IND-PO; s_adj=SA; geo=ES",
+      "semantic_difference": "The requested indicator code is not present in the current dataset. BS-IPE is the current Eurostat code for production expectations over the next three months.",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bsin_m_r2?lang=en&freq=M&indic=BS-IPE&s_adj=SA&unit=BAL&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2023-12"
+    },
+    {
+      "actual_scope": "sts_inppd_m; nace_r2=MIG_NRG; s_adj=NSA; unit=I15; geo=ES",
+      "dataset_updated": "2026-08-14T11:00:00+0200",
+      "name": "domestic_energy_producer_prices",
+      "requested_scope": "sts_inppd_m; nace_r2=C19-C20; s_adj=NSA; unit=I15; geo=ES",
+      "semantic_difference": "C19-C20 is not a current NACE aggregate in this dataset. MIG_NRG is the available Main Industrial Grouping for energy and is broader than a simple combination of coke/refined petroleum and chemicals.",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/sts_inppd_m?lang=en&freq=M&nace_r2=MIG_NRG&s_adj=NSA&unit=I15&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2023-12"
+    },
+    {
+      "actual_scope": "ei_bsin_m_r2; indic=BS-IEME-BAL; s_adj=SA; unit=BAL; geo=ES",
+      "dataset_updated": "2026-07-30T11:00:00+0200",
+      "name": "manufacturing_employment_expectations",
+      "requested_scope": "ei_bsin_m_r2; indic=BS-IND-EMPE; s_adj=SA; geo=ES",
+      "semantic_difference": "The requested indicator code is not present in the current dataset. BS-IEME-BAL is the current industry employment-expectations balance for the next three months.",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bsin_m_r2?lang=en&freq=M&indic=BS-IEME-BAL&s_adj=SA&unit=BAL&geo=ES&sinceTimePeriod=2008-01&untilTimePeriod=2023-12"
+    }
+  ]
+}

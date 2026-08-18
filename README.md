@@ -23,7 +23,7 @@ The last question matters. A relationship can look convincing in training data a
 
 ## Real-World Result: Spain Retail
 
-The first real case uses **216 monthly Eurostat observations from Spain (2008-2025)**. The target is retail sales volume; the four candidate signals are industrial production, unemployment, consumer confidence, and the Harmonised Index of Consumer Prices (HICP).
+The first real case uses **216 monthly Eurostat observations from Spain (2008-2025)**. The target is retail sales volume; the four candidate columns are industrial production, unemployment, a column originally labeled consumer confidence, and the Harmonised Index of Consumer Prices (HICP). A later audit established that the mislabeled column actually contains construction confidence (`BS-CCI-BAL`); the frozen data and metrics remain unchanged, and the correction is recorded in the case [erratum](cases/spain_retail_eurostat_2008_2025/ERRATA.md).
 
 The fixed split trains through `2023-12` and evaluates once on the 24 months from `2024-01` through `2025-12`. An external case builder aligned the exact monthly axis with no missing rows, interpolation, or imputation. Eurostat marked the retail and industrial source snapshots as provisional.
 
@@ -34,7 +34,7 @@ The fixed split trains through `2023-12` and evaluates once on the 24 months fro
 What happened:
 
 - The `1.00` and `0.75` budget tiers admitted all four signals and overfit badly out of sample.
-- At `0.50`, `0.25`, and `0.00`, the higher threshold excluded consumer confidence and HICP while retaining industrial production and unemployment.
+- At `0.50`, `0.25`, and `0.00`, the higher threshold excluded the mislabeled construction-confidence column and HICP while retaining industrial production and unemployment.
 - The two excluded signals showed train-period co-movement that did not hold up in the test period.
 - All five tiers were fixed before evaluation and all five are reported. No tier was selected after looking at test performance.
 
@@ -45,6 +45,12 @@ What happened:
 This result is worth showing precisely because it does **not** beat the baseline. The mechanism removed signals that failed to generalize, but it did not manufacture a predictive victory. The case demonstrates controlled behavior on messy real data and a willingness to report a tie as a tie.
 
 See the committed [metrics](reports/spain_retail_eurostat_2008_2025/real_budget_sweep_metrics.csv), [predictions](reports/spain_retail_eurostat_2008_2025/real_budget_sweep_predictions.csv), and [interpretation boundary](reports/spain_retail_eurostat_2008_2025/real_budget_sweep_summary.md).
+
+---
+
+## Key Findings
+
+The dual-window evaluation separated ordinary-period behavior from a structural-break test using 15 availability-gated signals across nine Eurostat datasets. In Case A, validation showed no improvement over persistence, so the baseline guard correctly froze the system as baseline-only and produced no fabricated Delta metric. In Case B, a five-signal model improved on persistence by 7.11% in validation but became 9.63% worse during the 2020-2021 pandemic window, showing that resource-aware filtering is not online shock detection. See the one-page [Dual-Window Findings](reports/DUAL_WINDOW_FINDINGS.md) for the protocol, results, and next technical boundary.
 
 ---
 

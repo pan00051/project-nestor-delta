@@ -1,0 +1,20 @@
+{
+  "candidate_signals": [
+    "order_book_assessment",
+    "production_expectations",
+    "domestic_energy_producer_prices",
+    "manufacturing_employment_expectations"
+  ],
+  "case_name": "spain_industrial_production_eurostat_2008_2023",
+  "csv": "data.csv",
+  "date_column": "date",
+  "frequency": "monthly",
+  "lag_window": 3,
+  "max_selected_signals": 3,
+  "notes": "Eurostat Spain monthly manufacturing case, 2008-01 through 2023-12, with an exact 192-month axis and no deletion, interpolation, or imputation. The original request used unavailable or obsolete codes for four candidate scopes. The actual scopes and semantic differences are recorded in methodology.md and source_manifest.json. In particular, order_book_assessment is a qualitative survey balance, not the requested quantitative industrial new-orders index. Results describe co-movement and out-of-sample predictive usefulness only, not causation. Clean CSV SHA-256: ce541159b3aa8a8eeb4c3bcfe34b09e1b5e0717b8b0537ad9f48a1ec67db30da.",
+  "output_dir": "../../reports/spain_industrial_production_eurostat_2008_2023",
+  "seasonal_period": 0,
+  "target": "industrial_production",
+  "test_start": "2022-01",
+  "train_end": "2021-12"
+}
