@@ -19,6 +19,9 @@ class RelationWeight:
     score: float
     sample_count: int
     transform: str = "none"
+    stability: float | None = None
+    uncertainty: float | None = None
+    selected: bool | None = None
 
 
 def compute_lagged_relation_weights(

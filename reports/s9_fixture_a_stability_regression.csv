@@ -1,0 +1,2 @@
+fixture,path,seed_count,median_stability,p90_stability,max_stability,pass_rate_stability_gt_045,state_distribution,endorsed_state_count,endorsed_state_rate
+fixture_a_random_walk,s7_transformed_diff_rolling,100,0.08210500000782646,0.25218166240917683,0.3590464201423464,0.0,"birth:88, dead:5, decaying:7",0,0.0

@@ -9,6 +9,7 @@ from .relation_weights import (
     NumericRow,
     compute_lagged_relation_weights,
 )
+from .stationarity import compute_transformed_relation_weights
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class TimedRelationWeight:
     weight: float
     score: float
     sample_count: int
+    transform: str = "none"
 
 
 def compute_rolling_relation_weights(
@@ -66,6 +68,50 @@ def compute_rolling_relation_weights(
                     weight=weight.weight,
                     score=weight.score,
                     sample_count=weight.sample_count,
+                    transform=weight.transform,
+                )
+            )
+    return timed_weights
+
+
+def compute_rolling_transformed_relation_weights(
+    rows: Sequence[NumericRow],
+    variables: Iterable[str],
+    max_lag: int,
+    steps: Iterable[int],
+    window_size: int,
+    transforms: dict[str, str],
+) -> List[TimedRelationWeight]:
+    """Recompute S7 transformed weights on causal windows at each step."""
+    if window_size <= max_lag:
+        raise ValueError("window_size must be greater than max_lag")
+
+    variable_names = tuple(variables)
+    timed_weights: List[TimedRelationWeight] = []
+    for step in steps:
+        if step < 0 or step > len(rows):
+            raise ValueError("steps must be within rows boundaries")
+        window_start = max(0, step - window_size)
+        history = rows[window_start:step]
+        if len(history) <= max_lag:
+            raise ValueError("each causal window must contain more rows than max_lag")
+
+        weights = compute_transformed_relation_weights(
+            history, variable_names, max_lag, transforms
+        )
+        for weight in weights:
+            timed_weights.append(
+                TimedRelationWeight(
+                    step=step,
+                    window_start=window_start,
+                    window_end=step,
+                    source=weight.source,
+                    target=weight.target,
+                    lag=weight.lag,
+                    weight=weight.weight,
+                    score=weight.score,
+                    sample_count=weight.sample_count,
+                    transform=weight.transform,
                 )
             )
     return timed_weights
