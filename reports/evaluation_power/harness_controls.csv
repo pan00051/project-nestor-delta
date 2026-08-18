@@ -1,0 +1,9 @@
+case,control,requirement,folds,median_skill,low,high,passed
+spain_retail_eurostat_2008_2025,sign_flip_null,interval must contain zero (zero-centred by construction),93,0.000000,-3.624116,3.490086,True
+spain_retail_eurostat_2008_2025,identity,every fold exactly zero,93,0.000000,0.000000,0.000000,True
+spain_retail_eurostat_2008_2025,scrambled,interval must not reach above zero,93,-3.260526,-4.691149,-2.365181,True
+spain_retail_eurostat_2008_2025,degraded,interval must sit entirely below zero,93,-0.294737,-0.401277,-0.141319,True
+spain_industrial_shock_2008_2021,sign_flip_null,interval must contain zero (zero-centred by construction),46,0.000000,-1.750166,1.748069,True
+spain_industrial_shock_2008_2021,identity,every fold exactly zero,46,0.000000,0.000000,0.000000,True
+spain_industrial_shock_2008_2021,scrambled,interval must not reach above zero,46,-2.462720,-4.564401,-0.969492,True
+spain_industrial_shock_2008_2021,degraded,interval must sit entirely below zero,46,-0.144303,-0.285796,-0.065158,True
