@@ -58,6 +58,7 @@ Nestor Delta 是 Nestor 系列中的**数据层模块**，用于分析多变量�
    - **层**(调用能力的场景)：数据层 / 信息层 / 跨层。
    - 本 repo 当前只落地数据层，但能力模块仍要尽量设计成可复用机制，避免绑死在某个 demo 场景里。
 4. **第一个要做透的，是被复用最多的底座模块**：通用权重机制。动态变化与忽略值都排在它之后。
+5. **Evidence Gate 的合法输入边界：** relationship uncertainty / stability / sample support / effect size 可以进入 selection；prediction error / validation error / test error **禁止**反向进入 selection。后者会形成自激式过拟合回路：预测错 → 放宽阈值 → 模型容量增加 → 训练误差下降 → 误判为改善。
 
 ---
 
