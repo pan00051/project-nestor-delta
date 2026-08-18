@@ -7,7 +7,7 @@ import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Mapping, Tuple
 
 from .synthetic import Row
 
@@ -29,6 +29,7 @@ class RealCaseConfig:
     output_dir: Path
     seasonal_period: int = 0
     notes: str = ""
+    transform_declarations: Mapping[str, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -66,7 +67,8 @@ def load_real_case_config(path: Path) -> RealCaseConfig:
 
     payload_keys = set(payload)
     missing = sorted(REQUIRED_CONFIG_FIELDS - payload_keys)
-    extra = sorted(payload_keys - REQUIRED_CONFIG_FIELDS)
+    optional_fields = {"transform_declarations"}
+    extra = sorted(payload_keys - REQUIRED_CONFIG_FIELDS - optional_fields)
     if missing:
         raise ValueError(f"case config missing required fields: {missing}")
     if extra:
@@ -96,6 +98,7 @@ def load_real_case_config(path: Path) -> RealCaseConfig:
         output_dir=output_dir,
         seasonal_period=int(payload["seasonal_period"]),
         notes=str(payload["notes"]),
+        transform_declarations=payload.get("transform_declarations"),
     )
     validate_real_case_config(config)
     return config
@@ -122,6 +125,13 @@ def validate_real_case_config(config: RealCaseConfig) -> None:
         raise ValueError("seasonal_period cannot be negative")
     if config.train_end >= config.test_start:
         raise ValueError("train_end must be earlier than test_start")
+    if config.transform_declarations is not None:
+        from .stationarity import validate_transform_declarations
+
+        validate_transform_declarations(
+            (config.target,) + config.candidate_signals,
+            config.transform_declarations,
+        )
 
 
 def load_real_case_data(config: RealCaseConfig) -> RealCaseData:
@@ -223,6 +233,15 @@ def _validate_config_types(payload: Dict[str, object]) -> None:
         raise ValueError("case config field 'candidate_signals' must be a list")
     if not all(isinstance(item, str) for item in payload["candidate_signals"]):
         raise ValueError("candidate_signals must contain only strings")
+    if "transform_declarations" in payload:
+        transforms = payload["transform_declarations"]
+        if not isinstance(transforms, dict):
+            raise ValueError("transform_declarations must be an object")
+        if not all(
+            isinstance(name, str) and isinstance(value, str)
+            for name, value in transforms.items()
+        ):
+            raise ValueError("transform_declarations must map strings to strings")
 
 
 def _parse_month(value: str, label: str) -> Tuple[int, int]:

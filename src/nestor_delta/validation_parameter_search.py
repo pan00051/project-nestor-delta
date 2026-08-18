@@ -89,6 +89,10 @@ REQUIRED_FIELDS = {
     "validation_start",
 }
 
+OPTIONAL_FIELDS = {
+    "transform_declarations",
+}
+
 
 def load_adaptive_case(path: Path) -> Tuple[AdaptiveCaseSpec, RealCaseData]:
     """Load a strict adaptive-case config and its aligned numeric CSV."""
@@ -96,7 +100,7 @@ def load_adaptive_case(path: Path) -> Tuple[AdaptiveCaseSpec, RealCaseData]:
     if not isinstance(payload, dict):
         raise ValueError("adaptive case config must be a JSON object")
     missing = sorted(REQUIRED_FIELDS - set(payload))
-    extra = sorted(set(payload) - REQUIRED_FIELDS)
+    extra = sorted(set(payload) - REQUIRED_FIELDS - OPTIONAL_FIELDS)
     if missing:
         raise ValueError(f"adaptive case config missing fields: {missing}")
     if extra:

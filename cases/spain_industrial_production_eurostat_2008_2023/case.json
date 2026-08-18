@@ -16,5 +16,12 @@
   "seasonal_period": 0,
   "target": "industrial_production",
   "test_start": "2022-01",
-  "train_end": "2021-12"
+  "train_end": "2021-12",
+  "transform_declarations": {
+    "domestic_energy_producer_prices": "diff",
+    "industrial_production": "diff",
+    "manufacturing_employment_expectations": "diff",
+    "order_book_assessment": "diff",
+    "production_expectations": "diff"
+  }
 }

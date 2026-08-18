@@ -115,13 +115,16 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **首个真实案例 — Eurostat 西班牙零售销量：五档扫描完成，等待作者验收。**
-> 当前只验收真实案例数据与五档结果；不改冻结 S5/S6/连接器，不挑赢家，不做 API、dashboard、上传或自动清洗。
+> **S7 · 平稳化层与伪关系检测。**
+> 当前只修复 relation measurement 的趋势伪关系问题：新增显式 `none / diff / log_diff` transform 路径、保留 legacy level scoring 对照、输出 fixtures 与 Spain/dual-window 新旧并列报告。S8-S10 禁止提前实现，S0-S6 冻结报告不追溯修改。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-18 · S7 平稳化测量路径实现]** 新增 `src/nestor_delta/stationarity.py`，提供显式 transform 声明校验、lag-1 ACF highly-persistent risk flag、`diff/log_diff` 变换和 S7 transformed relation scoring。`RelationWeight` 新增默认 `transform="none"` 字段；`relation_weights.py` 旧函数保留，新增 `legacy_level_scoring` 作为旧 level Pearson 对照入口。
+- **[2026-08-18 · S7 fixtures 与真实案例对照]** 新增 `src/nestor_delta/s7_fixtures.py` 和 `scripts/run_s7_stationarity.py`。Fixture A 独立随机游走显示 legacy median `|r|=0.410`、`P(|r|>0.06)=93.6%`，S7 diff path median `|r|=0.088`、`P(|r|>0.30)=0.0%`；Fixture B 在 200/200 seeds 恢复真实 lag=3。新增报告：`reports/s7_fixture_acceptance.csv`、`s7_eurostat_stationarity_diagnostics.csv`、`s7_spain_relation_comparison.csv`、`s7_relation_measurement_summary.md`。
+- **[2026-08-18 · S7 real-case transform 声明]** Spain retail、Spain expanded、Spain industrial production 和 dual-window adaptive cases 已写入显式 `transform_declarations`，当前均声明为 `diff`。Eurostat lag-1 ACF 输出只标记 highly-persistent risk flag，不作为正式 stationarity test；Spain/dual-window 报告新旧路径并列，不挑有利结果。
 - **[2026-08-06 · 首个真实 Eurostat 案例完成]** 新增西班牙 `2008-01..2025-12` 共 216 个月的干净案例 CSV，target 为零售销量，候选为失业率、消费者信心、工业生产和 HICP；`lag_window=2`、`max_selected_signals=4`、train 截止 `2023-12`、test 为 `2024-01..2025-12`。抓取与对齐由 repo 外 Case Builder 完成，五条序列均精确覆盖冻结月轴，无缺失、删行、插值或填补；CSV SHA-256 为 `a8c01df041db4d835baf83a459ae65194a4d5c9bca157753d56cd6259d106445`。
 - **[2026-08-06 · 真实案例五档结果]** `budget_ratio=1.00/0.75` 时四个候选均进入 OLS，MAE 相对 persistence 变化均为 `+63.2669%`；`0.50/0.25/0.00` 时仅工业生产与失业率进入 OLS，MAE 变化均为 `-0.0270%`。五档全部报告，不据 test 结果挑赢家；所有 fit status 均为 `fit`，无共线删除。Eurostat 原始响应把零售和工业生产全段标为 provisional，已在 case notes 留痕。
 - **[2026-08-06 · 连接器作者验收通过]** 作者使用独立对抗输入复核开闭原则、防泄漏、列序无关、零信号、单调性、先冻结后评估、无 test 挑赢家及 `0.06`/co-movement 措辞，确认连接器验收通过。
@@ -184,9 +187,9 @@
 
 ## 下一步(具体、可执行)
 
-1. 等待作者独立验收西班牙零售真实案例，重点复核 216 行无缺失输入、固定 train/test 边界、五档信号集合和原始 CSV 报告数字。
-2. 验收期间不调阈值、不换 lag、不删信号，也不根据 test 结果把某档称为最终模型。
-3. 不改冻结 S5/S6/连接器，不启动第二个真实案例、API、上传或 dashboard。
+1. 复跑 S7 一键脚本、完整 unittest、compileall、`git diff --check`，并核对 S0-S6 已跟踪旧报告 SHA-256 未变化。
+2. 作者验收 S7 时重点看 Fixture A/B、Eurostat ACF risk flag 措辞、Spain/dual-window 新旧并列表。
+3. S7 验收前不启动 S8 rolling-origin、S9 temporal stability 或 S10 evidence gate/confidence。
 
 ---
 
@@ -218,6 +221,7 @@
 - **Sprint 6 / 真实数据案例 Runner：框架实现完成。** 可读取作者准备的本地 CSV + config，自动输出 ranking、预测、资源 tradeoff 和 summary；等待真实案例数据输入。
 - **S6 加法连接器 / 真实案例预算扫描：完成并验收。** S5 阈值已真正控制进入 S6 OLS 的候选集合；作者已用独立对抗输入确认开闭原则、防泄漏、列序无关、零信号和先冻结后评估。
 - **首个真实案例 / Eurostat 西班牙零售：实现及工程验收完成。** 外部 Case Builder 生成 216 行无缺失月度 CSV，五档报告已字节复现；等待作者独立验收。
+- **S7 / 平稳化层与伪关系检测：实现中。** S7 transformed relation scoring、fixtures、diagnostics 和 Spain/dual-window 并列报告已实现；待完整回归验证和作者验收。
 
 ---
 
@@ -245,9 +249,10 @@
 | C10 | S5 使用双轨验收与 downstream-only 资源 proxy | 已决 | S4 冻结数据只做 correctness regression；新增高维 stress fixture 验证资源曲线；当前仍先算全量关系，因此只声明 downstream compute/memory proxy reduction |
 | C11 | S6 只做本地真实案例 runner | 已决 | 作者准备 CSV 和 config；runner 自动 ranking/selection 并输出 CSV 报告；不做 API、dashboard、上传、自动清洗或因果声明 |
 | C12 | 用独立薄连接器把 S5 过滤接入 S6 OLS | 已决 | 不改冻结 S5/S6；五档先按 threshold 过滤、再 cap、再共线降级；proxy 按 cap 后数量；全部模型冻结后才统一 test 评估，且不从 test 中挑赢家 |
+| C13 | S7 只新增显式 transformed scoring 路径 | 已决 | `legacy_level_scoring` 保留 level Pearson 对照；transform 必须声明为 `none/diff/log_diff`；lag-1 ACF 只作 risk flag；不做 S8-S10 |
 
 ---
 
 ## 给下一棒的话
 
-> Budget Sweep 连接器已通过作者独立验收；首个 Eurostat 西班牙零售真实案例也已跑出五档报告。当前停在真实案例作者验收点，不调整任何配置、不挑赢家，也不启动第二案例或产品化功能。
+> 当前推进 S7。不要把 S8 rolling-origin、S9 stability/lifecycle、S10 evidence gate/confidence 带进来；S7 的验收看 fixtures 是否杀掉 trend-induced fake relations 并保留 short-run lagged dynamic relation，不看真实数据预测精度是否提高。

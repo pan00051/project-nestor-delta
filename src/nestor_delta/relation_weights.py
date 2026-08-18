@@ -18,6 +18,7 @@ class RelationWeight:
     weight: float
     score: float
     sample_count: int
+    transform: str = "none"
 
 
 def compute_lagged_relation_weights(
@@ -46,6 +47,15 @@ def compute_lagged_relation_weights(
             weights.append(_best_weight_for_pair(rows, source, target, max_lag))
 
     return weights
+
+
+def legacy_level_scoring(
+    rows: Sequence[NumericRow],
+    variables: Iterable[str],
+    max_lag: int,
+) -> List[RelationWeight]:
+    """Run the frozen Sprint 2 level-Pearson scoring path."""
+    return compute_lagged_relation_weights(rows, variables, max_lag)
 
 
 def rank_target_sources(weights: Sequence[RelationWeight], target: str) -> List[RelationWeight]:

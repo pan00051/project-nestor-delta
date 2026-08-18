@@ -49,6 +49,24 @@
   "test_start": "2016-01",
   "train_end": "2013-12",
   "train_start": "2008-01",
+  "transform_declarations": {
+    "construction_confidence": "diff",
+    "construction_production": "diff",
+    "consumer_confidence": "diff",
+    "domestic_energy_producer_prices": "diff",
+    "economic_sentiment": "diff",
+    "employment_expectations": "diff",
+    "hicp": "diff",
+    "industrial_production": "diff",
+    "industrial_turnover": "diff",
+    "industry_confidence": "diff",
+    "industry_employment_expectations": "diff",
+    "order_book_assessment": "diff",
+    "production_expectations": "diff",
+    "retail_employment": "diff",
+    "services_confidence": "diff",
+    "unemployment_rate": "diff"
+  },
   "validation_end": "2015-12",
   "validation_start": "2014-01"
 }

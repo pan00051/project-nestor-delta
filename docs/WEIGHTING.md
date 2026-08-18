@@ -76,3 +76,40 @@ Sprint 2 validation is intentionally minimal:
 - results must be saved in `reports/weight_validation.csv` and `reports/weight_validation_summary.md`.
 
 The validation does not need to beat forecasting baselines; that belongs to Sprint 3.
+
+## S7 Additive Transformed Path
+
+Status: S7 adds a parallel measurement path and keeps the Sprint 2 function as
+`legacy_level_scoring`.
+
+The frozen Sprint 2 path still computes level Pearson correlation exactly as
+before. S7 does not replace it. The new path lives in:
+
+```text
+src/nestor_delta/stationarity.py
+```
+
+Primary function:
+
+```python
+compute_transformed_relation_weights(rows, variables, max_lag, transforms)
+```
+
+`transforms` must explicitly declare every signal as one of:
+
+- `none`
+- `diff`
+- `log_diff`
+
+The function does not infer or choose transforms from diagnostics. A lag-1 ACF
+above `0.95` is reported only as a highly-persistent / non-stationarity risk
+flag. It is not an ADF/KPSS test and is not a formal stationarity conclusion.
+
+If S7 receives a highly persistent signal declared as `none`, it refuses to run
+instead of silently producing a level-score relationship. This guard applies to
+the S7 transformed path only; the legacy level path remains available as the
+explicit control group.
+
+S7 only measures short-run transformed relationships. It does not implement
+cointegration, ECM/VECM, long-run relationship handling, temporal stability,
+evidence gates, prediction confidence, nonlinear scoring, FFT, or coherence.

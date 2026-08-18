@@ -1,0 +1,5 @@
+fixture,path,seed_count,median_abs_r,p90_abs_r,pass_rate_gt_006,pass_rate_gt_030,correct_lag_rate
+fixture_a_random_walk,legacy_level_scoring,500,0.4103115938,0.7721427389,0.9360000000,0.6640000000,
+fixture_a_random_walk,s7_transformed_diff,500,0.0883252720,0.1398571743,0.7600000000,0.0000000000,
+fixture_b_trended_dynamic,legacy_level_scoring,200,0.9728968866,0.9908839170,1.0000000000,0.9950000000,
+fixture_b_trended_dynamic,s7_transformed_diff,200,0.5982404934,0.6499414356,1.0000000000,1.0000000000,1.0000000000

@@ -24,5 +24,20 @@
   "seasonal_period": 0,
   "target": "retail_volume",
   "test_start": "2024-01",
-  "train_end": "2023-12"
+  "train_end": "2023-12",
+  "transform_declarations": {
+    "construction_confidence": "diff",
+    "construction_production": "diff",
+    "consumer_confidence": "diff",
+    "economic_sentiment": "diff",
+    "employment_expectations": "diff",
+    "hicp": "diff",
+    "industrial_production": "diff",
+    "industrial_turnover": "diff",
+    "industry_confidence": "diff",
+    "industry_employment_expectations": "diff",
+    "retail_employment": "diff",
+    "retail_volume": "diff",
+    "unemployment_rate": "diff"
+  }
 }
