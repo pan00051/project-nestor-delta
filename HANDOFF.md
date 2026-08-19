@@ -115,13 +115,15 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **S7 · 平稳化层与伪关系检测。**
-> 当前只修复 relation measurement 的趋势伪关系问题：新增显式 `none / diff / log_diff` transform 路径、保留 legacy level scoring 对照、输出 fixtures 与 Spain/dual-window 新旧并列报告。S8-S10 禁止提前实现，S0-S6 冻结报告不追溯修改。
+> **Website W4 · 前端绑定与端到端状态验收。**
+> W0-W3 已完成 contract/mock、同步分析、数据审计、transform 声明预览、Eurostat JSON-stat intake 与 hash-bound CSV snapshot。W4 只绑定冻结的 Report JSON v1 和 `/snapshot`、`/audit`、`/analyze`；前端不得重算 S1-S10 结论。
 
 ---
 
 ## 最近进展(倒序，最新在上)
 
+- **[2026-08-19 · Website W1-W3 验收完成]** 新增薄服务层 `src/nestor_delta_service/`，FastAPI 只包装现有 pipeline；`/analyze` 返回 versioned Report JSON，`/audit` 共享同一审计函数并在分析前拒绝冲突 transform，`/snapshot` 把 case/upload/Eurostat 输入冻结为带 SHA-256 的 CSV。Eurostat intake 读取官方 JSON-stat、要求精确连续月轴、拒绝缺月且不填补；S1-S10 算法模块未改。
+- **[2026-08-19 · Website W1-W3 独立复核]** 完整 110 tests 通过；真实 Eurostat 官方接口烟雾测试读取 2025-01..2025-03 三个月并生成 64 位哈希；临时安装 web extra 后通过真实 FastAPI TestClient 验证 `/health=200`、未知 case `404 not_found`、`/audit=200 ok_to_analyze`、`/snapshot=200 snapshot_ready`、`/analyze=200 baseline_only`。修正 canonical snapshot mock 的 hash/row_count 内部一致性，并新增测试锁定。
 - **[2026-08-18 · S7 平稳化测量路径实现]** 新增 `src/nestor_delta/stationarity.py`，提供显式 transform 声明校验、lag-1 ACF highly-persistent risk flag、`diff/log_diff` 变换和 S7 transformed relation scoring。`RelationWeight` 新增默认 `transform="none"` 字段；`relation_weights.py` 旧函数保留，新增 `legacy_level_scoring` 作为旧 level Pearson 对照入口。
 - **[2026-08-18 · S7 fixtures 与真实案例对照]** 新增 `src/nestor_delta/s7_fixtures.py` 和 `scripts/run_s7_stationarity.py`。Fixture A 独立随机游走显示 legacy median `|r|=0.410`、`P(|r|>0.06)=93.6%`，S7 diff path median `|r|=0.088`、`P(|r|>0.30)=0.0%`；Fixture B 在 200/200 seeds 恢复真实 lag=3。新增报告：`reports/s7_fixture_acceptance.csv`、`s7_eurostat_stationarity_diagnostics.csv`、`s7_spain_relation_comparison.csv`、`s7_relation_measurement_summary.md`。
 - **[2026-08-18 · S7 real-case transform 声明]** Spain retail、Spain expanded、Spain industrial production 和 dual-window adaptive cases 已写入显式 `transform_declarations`，当前均声明为 `diff`。Eurostat lag-1 ACF 输出只标记 highly-persistent risk flag，不作为正式 stationarity test；Spain/dual-window 报告新旧路径并列，不挑有利结果。
@@ -187,9 +189,9 @@
 
 ## 下一步(具体、可执行)
 
-1. 复跑 S7 一键脚本、完整 unittest、compileall、`git diff --check`，并核对 S0-S6 已跟踪旧报告 SHA-256 未变化。
-2. 作者验收 S7 时重点看 Fixture A/B、Eurostat ACF risk flag 措辞、Spain/dual-window 新旧并列表。
-3. S7 验收前不启动 S8 rolling-origin、S9 temporal stability 或 S10 evidence gate/confidence。
+1. Claude 执行 Website W4：把既有前端设计绑定到冻结的 Report JSON v1 和三个 API，不修改 Python 分析语义。
+2. W4 必须覆盖 loading、snapshot_ready、ok_to_analyze、ok、baseline_only、422 validation_error、404 not_found、500 analysis_failure 与合法 null 字段。
+3. 用 canonical mocks 做稳定视觉状态，再用本地 FastAPI 做端到端验收；Eurostat 数据集发现/搜索若无后端接口，只提供诚实的手动 dataset/filter 输入和已验证示例，不伪造 catalog。
 
 ---
 
@@ -221,7 +223,8 @@
 - **Sprint 6 / 真实数据案例 Runner：框架实现完成。** 可读取作者准备的本地 CSV + config，自动输出 ranking、预测、资源 tradeoff 和 summary；等待真实案例数据输入。
 - **S6 加法连接器 / 真实案例预算扫描：完成并验收。** S5 阈值已真正控制进入 S6 OLS 的候选集合；作者已用独立对抗输入确认开闭原则、防泄漏、列序无关、零信号和先冻结后评估。
 - **首个真实案例 / Eurostat 西班牙零售：实现及工程验收完成。** 外部 Case Builder 生成 216 行无缺失月度 CSV，五档报告已字节复现；等待作者独立验收。
-- **S7 / 平稳化层与伪关系检测：实现中。** S7 transformed relation scoring、fixtures、diagnostics 和 Spain/dual-window 并列报告已实现；待完整回归验证和作者验收。
+- **S7-S10 / 关系可信度 pipeline：完成并验收。** transformed scoring、rolling evaluation、stability/lifecycle 与 Evidence Gate/Prediction Confidence 均已实现并通过独立复核。
+- **Website W1-W3 / 后端与 Eurostat intake：完成并验收。** Report JSON v1、结构化错误、同步 `/analyze`、dry-run `/audit`、hash-bound `/snapshot` 和 Eurostat JSON-stat intake 已通过 110 tests、真实 HTTP 路由及官方 Eurostat 烟雾测试。
 
 ---
 
@@ -255,4 +258,4 @@
 
 ## 给下一棒的话
 
-> 当前推进 S7。不要把 S8 rolling-origin、S9 stability/lifecycle、S10 evidence gate/confidence 带进来；S7 的验收看 fixtures 是否杀掉 trend-induced fake relations 并保留 short-run lagged dynamic relation，不看真实数据预测精度是否提高。
+> 当前推进 Website W4。以 `docs/WEBSITE_BACKEND_CONTRACT.md` 和 `docs/mock_reports_v1.json` 为唯一前端数据契约；前端只展示，不重算 relation、lag、stability、uncertainty、lifecycle、selection 或 confidence。合法的 `baseline_only` 和 null 都是产品结论，不得显示成空数据或错误。

@@ -1,0 +1,401 @@
+{
+  "_note": "Canonical Report JSON v1 states for W4 frontend binding and backend contract tests. Mock values are illustrative unless they match the bundled Spain audit case.",
+  "snapshot_ready__eurostat": {
+    "schema_version": "delta.report.v1",
+    "outcome": "snapshot_ready",
+    "snapshot": {
+      "hash": "b30a368c1f0209caeb28c7c62090913d87e330557d1c30dc5f4b7e6aef2fd861",
+      "source": "eurostat",
+      "provenance": {
+        "source": "eurostat",
+        "coverage": { "start": "2008-01", "end": "2008-01", "months": 1 },
+        "series": [
+          {
+            "name": "retail_volume",
+            "dataset": "sts_trtu_m",
+            "filters": { "freq": "M", "geo": "ES", "s_adj": "SCA", "unit": "I21" },
+            "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/sts_trtu_m",
+            "updated": "2026-08-19T00:00:00+0000"
+          }
+        ],
+        "missing_value_policy": "Reject any missing month; no filling or interpolation."
+      }
+    },
+    "csv_base64": "ZGF0ZSxyZXRhaWxfdm9sdW1lCjIwMDgtMDEsMTAwLjAwMDAwMDAwMDAK",
+    "columns": ["date", "retail_volume"],
+    "row_count": 1
+  },
+  "audit_ok__spain_retail": {
+    "schema_version": "delta.report.v1",
+    "outcome": "ok_to_analyze",
+    "snapshot": {
+      "hash": "a8c01df041db4d835baf83a459ae65194a4d5c9bca157753d56cd6259d106445",
+      "source": "case",
+      "provenance": null
+    },
+    "data_audit": {
+      "date_axis": {
+        "continuous": true,
+        "expected_months": 216,
+        "present": 216,
+        "missing_months": [],
+        "duplicate_months": []
+      },
+      "signals": [
+        {
+          "signal": "retail_volume",
+          "sample_count": 216,
+          "unit": "unknown",
+          "seasonal_adjustment": "unknown",
+          "coverage": { "start": "2008-01", "end": "2025-12", "months": 216 },
+          "lag1_acf": 0.947729,
+          "highly_persistent_risk": false
+        },
+        {
+          "signal": "unemployment_rate",
+          "sample_count": 216,
+          "unit": "unknown",
+          "seasonal_adjustment": "unknown",
+          "coverage": { "start": "2008-01", "end": "2025-12", "months": 216 },
+          "lag1_acf": 0.998098,
+          "highly_persistent_risk": true
+        },
+        {
+          "signal": "hicp",
+          "sample_count": 216,
+          "unit": "unknown",
+          "seasonal_adjustment": "unknown",
+          "coverage": { "start": "2008-01", "end": "2025-12", "months": 216 },
+          "lag1_acf": 0.99247,
+          "highly_persistent_risk": true
+        }
+      ],
+      "candidate_pool_available": true
+    },
+    "transform_diagnostics": [
+      {
+        "signal": "retail_volume",
+        "declared": "diff",
+        "lag1_acf": 0.947729,
+        "highly_persistent_risk": false,
+        "verdict": "accepted"
+      },
+      {
+        "signal": "unemployment_rate",
+        "declared": "diff",
+        "lag1_acf": 0.998098,
+        "highly_persistent_risk": true,
+        "verdict": "accepted"
+      },
+      {
+        "signal": "hicp",
+        "declared": "diff",
+        "lag1_acf": 0.99247,
+        "highly_persistent_risk": true,
+        "verdict": "accepted"
+      }
+    ]
+  },
+  "baseline_only__spain_retail": {
+    "schema_version": "delta.report.v1",
+    "outcome": "baseline_only",
+    "generated_as_of": "2023-12",
+    "case": {
+      "name": "spain_retail_eurostat_2008_2025",
+      "target": "retail_volume",
+      "candidate_signals": [
+        "unemployment_rate",
+        "consumer_confidence",
+        "industrial_production",
+        "hicp"
+      ],
+      "frequency": "monthly",
+      "n_observations": 216,
+      "train_end": "2023-12",
+      "lag_window": 2
+    },
+    "snapshot": {
+      "hash": "a8c01df041db4d835baf83a459ae65194a4d5c9bca157753d56cd6259d106445",
+      "source": "case",
+      "provenance": null
+    },
+    "transform_declarations": {
+      "retail_volume": "diff",
+      "unemployment_rate": "diff",
+      "consumer_confidence": "diff",
+      "industrial_production": "diff",
+      "hicp": "diff"
+    },
+    "transform_diagnostics": [
+      {
+        "signal": "hicp",
+        "declared": "diff",
+        "lag1_acf": 0.99247,
+        "highly_persistent_risk": true,
+        "verdict": "accepted"
+      }
+    ],
+    "data_audit": {
+      "date_axis": {
+        "continuous": true,
+        "expected_months": 216,
+        "present": 216,
+        "missing_months": [],
+        "duplicate_months": []
+      },
+      "signals": [],
+      "candidate_pool_available": true
+    },
+    "baseline": { "name": "persistence", "mae": 0.8042 },
+    "evaluation": null,
+    "noise_floor": {
+      "sample_count": 191,
+      "comparisons": 8,
+      "alpha": 0.05,
+      "threshold": 0.1896
+    },
+    "relations": [
+      {
+        "source": "industrial_production",
+        "target": "retail_volume",
+        "lag": 2,
+        "transform": "diff",
+        "effect": {
+          "score": 0.355,
+          "weight": -0.355,
+          "sign": -1,
+          "noise_floor": 0.1896,
+          "effect_size_vs_noise_floor": 1.87
+        },
+        "significance": {
+          "p_value": 0.0009,
+          "fdr_threshold": 0.0007,
+          "clears": false
+        },
+        "stability": 0.35,
+        "uncertainty": 0.07,
+        "sample_support": 1.0,
+        "lifecycle": { "state": "birth", "points": null },
+        "selected": false,
+        "reason_code": "below_fdr_corrected_effect",
+        "reason_text": "Does not survive the FDR-corrected effect threshold.",
+        "trajectory": null
+      }
+    ],
+    "selection": {
+      "fit_status": "baseline_only_no_evidence",
+      "final_mode": "not_evaluated",
+      "selected_count": 0,
+      "selected_sources": []
+    },
+    "prediction_confidence": {
+      "confidence": null,
+      "components": {
+        "relation_stability": null,
+        "parameter_uncertainty": null,
+        "input_support": null,
+        "residual_uncertainty": null
+      },
+      "capped_by": null
+    },
+    "narrative": {
+      "headline": "No reliable relation selected - baseline active.",
+      "lines": [
+        "0 of 4 candidates cleared the evidence gate.",
+        "Delta defers to persistence rather than fit a model it cannot defend."
+      ]
+    },
+    "warnings": []
+  },
+  "ok__with_selection": {
+    "schema_version": "delta.report.v1",
+    "outcome": "ok",
+    "generated_as_of": "2019-12",
+    "case": {
+      "name": "synthetic_strong_demo",
+      "target": "y",
+      "candidate_signals": ["x_true", "x_noise_1", "x_dead"],
+      "frequency": "monthly",
+      "n_observations": 180,
+      "train_end": "2019-12",
+      "lag_window": 3
+    },
+    "snapshot": {
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source": "case",
+      "provenance": null
+    },
+    "transform_declarations": {
+      "y": "diff",
+      "x_true": "diff",
+      "x_noise_1": "diff",
+      "x_dead": "diff"
+    },
+    "transform_diagnostics": [
+      {
+        "signal": "x_true",
+        "declared": "diff",
+        "lag1_acf": 0.62,
+        "highly_persistent_risk": false,
+        "verdict": "accepted"
+      }
+    ],
+    "data_audit": {
+      "date_axis": {
+        "continuous": true,
+        "expected_months": 180,
+        "present": 180,
+        "missing_months": [],
+        "duplicate_months": []
+      },
+      "signals": [],
+      "candidate_pool_available": true
+    },
+    "baseline": { "name": "persistence", "mae": 0.451 },
+    "evaluation": {
+      "rolling_origin": {
+        "folds": 54,
+        "median": 0.14,
+        "low": 0.06,
+        "high": 0.23,
+        "resolves": true
+      },
+      "mase": 0.79,
+      "directional_accuracy": 0.66,
+      "worst_decile_error": 1.02
+    },
+    "noise_floor": {
+      "sample_count": 140,
+      "comparisons": 9,
+      "alpha": 0.05,
+      "threshold": 0.207
+    },
+    "relations": [
+      {
+        "source": "x_true",
+        "target": "y",
+        "lag": 3,
+        "transform": "diff",
+        "effect": {
+          "score": 0.58,
+          "weight": 0.58,
+          "sign": 1,
+          "noise_floor": 0.207,
+          "effect_size_vs_noise_floor": 2.8
+        },
+        "significance": {
+          "p_value": 0.00001,
+          "fdr_threshold": 0.017,
+          "clears": true
+        },
+        "stability": 0.61,
+        "uncertainty": 0.09,
+        "sample_support": 1.0,
+        "lifecycle": { "state": "stable", "points": 40 },
+        "selected": true,
+        "reason_code": "selected",
+        "reason_text": "Clears effect, stability, support, uncertainty, and FDR.",
+        "trajectory": [
+          { "step": 150, "date": "2018-01", "score": 0.55, "sign": 1, "lag": 3 },
+          { "step": 168, "date": "2019-07", "score": 0.6, "sign": 1, "lag": 3 }
+        ]
+      }
+    ],
+    "selection": {
+      "fit_status": "fit",
+      "final_mode": "delta",
+      "selected_count": 1,
+      "selected_sources": ["x_true"]
+    },
+    "prediction_confidence": {
+      "confidence": 0.68,
+      "components": {
+        "relation_stability": 0.61,
+        "parameter_uncertainty": 0.12,
+        "input_support": 1.0,
+        "residual_uncertainty": 0.34
+      },
+      "capped_by": null
+    },
+    "narrative": {
+      "headline": "1 reliable relation selected.",
+      "lines": [
+        "x_true shows a stable transformed lag-3 relation to y that clears every gate.",
+        "Confidence is moderate: inputs are in-support, but residual uncertainty is non-trivial."
+      ]
+    },
+    "warnings": []
+  },
+  "validation_error__missing_month": {
+    "schema_version": "delta.report.v1",
+    "outcome": "validation_error",
+    "error": {
+      "code": "non_contiguous_dates",
+      "message": "Month 2019-07 is missing; the runner does not interpolate.",
+      "field": "csv_base64",
+      "detail": { "missing_months": ["2019-07"] }
+    },
+    "data_audit": {
+      "date_axis": {
+        "continuous": false,
+        "expected_months": 12,
+        "present": 11,
+        "missing_months": ["2019-07"],
+        "duplicate_months": []
+      },
+      "signals": [],
+      "candidate_pool_available": true
+    },
+    "transform_diagnostics": []
+  },
+  "validation_error__rejected_transform": {
+    "schema_version": "delta.report.v1",
+    "outcome": "validation_error",
+    "error": {
+      "code": "high_persistence_requires_transform",
+      "message": "Signal 'hicp' has lag-1 ACF 0.992 but was declared 'none'.",
+      "field": "transform_declarations",
+      "detail": { "signals": ["hicp"], "threshold": 0.95 }
+    },
+    "data_audit": {
+      "date_axis": {
+        "continuous": true,
+        "expected_months": 216,
+        "present": 216,
+        "missing_months": [],
+        "duplicate_months": []
+      },
+      "signals": [],
+      "candidate_pool_available": true
+    },
+    "transform_diagnostics": [
+      {
+        "signal": "hicp",
+        "declared": "none",
+        "lag1_acf": 0.99247,
+        "highly_persistent_risk": true,
+        "verdict": "rejected"
+      }
+    ]
+  },
+  "analysis_failure__singular": {
+    "schema_version": "delta.report.v1",
+    "outcome": "analysis_failure",
+    "error": {
+      "code": "singular_fit",
+      "message": "The design matrix is singular after collinearity backoff; no model could be fit.",
+      "field": null,
+      "detail": null
+    }
+  },
+  "not_found__unknown_case": {
+    "schema_version": "delta.report.v1",
+    "outcome": "not_found",
+    "error": {
+      "code": "case_not_found",
+      "message": "Case 'unknown_case' was not found.",
+      "field": "case_name",
+      "detail": { "case_name": "unknown_case" }
+    }
+  }
+}
