@@ -1,0 +1,332 @@
+"""Pure, Streamlit-free rendering decisions for the Delta website.
+
+Every function here takes plain dicts (an API response, or a piece of one) and
+returns display decisions. No Streamlit, no `nestor_delta` import, no analytic
+recomputation. This is the layer the contract/state tests exercise against
+`docs/mock_reports_v1.json` without a live backend.
+
+Two rules are encoded structurally, because they are the product:
+  1. A null value is shown as "insufficient / not evaluated", never as 0.
+  2. baseline_only, and every error class, are distinct states — never "No data".
+"""
+
+from __future__ import annotations
+
+from typing import Any, Mapping, Optional
+
+SCHEMA_VERSION = "delta.report.v1"
+
+# transport-level pseudo states produced by the api client (no HTTP body)
+TRANSPORT_STATES = {"unreachable", "timeout"}
+
+# outcome -> internal view id
+_OUTCOME_VIEW = {
+    "ok": "report_ok",
+    "baseline_only": "report_baseline",
+    "ok_to_analyze": "audit_ok",
+    "snapshot_ready": "snapshot_ready",
+    "validation_error": "validation_error",
+    "not_found": "not_found",
+    "analysis_failure": "analysis_failure",
+}
+
+# distinct, human states — the UI must render each differently.
+ERROR_VIEWS = {"validation_error", "not_found", "analysis_failure",
+               "unreachable", "timeout", "malformed"}
+
+
+def classify_response(
+    status: Optional[int],
+    body: Optional[Mapping[str, Any]],
+    transport: Optional[str] = None,
+) -> str:
+    """Map an API result to exactly one view id.
+
+    `transport` is set by the client when there is no valid HTTP body at all
+    (connection refused, timeout, non-JSON). It wins over everything.
+    """
+    if transport in TRANSPORT_STATES:
+        return transport
+    if not isinstance(body, Mapping):
+        return "malformed"
+    if body.get("schema_version") != SCHEMA_VERSION:
+        return "malformed"
+    outcome = body.get("outcome")
+    if outcome not in _OUTCOME_VIEW:
+        return "malformed"
+    return _OUTCOME_VIEW[outcome]
+
+
+def is_error_view(view: str) -> bool:
+    return view in ERROR_VIEWS
+
+
+# ---------------------------------------------------------------- values
+
+_NULL_TEXT = "insufficient / not evaluated"
+
+
+def is_null(value: Any) -> bool:
+    return value is None
+
+
+def fmt_number(value: Any, digits: int = 3) -> str:
+    """A number, or an em dash for null. Never coerces null to 0."""
+    if value is None:
+        return "—"
+    return f"{float(value):.{digits}f}"
+
+
+def fmt_percent(value: Any, digits: int = 1) -> str:
+    if value is None:
+        return "—"
+    return f"{float(value) * 100:+.{digits}f}%"
+
+
+def fmt_signed(value: Any, digits: int = 3) -> str:
+    if value is None:
+        return "—"
+    return f"{float(value):+.{digits}f}"
+
+
+def confidence_display(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Prediction confidence for display. Null stays null, never 0."""
+    pc = report.get("prediction_confidence")
+    if not isinstance(pc, Mapping) or pc.get("confidence") is None:
+        return {"is_null": True, "text": _NULL_TEXT, "value": None,
+                "capped_by": (pc or {}).get("capped_by")}
+    return {"is_null": False, "text": f"{float(pc['confidence']) * 100:.0f}%",
+            "value": float(pc["confidence"]), "capped_by": pc.get("capped_by")}
+
+
+def report_decision(report: Mapping[str, Any]) -> dict[str, Any]:
+    """User-facing decision header derived only from report outcome and narrative."""
+    outcome = report.get("outcome")
+    narrative = report.get("narrative") or {}
+    selection = report.get("selection") or {}
+    confidence = confidence_display(report)
+    if outcome == "baseline_only":
+        default_headline = "No relationship cleared the evidence gate"
+        default_summary = (
+            "Delta completed the analysis and kept the persistence baseline. "
+            "This is a valid result, not missing data."
+        )
+        tone = "baseline"
+    else:
+        default_headline = "Reliable relationships selected"
+        default_summary = (
+            "Delta completed the analysis and selected the relations shown below."
+        )
+        tone = "selected"
+    lines = narrative.get("lines") if isinstance(narrative, Mapping) else []
+    return {
+        "tone": tone,
+        "headline": narrative.get("headline") or default_headline,
+        "summary": lines[0] if isinstance(lines, list) and lines else default_summary,
+        "lines": lines if isinstance(lines, list) else [],
+        "selected_count": selection.get("selected_count"),
+        "fit_status": selection.get("fit_status"),
+        "final_mode": selection.get("final_mode"),
+        "confidence": confidence,
+    }
+
+
+def report_context(report: Mapping[str, Any]) -> dict[str, Any]:
+    case = report.get("case") or {}
+    snapshot = report.get("snapshot") or {}
+    return {
+        "case_name": case.get("name"),
+        "target": case.get("target"),
+        "frequency": case.get("frequency"),
+        "observations": case.get("n_observations"),
+        "train_end": case.get("train_end"),
+        "lag_window": case.get("lag_window"),
+        "generated_as_of": report.get("generated_as_of"),
+        "snapshot_hash": snapshot.get("hash"),
+        "snapshot_source": snapshot.get("source"),
+    }
+
+
+def report_filename(report: Mapping[str, Any]) -> str:
+    context = report_context(report)
+    raw = str(context.get("case_name") or context.get("target") or "analysis")
+    safe = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in raw)
+    safe = safe.strip("-") or "analysis"
+    return f"nestor-delta-{safe}.json"
+
+
+# ---------------------------------------------------------------- charts / guards
+
+def should_show_evaluation(report: Mapping[str, Any]) -> bool:
+    """True only when a real rolling-origin interval exists. No fake intervals."""
+    ev = report.get("evaluation")
+    if not isinstance(ev, Mapping):
+        return False
+    ro = ev.get("rolling_origin")
+    return isinstance(ro, Mapping) and ro.get("median") is not None
+
+
+def evaluation_interval(report: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    if not should_show_evaluation(report):
+        return None
+    ro = report["evaluation"]["rolling_origin"]
+    return {"median": ro.get("median"), "low": ro.get("low"), "high": ro.get("high"),
+            "folds": ro.get("folds"), "resolves": bool(ro.get("resolves"))}
+
+
+def should_show_trajectory(relation: Mapping[str, Any]) -> bool:
+    """True only when trajectory is a non-empty list. null or [] -> no timeline."""
+    traj = relation.get("trajectory")
+    return isinstance(traj, list) and len(traj) > 0
+
+
+# ---------------------------------------------------------------- lifecycle
+
+_LIFECYCLE = {
+    "birth": ("Birth", "neutral"),
+    "strengthening": ("Strengthening", "good"),
+    "stable": ("Stable", "good"),
+    "decaying": ("Decaying", "warn"),   # a detected fact, not an alarm
+    "dead": ("Dead", "muted"),
+}
+
+
+def lifecycle_badge(state: Any) -> dict[str, str]:
+    """Raw lifecycle state -> label + tone. Never invents a state."""
+    label, tone = _LIFECYCLE.get(state, (str(state), "neutral"))
+    return {"state": str(state), "label": label, "tone": tone}
+
+
+def lifecycle_steps(state: Any) -> list[dict[str, Any]]:
+    """Return the canonical lifecycle order with the reported state highlighted."""
+    return [
+        {"state": key, "label": label, "active": key == state}
+        for key, (label, _tone) in _LIFECYCLE.items()
+    ]
+
+
+# ---------------------------------------------------------------- relations
+
+_REASON_TEXT = {
+    "selected": "Cleared effect, stability, support, and FDR.",
+    "below_fdr_corrected_effect": "Effect does not survive multiple-comparison (FDR) correction.",
+    "insufficient_stability": "Real, but not stable enough across rolling windows.",
+    "excess_relationship_uncertainty": "Estimate too uncertain to trust.",
+    "insufficient_sample_support": "Too little sample support.",
+    "not_selected": "Not selected.",
+}
+
+
+def reason_text(code: Any) -> str:
+    return _REASON_TEXT.get(code, str(code))
+
+
+def relation_view(relation: Mapping[str, Any]) -> dict[str, Any]:
+    """Flatten one RelationView into display fields. No recomputation."""
+    effect = relation.get("effect") or {}
+    sig = relation.get("significance") or {}
+    return {
+        "source": relation.get("source"),
+        "target": relation.get("target"),
+        "lag": relation.get("lag"),
+        "transform": relation.get("transform"),
+        "score": effect.get("score"),
+        "weight": effect.get("weight"),
+        "sign": effect.get("sign"),
+        "noise_floor": effect.get("noise_floor"),
+        "effect_size": effect.get("effect_size_vs_noise_floor"),
+        "p_value": sig.get("p_value"),
+        "fdr_threshold": sig.get("fdr_threshold"),
+        "clears_fdr": sig.get("clears"),
+        "stability": relation.get("stability"),
+        "uncertainty": relation.get("uncertainty"),
+        "sample_support": relation.get("sample_support"),
+        "lifecycle": lifecycle_badge((relation.get("lifecycle") or {}).get("state")),
+        "selected": relation.get("selected"),
+        "reason_code": relation.get("reason_code"),
+        "reason_text": relation.get("reason_text") or reason_text(relation.get("reason_code")),
+        "has_trajectory": should_show_trajectory(relation),
+    }
+
+
+def relation_views(report: Mapping[str, Any]) -> list[dict[str, Any]]:
+    return [relation_view(r) for r in report.get("relations", [])]
+
+
+# ---------------------------------------------------------------- audit + transforms
+
+def transform_conflicts(diagnostics: Any) -> list[str]:
+    """Signals that block analysis: rejected verdict (persistent + declared none)."""
+    if not isinstance(diagnostics, list):
+        return []
+    return [d.get("signal") for d in diagnostics if d.get("verdict") == "rejected"]
+
+
+def analyze_allowed(diagnostics: Any) -> bool:
+    """Analyze is allowed only when no declaration is rejected."""
+    return len(transform_conflicts(diagnostics)) == 0
+
+
+def audit_signal_rows(data_audit: Mapping[str, Any]) -> list[dict[str, Any]]:
+    rows = []
+    for s in (data_audit or {}).get("signals", []):
+        cov = s.get("coverage") or {}
+        rows.append({
+            "signal": s.get("signal"),
+            "sample_count": s.get("sample_count"),
+            "unit": s.get("unit"),
+            "seasonal_adjustment": s.get("seasonal_adjustment"),
+            "coverage": f"{cov.get('start')}…{cov.get('end')}" if cov else "—",
+            "lag1_acf": s.get("lag1_acf"),
+            "persistent": bool(s.get("highly_persistent_risk")),
+        })
+    return rows
+
+
+def date_axis_summary(data_audit: Mapping[str, Any]) -> dict[str, Any]:
+    da = (data_audit or {}).get("date_axis", {}) or {}
+    return {
+        "continuous": bool(da.get("continuous")),
+        "expected": da.get("expected_months"),
+        "present": da.get("present"),
+        "missing": da.get("missing_months", []) or [],
+        "duplicates": da.get("duplicate_months", []) or [],
+    }
+
+
+# ---------------------------------------------------------------- errors + snapshot
+
+def error_display(body: Mapping[str, Any]) -> dict[str, Any]:
+    err = (body or {}).get("error") or {}
+    return {"code": err.get("code"), "message": err.get("message"),
+            "field": err.get("field"), "detail": err.get("detail")}
+
+
+def snapshot_summary(body: Mapping[str, Any]) -> dict[str, Any]:
+    snap = (body or {}).get("snapshot") or {}
+    return {"hash": snap.get("hash"), "source": snap.get("source"),
+            "provenance": snap.get("provenance"),
+            "row_count": body.get("row_count"), "columns": body.get("columns"),
+            "has_csv": bool(body.get("csv_base64"))}
+
+
+def frozen_snapshot_payload(
+    snapshot_body: Mapping[str, Any],
+    source_payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Turn a snapshot response into the immutable upload payload used downstream."""
+    csv_base64 = snapshot_body.get("csv_base64")
+    columns = snapshot_body.get("columns") or []
+    if not csv_base64 or not columns:
+        raise ValueError("snapshot response must include csv_base64 and columns")
+    return {
+        "csv_base64": csv_base64,
+        "date_column": columns[0],
+        "target": source_payload.get("target"),
+        "candidate_signals": list(source_payload.get("candidate_signals") or []),
+        "transform_declarations": dict(
+            source_payload.get("transform_declarations") or {}
+        ),
+        "train_end": source_payload.get("train_end"),
+        "lag_window": source_payload.get("lag_window"),
+    }

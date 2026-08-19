@@ -115,12 +115,17 @@
 
 ## 当前焦点(同一时间只允许一个)
 
-> **Website W4 · 前端绑定与端到端状态验收。**
-> W0-W3 已完成 contract/mock、同步分析、数据审计、transform 声明预览、Eurostat JSON-stat intake 与 hash-bound CSV snapshot。W4 只绑定冻结的 Report JSON v1 和 `/snapshot`、`/audit`、`/analyze`；前端不得重算 S1-S10 结论。
+> **Website W5 已完成，等待作者确定下一 Sprint。**
+> W0-W5 已完成 contract、同步分析、数据审计、Eurostat hash-bound snapshot、前端状态绑定与用户展示层整合。下一 Sprint 不得默认扩展为 Eurostat 搜索、历史报告或数据库；需先单独定边界。
 
 ---
 
-## 最近进展(倒序，最新在上)
+## 最近进展
+
+- **[2026-08-19 · Website W5 用户展示层完成]** 将 W4 工程控件整合为“选择数据 → 审计与声明 → 阅读报告”三步用户旅程，并把 Claude 审计稿的视觉语言落到真实 Streamlit。报告改为结论优先，默认折叠未选关系，逐条展示 lag/transform/weight、noise floor、FDR、stability、uncertainty、sample support 与生命周期轨迹；支持 snapshot CSV 和 Report JSON 下载。未改 API contract 或 S1-S10。独立复核修正 metric 说明被 Streamlit 画成方向箭头的误导。前端 22 tests、全量 132 tests、compileall 与 diff check 通过；bundled Spain 与 228 月 Eurostat preset 活体链路通过，transform 变化会隐藏旧报告，桌面/窄屏无横向溢出。范围和证据见 `docs/W5_SCOPE.md`、`docs/W5_ACCEPTANCE.md`。
+
+- **[2026-08-19 · Website W4 验收完成]** 新增 `src/nestor_delta_web/`(Streamlit + 纯函数 `render_logic` + HTTP `api_client`),消费 `/snapshot`/`/audit`/`/analyze`,不 import `nestor_delta`、不重算任何结论。三数据源(bundled/upload/Eurostat)+ 完整 snapshot→audit→transform 声明→analyze 流覆盖 ok/baseline_only/422/404/500/loading/timeout/unreachable/malformed。独立复核修正了无效 bundled presets、Eurostat 重取活数据、transform 变化后残留旧报告及 nullable selected 被显示为 false 四个问题。前端契约测试 18、全量 128 通过；活体 FastAPI + Streamlit 已跑通 bundled Spain 与 Eurostat `ei_bssi_m_r2`，后者冻结 2005-01..2023-12 共 228 行并完成 audit/analyze。桌面与窄宽度无横向溢出。详见 `docs/W4_ACCEPTANCE.md` 与 `docs/WEBSITE_FRONTEND_RUN.md`。
+(倒序，最新在上)
 
 - **[2026-08-19 · Website W1-W3 验收完成]** 新增薄服务层 `src/nestor_delta_service/`，FastAPI 只包装现有 pipeline；`/analyze` 返回 versioned Report JSON，`/audit` 共享同一审计函数并在分析前拒绝冲突 transform，`/snapshot` 把 case/upload/Eurostat 输入冻结为带 SHA-256 的 CSV。Eurostat intake 读取官方 JSON-stat、要求精确连续月轴、拒绝缺月且不填补；S1-S10 算法模块未改。
 - **[2026-08-19 · Website W1-W3 独立复核]** 完整 110 tests 通过；真实 Eurostat 官方接口烟雾测试读取 2025-01..2025-03 三个月并生成 64 位哈希；临时安装 web extra 后通过真实 FastAPI TestClient 验证 `/health=200`、未知 case `404 not_found`、`/audit=200 ok_to_analyze`、`/snapshot=200 snapshot_ready`、`/analyze=200 baseline_only`。修正 canonical snapshot mock 的 hash/row_count 内部一致性，并新增测试锁定。
@@ -189,9 +194,9 @@
 
 ## 下一步(具体、可执行)
 
-1. Claude 执行 Website W4：把既有前端设计绑定到冻结的 Report JSON v1 和三个 API，不修改 Python 分析语义。
-2. W4 必须覆盖 loading、snapshot_ready、ok_to_analyze、ok、baseline_only、422 validation_error、404 not_found、500 analysis_failure 与合法 null 字段。
-3. 用 canonical mocks 做稳定视觉状态，再用本地 FastAPI 做端到端验收；Eurostat 数据集发现/搜索若无后端接口，只提供诚实的手动 dataset/filter 输入和已验证示例，不伪造 catalog。
+1. 作者在 W6 前选择主目标：先部署现有作品集，或先新增 Eurostat catalog/discovery；两者不要混成一个 Sprint。
+2. 若先部署，只做 Railway FastAPI + Streamlit Cloud 配置、环境变量、健康检查和线上 smoke，不引入数据库。
+3. 若先做 Eurostat discovery，先定义 dataset/filter catalog API、缓存和错误契约；当前 verified preset/manual JSON 保持不变，不伪造搜索结果。
 
 ---
 
@@ -225,6 +230,8 @@
 - **首个真实案例 / Eurostat 西班牙零售：实现及工程验收完成。** 外部 Case Builder 生成 216 行无缺失月度 CSV，五档报告已字节复现；等待作者独立验收。
 - **S7-S10 / 关系可信度 pipeline：完成并验收。** transformed scoring、rolling evaluation、stability/lifecycle 与 Evidence Gate/Prediction Confidence 均已实现并通过独立复核。
 - **Website W1-W3 / 后端与 Eurostat intake：完成并验收。** Report JSON v1、结构化错误、同步 `/analyze`、dry-run `/audit`、hash-bound `/snapshot` 和 Eurostat JSON-stat intake 已通过 110 tests、真实 HTTP 路由及官方 Eurostat 烟雾测试。
+- **Website W4 / 前端绑定与端到端状态：完成并验收。** 18 项前端契约测试、128 项全量测试通过；bundled Spain 与真实 Eurostat preset 已在活体 FastAPI + Streamlit 跑通，null、baseline_only、错误分型、transform 阻断和冻结快照边界均由测试守护。
+- **Website W5 / 用户展示层整合：完成并验收。** 三步用户旅程、结论优先报告、关系生命周期展开和 Report JSON 下载已落地；前端 22 tests、全量 132 tests 通过，bundled/Eurostat 活体链路和 transform 失效旧报告守卫均通过。
 
 ---
 
@@ -258,4 +265,4 @@
 
 ## 给下一棒的话
 
-> 当前推进 Website W4。以 `docs/WEBSITE_BACKEND_CONTRACT.md` 和 `docs/mock_reports_v1.json` 为唯一前端数据契约；前端只展示，不重算 relation、lag、stability、uncertainty、lifecycle、selection 或 confidence。合法的 `baseline_only` 和 null 都是产品结论，不得显示成空数据或错误。
+> Website W1-W5 已完成。下一步必须在“部署现有作品集”和“新增 Eurostat discovery”之间先选一个 Sprint；历史报告/分享仍未批准。继续以 `docs/WEBSITE_BACKEND_CONTRACT.md` 和 `docs/mock_reports_v1.json` 为契约，前端只展示，不重算任何算法结论。
