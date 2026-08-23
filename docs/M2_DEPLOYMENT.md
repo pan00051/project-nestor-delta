@@ -88,9 +88,10 @@ Four deployment unknowns:
    2.378 seconds TTFB and 2.379 seconds total. The Web service does not sleep in
    demo configuration. A controlled restart showed Uvicorn ready at
    `16:48:37.484Z` and Streamlit ready at `16:48:37.889Z` (0.404 seconds inside
-   the process); `Starting Container` to manually interactive browser time still
-   requires one human stopwatch pass. The discarded 69.902-second browser-tool
-   result is not a cold-start measurement and must not be used.
+   the process). A human stopwatch pass in an unauthenticated browser measured
+   `Starting Container` to interactive first screen at under 2 seconds. The
+   discarded 69.902-second browser-tool result is not a cold-start measurement
+   and must not be used.
 4. Topology: two services on separate Railway origins. Streamlit calls FastAPI
    from the Streamlit server through `requests`, so CORS has no real consumer in
    M2. Production OPTIONS and Origin-bearing GET probes returned 200 with
@@ -108,9 +109,9 @@ Online validation:
   tests/ground_truth -v` passed all 21 tests in 73.59 seconds.
 - The online positive control returned effect score `0.5844220533473201`; the
   negative control returned HTTP 200 with outcome `baseline_only`.
-- A public browser completed audit and analysis for bundled case
-  `spain_retail_eurostat_2008_2025`, producing the baseline report above without
-  any Nestor account or application login.
+- An unauthenticated browser completed audit and analysis for bundled case
+  `spain_retail_eurostat_2008_2025`, producing `Baseline retained` without any
+  Nestor account or application login.
 
 ## Known test-tool issue
 
