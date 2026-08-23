@@ -43,7 +43,9 @@ Nestor Delta 是 Nestor 系列中的**数据层模块**，用于分析多变量�
 | **M0** | 地基 | 评测协议 + 数据 + baseline，让一切可测、可复现 | 内部里程碑 |
 | **M1** | MVP 核心 | 通用权重机制 + 三变量预测(Stage 1) + 静态信任度门控(S3.1) | ✅ 第一个可写进简历的完整作品 |
 | **M2** | 深度/差异化 | 动态权重漂移(S4) + 忽略值/资源自适应(S5) | ✅ 增强版作品 |
-| — | 星辰大海 | 大规模导入、视角切换、动态二级分组(Stage 4) | ❌ 一年内不碰 |
+| **M3** | 关系可信度 | S7 transformed scoring + S8 evaluation power + S9 lifecycle + S10 evidence/confidence | ✅ 已完成 |
+| **W0-W5** | 展示与摄入 | report contract + FastAPI adapter + Eurostat snapshot + Streamlit UI | ✅ 本地完成 |
+| — | 星辰大海 | 无边界的大规模导入、动态二级分组与跨层推理 | ❌ 不在当前范围 |
 
 **关键规则：做完 M1 就可以停下来交付。M2 是加分项，不是义务。**
 
@@ -76,9 +78,9 @@ Nestor Delta 是 Nestor 系列中的**数据层模块**，用于分析多变量�
 
 ## 6. 星辰大海(明确划出边界并合上)
 
-以下属于远期可能，**现阶段乃至一年内不予考虑，不投入精力**：
+以下属于远期可能，**没有独立 Sprint 边界前不投入实现**：
 
-- 大规模导入。
+- 无边界的大规模导入；当前仅支持受约束的 Eurostat exact-definition intake。
 - 用户切换观测视角。
 - 动态二级关系分组。
 - 提纯核心算法逻辑并扩展到更多领域 / 场景。
@@ -109,7 +111,7 @@ Nestor Delta 是 Nestor 系列中的**数据层模块**，用于分析多变量�
 
 ## 9. 当前状态与下一步
 
-- **已明确：** 本 repo 只做 Nestor Delta；M0/M1 已完成；M1 是第一个可交付停止点；M2 是加分项。
+- **已明确：** 本 repo 只做 Nestor Delta；S1-S10 与 Website W0-W5 已完成，当前是可本地运行的作品集。
 - **S3.1 路线细化：** 静态、OLS 前的信任度门控用于验证关系权重数值会实际改变预测；门控后的源先合成为共享关系信号，避免无约束 OLS 抵消独立特征缩放。S3.1 不回改 Sprint 3，也不包含动态权重。
-- **Sprint 序列：** S3(选择) → S3.1(静态信任度门控，权重数值生效) → S4(动态权重漂移) → S5(忽略值/资源自适应) → S6(真实数据案例 runner)。S3.1 与 S4 均已完成并验收；S5 已实现并通过工程验收；S6 仅做作者准备 CSV 的离线分析框架。
-- **当前焦点与下一步：** 以 `HANDOFF.md` 和 `S7-S10的规则.md` 为准。当前只做 S7 平稳化层与伪关系检测；S8-S10 不提前实现，S0-S6 冻结报告不追溯修改。
+- **已完成序列：** S1-S6 建立预测、门控、漂移与真实案例；S7-S10 建立 transformed scoring、evaluation power、lifecycle 与 Evidence Gate/Prediction Confidence；W0-W5 增加薄 API、Eurostat snapshot 和展示层。
+- **当前焦点与下一步：** 以 `HANDOFF.md` 为准。部署和 Eurostat discovery 必须拆成两个 Sprint，先选一个；不得默认引入数据库、任务队列、账户或跨层 Insight 业务。

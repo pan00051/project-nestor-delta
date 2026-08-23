@@ -1,6 +1,7 @@
 # S8 · Evaluation Power
 
-> **Status:** implemented, awaiting author acceptance and cross-review with S7.
+> **Status:** implemented, integrated with S7-S10, and accepted. This document
+> preserves the S8 design boundary; later integration status is recorded below.
 > **Scope rule:** additive only. No existing module, report, or protocol was modified.
 
 ## 1. The problem this Sprint fixes
@@ -131,9 +132,9 @@ anything -- it resolves large effects and declines to resolve small ones.
 2. **Bootstrap over folds assumes fold errors are exchangeable.** Overlapping expanding
    windows share training data, so the interval is somewhat optimistic. A block
    bootstrap would be tighter and is deferred.
-3. **Relation scoring still runs on non-stationary levels.** That is S7's scope. Until
-   S7 lands, these intervals measure the honesty of the evaluation, not the validity of
-   the relations being evaluated.
+3. **S8 does not transform relation inputs.** S7 owns transformed relation scoring;
+   the integrated S9/S10 path consumes that S7 output. This module remains focused on
+   evaluation resolution rather than relation validity.
 
 ## 5. Interface boundary with S7
 
@@ -154,7 +155,7 @@ share no module, no constant, and no output path.
       case results carry intervals. Frozen single-split reports stay as protocol v1.
 - [x] Restate the dual-window `+7.11% / -9.63%` conclusion using the real pipeline under
       rolling origin, and amend `DUAL_WINDOW_FINDINGS.md` with whatever comes back.
-- [ ] S10 consumes `noise_floor` to replace the fixed `0.06` in the Evidence Gate.
+- [x] S10 consumes `noise_floor` in the Evidence Gate.
 
 
 ## 7. Dual-window recheck (faithful, frozen selection)

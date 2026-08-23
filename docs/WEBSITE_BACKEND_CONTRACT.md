@@ -1,6 +1,6 @@
 # Nestor Delta Website Backend Contract
 
-Status: W0 contract implemented through W3; frozen for W4 frontend binding.
+Status: Report JSON v1 implemented through W5; frozen for frontend binding.
 
 The backend adapts existing S1-S10 outputs into JSON. Every algorithmic field
 maps to an existing Delta capability; the W1 adapter may compose and serialize

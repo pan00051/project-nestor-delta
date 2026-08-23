@@ -1,193 +1,158 @@
 # Nestor Delta
 
-**A deterministic multivariate relationship analysis engine that ranks lagged co-movement, tracks drift with past-only windows, filters weak signals under budget pressure, and checks whether the remaining signals improve out-of-sample prediction.**
+Nestor Delta is a deterministic relationship-reliability engine for monthly
+multivariate time series. It measures lagged relationships on explicitly
+transformed data, tracks whether those relationships remain stable, and admits
+only adequately supported evidence before prediction.
 
-Nestor Delta is the data-layer module of the Nestor project. It combines established statistical methods with strict evaluation discipline: fixed data splits, train-only decisions, deterministic reports, leakage tests, and explicit comparison with simple baselines.
+It reports co-movement and predictive usefulness, not causation. An honest
+`baseline_only` result is a valid outcome.
 
-It reports **co-movement and predictive usefulness, not causation**.
+## What Is Included
 
----
+The completed pipeline covers:
 
-## What It Answers
+1. deterministic baselines and lagged relationship scoring;
+2. trust gating, dynamic weights, and resource-adaptive filtering;
+3. strict real-data case validation and rolling-origin evaluation;
+4. S7 transformed relation scoring (`none`, `diff`, or `log_diff`);
+5. S8 uncertainty intervals and sample-aware noise floors;
+6. S9 stability, uncertainty, and relationship lifecycle states;
+7. S10 evidence selection and prediction confidence;
+8. a thin FastAPI adapter and Streamlit interface for bundled cases, CSV
+   uploads, and exact Eurostat series definitions.
 
-When many measurements move at once, Nestor Delta asks four narrow questions:
+The S7-S10 pipeline is deliberately conservative: stability is computed from
+the transformed S7 trajectory, never from legacy level Pearson correlations.
+Insufficient evidence remains `null`; the frontend does not turn it into zero
+or invent a conclusion.
 
-1. Which candidate signals move with the target, at which lag, and in which direction?
-2. Does that relationship change over time?
-3. Which weak or redundant signals should be excluded before prediction?
-4. On held-out data, does the resulting model do better than a simple baseline?
+## Quick Start
 
-The last question matters. A relationship can look convincing in training data and still fail when the future arrives.
-
----
-
-## Real-World Result: Spain Retail
-
-The first real case uses **216 monthly Eurostat observations from Spain (2008-2025)**. The target is retail sales volume; the four candidate columns are industrial production, unemployment, a column originally labeled consumer confidence, and the Harmonised Index of Consumer Prices (HICP). A later audit established that the mislabeled column actually contains construction confidence (`BS-CCI-BAL`); the frozen data and metrics remain unchanged, and the correction is recorded in the case [erratum](cases/spain_retail_eurostat_2008_2025/ERRATA.md).
-
-The fixed split trains through `2023-12` and evaluates once on the 24 months from `2024-01` through `2025-12`. An external case builder aligned the exact monthly axis with no missing rows, interpolation, or imputation. Eurostat marked the retail and industrial source snapshots as provisional.
-
-![Budget-Accuracy Trade-off for the Spain retail case](reports/spain_retail_eurostat_2008_2025/budget_accuracy_tradeoff.png)
-
-*With all four signals, test MAE was 63.27% worse than persistence. At the three higher-pressure tiers, the model retained two signals and finished at -0.03% versus persistence: effectively level, not a win.*
-
-What happened:
-
-- The `1.00` and `0.75` budget tiers admitted all four signals and overfit badly out of sample.
-- At `0.50`, `0.25`, and `0.00`, the higher threshold excluded the mislabeled construction-confidence column and HICP while retaining industrial production and unemployment.
-- The two excluded signals showed train-period co-movement that did not hold up in the test period.
-- All five tiers were fixed before evaluation and all five are reported. No tier was selected after looking at test performance.
-
-![Signals retained under rising budget pressure](reports/spain_retail_eurostat_2008_2025/signal_retention.png)
-
-*The fixed threshold scan reduced the prediction input from four signals to two. In this case, filtering acted as an overfitting guard: it moved the model from a large out-of-sample penalty back to approximate parity with persistence.*
-
-This result is worth showing precisely because it does **not** beat the baseline. The mechanism removed signals that failed to generalize, but it did not manufacture a predictive victory. The case demonstrates controlled behavior on messy real data and a willingness to report a tie as a tie.
-
-See the committed [metrics](reports/spain_retail_eurostat_2008_2025/real_budget_sweep_metrics.csv), [predictions](reports/spain_retail_eurostat_2008_2025/real_budget_sweep_predictions.csv), and [interpretation boundary](reports/spain_retail_eurostat_2008_2025/real_budget_sweep_summary.md).
-
----
-
-## Key Findings
-
-The dual-window evaluation separated ordinary-period behavior from a structural-break test using 15 availability-gated signals across nine Eurostat datasets. In Case A, validation showed no improvement over persistence, so the baseline guard correctly froze the system as baseline-only and produced no fabricated Delta metric. In Case B, a five-signal model improved on persistence by 7.11% in validation but became 9.63% worse during the 2020-2021 pandemic window, showing that resource-aware filtering is not online shock detection. See the one-page [Dual-Window Findings](reports/DUAL_WINDOW_FINDINGS.md) for the protocol, results, and next technical boundary.
-
----
-
-## The Design Correction That Shaped the Project
-
-The most important engineering result is a flaw that was found, explained, and corrected.
-
-1. **Initial idea:** scale each input by its relationship strength, then fit an ordinary least-squares model.
-2. **Failure found:** independent constant scaling had no effect on prediction. OLS simply re-estimated its coefficients and cancelled the scaling. Weighted and unweighted predictions were identical to ten decimal places.
-3. **Mechanism identified:** the apparent gain came from signal selection - dropping noise - rather than from the weights themselves.
-4. **Redesign:** move trust before the model as an irreversible gate. Strong signals pass fully, intermediate signals pass proportionally, and weak signals are blocked. The admitted sources are combined before OLS, so their relative admissions cannot be independently reconstructed.
-5. **Counterfactual check:** changing one signal's trust produced a mean absolute prediction change of `0.0774200737` in the gated model, versus `0.0000000000` in the old independently scaled design.
-
-This correction is the project's central story: do not trust a mechanism because its name sounds plausible; isolate whether it changes behavior, explain why, and preserve the evidence.
-
----
-
-## Controlled Mechanism Validation
-
-Synthetic fixtures provide known signal roles and a known injected drift path. That makes them the right place to test whether each mechanism behaves as intended before using it on real data.
-
-![Drift tracking on the frozen synthetic fixture](reports/drift_tracking.png)
-
-*Across all five frozen seeds, the dynamic relation estimate moved in the injected positive drift direction while the static estimate stayed fixed. The coefficient and relation weight are different quantities, so the claim is directional tracking, not coefficient equality.*
-
-All headline results below use frozen synthetic data and fixed test splits:
-
-| Capability | Frozen result | What it establishes |
-|---|---|---|
-| Baselines | persistence MAE `0.566021`; simple OLS MAE `0.428163` | fixed comparison ruler |
-| Selected three-variable model | MAE `0.422277`, 1.37% below simple OLS | a modest gain from selecting known useful signals and dropping noise, not from feature scaling |
-| Trust gate | prediction delta `0.0774200737` gated vs `0.0000000000` old design | trust is numerically operative after the redesign |
-| Dynamic drift | MAE `0.506484` vs static `0.547689` (7.52% lower); 5/5 seeds move correctly | past-only adaptation follows the injected drift direction |
-| Resource-adaptive ignore | at budget `0.75`, downstream proxies fall 41.56% with 4.11% MAE loss | moderate pressure can remove weak relationships at a measured quality cost |
-| Extreme resource pressure | at budget `0.00`, downstream proxies fall 98.46% while MAE loss reaches 137.57% | the trade-off is bounded and reported, not presented as free compression |
-
-The resource figures are **downstream compute and memory proxies after relation discovery**. Every candidate relation is still scored upstream, so these results do not claim end-to-end compute reduction. See the complete [five-tier resource report](reports/resource_adaptive_summary.md).
-
----
-
-## Capability Ladder
-
-Each capability is an independent, testable addition. Earlier frozen modules and reports remain unchanged as later capabilities are added.
-
-- **Relationship scoring** - estimates lagged Pearson co-movement, preserving direction and selecting a deterministic lag.
-- **Selected prediction** - keeps the strongest candidate signals, excludes synthetic noise, and predicts one step ahead.
-- **Trust gating** - makes trust operative through an irreversible pre-model gate and shared admitted signal.
-- **Dynamic drift tracking** - recomputes relation estimates through a 120-row past-only rolling window.
-- **Resource-adaptive ignore** - raises a deterministic threshold as `budget_ratio` falls, retaining fewer relationships.
-- **Real-data runner** - validates an author-prepared CSV and config, then emits rankings, predictions, metrics, and a bounded summary.
-- **Budget sweep connector** - applies the five frozen pressure tiers to the real-data prediction path, freezes every model on train data, and evaluates all tiers once on test data.
-
----
-
-## Verification and Reproducibility
-
-The core engine uses the Python standard library only. Optional presentation chart generation uses Matplotlib and is outside the core runtime dependency lock.
-
-The repository verifies:
-
-- **Past-only decisions:** relation scoring, lag selection, filtering, collinearity handling, and fitting use train data only.
-- **Adversarial leakage checks:** corrupting future or test rows leaves past estimates, selected signals, and fitted coefficients unchanged.
-- **Column-order independence:** physically reordering candidate columns does not change decisions or reports.
-- **Deterministic collinearity backoff:** exact and approximate collinearity degrade to a stable lower-ranked signal set instead of crashing or producing NaNs.
-- **Strict real-data input:** missing dates, uneven intervals, invalid values, or malformed configuration fail explicitly; the runner does not guess, fill, or clean.
-- **Byte-level report reproduction:** frozen CSV and Markdown artifacts regenerate identically under the locked protocol.
-
-Every numerical claim in this README points to a committed report and an automated test.
-
-### Reproduce the core pipeline
+Core tests require Python 3.9 or newer and use the standard library:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-lock.txt
-
-python scripts/run_baselines.py
-python scripts/run_weights.py
-python scripts/run_stage1.py
-python scripts/run_trust_gating.py
-python scripts/run_dynamic_weights.py
-python scripts/run_resource_adaptive_ignore.py
-python -m unittest discover -s tests
+python3 -m unittest discover -s tests
 ```
 
-### Reproduce the Spain budget sweep
+Run the website with two processes:
 
 ```bash
-python scripts/run_real_budget_sweep.py \
-  cases/spain_retail_eurostat_2008_2025/case.json
+python -m pip install -r requirements-web.txt
+uvicorn nestor_delta_service.app:app --app-dir src --host 0.0.0.0 --port 8000
 ```
 
-The real-data runner does not fetch APIs or clean raw data. It analyzes a local CSV that has already been aligned by an external case builder. It reports co-movement and out-of-sample predictive usefulness only.
-
-The presentation PNGs are committed. Regenerating the two Spain charts additionally requires Matplotlib:
+In a second shell:
 
 ```bash
-python scripts/plot_spain_case.py
+export DELTA_API_BASE_URL=http://localhost:8000
+PYTHONPATH=src streamlit run src/nestor_delta_web/streamlit_app.py --server.port 8501
 ```
 
----
+Open [http://localhost:8501](http://localhost:8501). The API health endpoint is
+at [http://localhost:8000/health](http://localhost:8000/health).
 
-## Architecture and Discipline
+The full website guide is in
+[`docs/WEBSITE_FRONTEND_RUN.md`](docs/WEBSITE_FRONTEND_RUN.md).
 
-Three governance documents keep scope, state, and workflow explicit:
-
-- [`BLUEPRINT.md`](BLUEPRINT.md) - goals, architecture, scope, and hard boundaries.
-- [`HANDOFF.md`](HANDOFF.md) - current status, next focus, and pending decisions.
-- [`RUNBOOK.md`](RUNBOOK.md) - the human-plus-AI collaboration protocol.
-
-The implementation follows an open/closed discipline: new capabilities are added as independent modules rather than by rewriting frozen behavior. [`EVALUATION.md`](EVALUATION.md) provides the fixed ruler used for synthetic comparisons.
-
----
-
-## Honest Scope
-
-- Nestor Delta combines established methods; it does not claim a novel algorithm.
-- Synthetic fixtures validate mechanism behavior because their signal roles and drift path are known.
-- The Eurostat case tests the same discipline on real data, including an outcome that only matches a naive baseline.
-- Resource results describe downstream proxies, not measured end-to-end runtime.
-- Results describe co-movement and out-of-sample predictive usefulness, never causation.
-- Data ingestion, API fetching, automatic cleaning, dashboards, and end-user uploads are outside the current scope.
-- Event-impact analysis and cross-layer reasoning belong to other Nestor modules.
-
----
-
-## Project Structure
+## How It Works
 
 ```text
-src/nestor_delta/     capability modules: scoring, gating, drift, ignore, real data
-scripts/              deterministic entry points and optional chart generation
-cases/                author-prepared real-data CSV and configuration
-reports/              committed result artifacts and presentation charts
-tests/                correctness, determinism, leakage, and stability tests
-docs/                 per-capability design notes
-EVALUATION.md         frozen synthetic evaluation protocol
-BLUEPRINT.md          architecture and scope
-HANDOFF.md            current project state
-RUNBOOK.md            collaboration workflow
+monthly input
+  -> data audit and explicit transform declarations
+  -> S7 transformed relation scoring
+  -> S8 rolling evaluation and noise floor
+  -> S9 stability, uncertainty, and lifecycle
+  -> S10 Evidence Gate
+  -> baseline-only or evidence-supported prediction report
 ```
+
+The analysis package is the source of truth. The service adapter only validates,
+composes, and serializes existing outputs into `delta.report.v1`; the Streamlit
+app calls that API over HTTP and never imports or recomputes the algorithm.
+
+### Relationship object
+
+Each relationship keeps the existing source, target, lag, and signed weight,
+then adds only:
+
+- `stability`
+- `uncertainty`
+- `selected`
+
+Direction is represented by `sign(weight)`. Lifecycle is reported separately as
+`birth -> strengthening -> stable -> decaying -> dead`.
+
+### Website API
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | service health |
+| `GET /schema/report` | Report JSON contract metadata |
+| `POST /snapshot` | fetch and freeze an exact Eurostat definition |
+| `POST /audit` | validate monthly data and transform declarations |
+| `POST /analyze` | run the existing S1-S10 pipeline synchronously |
+
+Validation errors, analysis failures, missing resources, and valid empty results
+remain distinct. There is currently no report database, account system, generic
+Eurostat catalog search, or public deployment configuration.
+
+## Evidence And Results
+
+The repository keeps frozen fixtures and committed reports so claims can be
+checked without trusting a live service.
+
+- **S7:** independent random walks no longer receive high transformed relation
+  scores, while the known lagged synthetic relationship is retained.
+- **S8:** rolling-origin intervals showed that the earlier Spain `+7.11%`
+  validation improvement was not distinguishable from noise, while the pandemic
+  degradation was.
+- **S9:** Fixture C detects a known relationship death in all 100 runs within the
+  required horizon; noise fixtures are not promoted to `stable` or
+  `strengthening`.
+- **S10:** Fixture D raises selection precision from a permissive fixed threshold
+  to evidence-gated selection while preserving the no-evidence baseline fallback.
+- **Spain retail:** the frozen 216-month Eurostat case does not establish a win
+  over persistence. The current website correctly returns a successful
+  `baseline_only` report rather than presenting false confidence.
+
+Start with these artifacts:
+
+- [`reports/s7_relation_measurement_summary.md`](reports/s7_relation_measurement_summary.md)
+- [`reports/evaluation_power/dual_window_recheck.md`](reports/evaluation_power/dual_window_recheck.md)
+- [`reports/s9_relation_lifecycle_summary.md`](reports/s9_relation_lifecycle_summary.md)
+- [`reports/s10_evidence_confidence_summary.md`](reports/s10_evidence_confidence_summary.md)
+- [`reports/spain_retail_eurostat_2008_2025/real_budget_sweep_summary.md`](reports/spain_retail_eurostat_2008_2025/real_budget_sweep_summary.md)
+
+## Repository Guide
+
+```text
+src/nestor_delta/          analysis pipeline (source of truth)
+src/nestor_delta_service/  thin FastAPI adapter and Eurostat intake
+src/nestor_delta_web/      Streamlit UI and pure rendering helpers
+tests/                     algorithm, contract, and frontend tests
+scripts/                   deterministic report and case entry points
+cases/                     frozen real-data inputs and provenance
+data/                      synthetic and regression fixtures
+reports/                   committed numerical evidence
+docs/                      contracts, run guides, and capability notes
+```
+
+Project-level documents have distinct roles:
+
+- [`BLUEPRINT.md`](BLUEPRINT.md): stable scope and architecture rules.
+- [`HANDOFF.md`](HANDOFF.md): current state and next decision only.
+- [`RUNBOOK.md`](RUNBOOK.md): collaboration workflow.
+- [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md): verification commands.
+- [`docs/README.md`](docs/README.md): documentation index.
+- [`S7-S10的规则.md`](S7-S10的规则.md): frozen S7-S10 scope and acceptance rules.
+
+## Boundaries
+
+- Core conclusions are deterministic and past-only.
+- Transform declarations are explicit; the engine does not silently guess.
+- Prediction error cannot feed back into S10 relationship selection.
+- `null` means insufficient evidence or not evaluated, never zero.
+- Eurostat intake freezes exact data definitions and hashes the resulting CSV.
+- The project combines established statistical methods and does not claim a new
+  causal or forecasting algorithm.

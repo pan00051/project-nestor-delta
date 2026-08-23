@@ -1,92 +1,90 @@
 # Reproducibility
 
-This file defines how to verify the environment and all completed workflows through Sprint 4 dynamic weights.
+Nestor Delta separates its standard-library analysis core from optional website
+dependencies. Run commands from the repository root with Python 3.9 or newer.
 
-## Acceptance Commands
-
-Run from a clean checkout:
+## Core Verification
 
 ```bash
-python3 --version
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
+python -m unittest discover -s tests
+```
+
+`requirements-lock.txt` is intentionally empty of packages: the core pipeline
+and full unit-test suite use the Python standard library. Website dependencies
+are listed separately in `requirements-web.txt`.
+
+## Capability Reports
+
+The following commands regenerate the main synthetic and relationship reports:
+
+```bash
 python scripts/run_baselines.py
 python scripts/run_weights.py
 python scripts/run_stage1.py
 python scripts/run_trust_gating.py
 python scripts/run_dynamic_weights.py
-python -m unittest discover -s tests
+python scripts/run_resource_adaptive_ignore.py
+python scripts/run_s7_stationarity.py
+python scripts/run_evaluation_power.py
+python scripts/run_s9_lifecycle.py
+python scripts/run_s10_evidence_confidence.py
 ```
 
-Expected result:
-
-- Python version is `>=3.9`.
-- Virtual environment creation succeeds.
-- `requirements-lock.txt` installs successfully.
-- Synthetic CSV files are generated under `data/synthetic/`.
-- Per-seed metrics are written to `reports/baseline_metrics.csv`.
-- Aggregate metrics are written to `reports/baseline_summary.md`.
-- Unit tests pass, including deterministic generation and OLS coefficient recovery.
-- Relation-weight details are written to `reports/weight_validation.csv`.
-- Relation-weight summary is written to `reports/weight_validation_summary.md`.
-- Stage 1 metrics are written to `reports/stage1_metrics.csv`.
-- Stage 1 selected sources are written to `reports/stage1_selected_sources.csv`.
-- Stage 1 summary is written to `reports/stage1_summary.md`.
-- Trust-gating metrics, admissions, sensitivity checks, and summary are written under `reports/trust_gating_*`.
-- Drift data and separate coefficient truth sidecars are generated under `data/synthetic_drift/`.
-- Dynamic-weight metrics, per-step trajectory, tracking checks, and summary are written under `reports/dynamic_weight_*`.
-- Unit tests pass, including deterministic drift generation, causal window exclusion, known drift tracking, and static/dynamic prediction comparison.
-
-## Current Dependency Policy
-
-The completed project through Sprint 4 dynamic weights has no third-party runtime dependencies.
-
-The simple linear regression baseline uses a deterministic standard-library OLS implementation. Relation weighting, Stage 1 prediction, trust gating, drift generation, and rolling adaptation also use only the Python standard library. If a later sprint introduces a package such as NumPy, the dependency must be pinned in `requirements-lock.txt` before any new numbers are reported.
-
-## Test Policy
-
-The test suite is standard-library only and can be run with:
+Real-data reports use explicit case configuration:
 
 ```bash
-python -m unittest discover -s tests
+python scripts/run_real_case.py \
+  cases/spain_retail_eurostat_2008_2025/case.json
+
+python scripts/run_real_budget_sweep.py \
+  cases/spain_retail_eurostat_2008_2025/case.json
 ```
 
-Current permanent checks:
+These runners analyze committed, aligned snapshots. They do not silently fetch,
+impute, clean, or reinterpret source data.
 
-- same-seed synthetic generation produces identical CSV bytes;
-- the linear regression baseline recovers the known synthetic drivers on the frozen seed `11` training split within documented tolerance;
-- the S4 rolling window excludes the current and future rows;
-- all five drift seeds move in the known direction and dynamic mean MAE/RMSE beat static weights.
+## Website Verification
 
-## Output Policy
+```bash
+python -m pip install -r requirements-web.txt
+uvicorn nestor_delta_service.app:app --app-dir src --host 0.0.0.0 --port 8000
+```
 
-Sprint 1 and Sprint 2 write reproducible generated artifacts.
+In another shell:
 
-Tracked outputs:
+```bash
+export DELTA_API_BASE_URL=http://localhost:8000
+PYTHONPATH=src streamlit run src/nestor_delta_web/streamlit_app.py --server.port 8501
+```
 
-- `reports/baseline_metrics.csv`
-- `reports/baseline_summary.md`
-- `reports/weight_validation.csv`
-- `reports/weight_validation_summary.md`
-- `reports/stage1_metrics.csv`
-- `reports/stage1_selected_sources.csv`
-- `reports/stage1_summary.md`
-- `reports/trust_gating_metrics.csv`
-- `reports/trust_gating_admissions.csv`
-- `reports/trust_gating_sensitivity.csv`
-- `reports/trust_gating_summary.md`
-- `reports/dynamic_weight_metrics.csv`
-- `reports/dynamic_weight_trajectory.csv`
-- `reports/dynamic_weight_tracking.csv`
-- `reports/dynamic_weight_summary.md`
+Then verify:
 
-Regenerated but untracked outputs:
+- `GET http://localhost:8000/health` returns a healthy service;
+- the bundled Spain case can be audited and analyzed;
+- a highly persistent signal declared as `none` is rejected explicitly;
+- `baseline_only` is rendered as a valid result and null confidence is not shown
+  as zero;
+- the verified Eurostat preset freezes a snapshot before audit and analysis.
 
-- `data/synthetic/synthetic_seed_11.csv`
-- `data/synthetic/synthetic_seed_23.csv`
-- `data/synthetic/synthetic_seed_37.csv`
-- `data/synthetic/synthetic_seed_41.csv`
-- `data/synthetic/synthetic_seed_53.csv`
-- `data/synthetic_drift/synthetic_drift_seed_<seed>.csv`
-- `data/synthetic_drift/synthetic_drift_truth_seed_<seed>.csv`
+See `docs/W5_ACCEPTANCE.md` for the last recorded live verification.
+
+## Determinism And Leakage Policy
+
+- Time splits are chronological.
+- Relation scoring, selection, fitting, and rolling updates use past data only.
+- Explicit transform declarations are mandatory on the S7 path.
+- S9 stability is derived from S7 transformed trajectories.
+- Prediction errors never feed back into S10 relationship selection.
+- Frozen snapshots and generated reports use deterministic ordering and stable
+  serialization.
+- Existing report artifacts remain committed so regenerated bytes and numerical
+  claims can be checked against Git.
+
+## Generated Data
+
+Synthetic CSVs under `data/synthetic/` and `data/synthetic_drift/` are ignored
+because their scripts reproduce them deterministically. Frozen regression
+fixtures, real cases, source manifests, and reports are tracked.

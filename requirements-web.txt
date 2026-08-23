@@ -1,6 +1,6 @@
-# Frontend (Streamlit) — server-side HTTP client only, no nestor_delta import.
-streamlit>=1.36
-requests>=2.31
+# Frontend (Streamlit) - server-side HTTP client only, no nestor_delta import.
+streamlit>=1.36,<2
+requests>=2.31,<3
 # Backend deployment extra (FastAPI wrapper for the adapter):
-fastapi>=0.110
-uvicorn>=0.29
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1

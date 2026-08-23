@@ -1,7 +1,7 @@
 [project]
 name = "nestor-delta"
-version = "0.0.0"
-description = "Data-layer evaluation groundwork for Nestor Delta."
+version = "0.1.0"
+description = "Deterministic relationship reliability analysis for multivariate time series."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
@@ -9,10 +9,13 @@ dependencies = []
 [project.optional-dependencies]
 web = [
     "fastapi>=0.115,<1",
+    "requests>=2.31,<3",
+    "streamlit>=1.36,<2",
     "uvicorn[standard]>=0.30,<1",
 ]
 
 [tool.nestor_delta]
 evaluation_protocol = "EVALUATION.md"
-current_milestone = "M1"
-current_sprint = "Sprint 4"
+report_schema = "delta.report.v1"
+current_milestone = "S1-S10 and Website W0-W5 complete"
+current_sprint = "Awaiting next-sprint decision"
