@@ -20,7 +20,8 @@ Streamlit service `web`:
 streamlit run src/nestor_delta_web/streamlit_app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
 ```
 
-Runtime: Python `3.10.14`, locked in both `runtime.txt` and the Docker base image.
+Runtime: Python `3.10.14`, locked by the Docker base image. Railway does not use
+`runtime.txt` for this Dockerfile build, so there is only one version source.
 
 Dependencies: deployment installs `requirements-web.txt`. `requirements-lock.txt`
 documents that core analysis has no third-party runtime dependency; web serving
