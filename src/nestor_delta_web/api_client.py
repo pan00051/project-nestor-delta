@@ -54,6 +54,18 @@ def _post(path: str, payload: Mapping[str, Any], timeout: float) -> ApiResult:
     return ApiResult(resp.status_code, body)
 
 
+def _report_from_run(result: ApiResult) -> ApiResult:
+    body = result.body
+    if not isinstance(body, Mapping) or "run" not in body:
+        return result
+    report = body.get("report")
+    if not isinstance(report, Mapping):
+        if body.get("schema_version") == "delta.report.v1":
+            return result
+        return ApiResult(result.status, None, transport="malformed", raw=str(body)[:2000])
+    return ApiResult(result.status, report)
+
+
 def health(timeout: float = 5.0) -> ApiResult:
     url = f"{base_url()}/health"
     try:
@@ -76,4 +88,4 @@ def audit(payload: Mapping[str, Any], timeout: float = DEFAULT_TIMEOUT) -> ApiRe
 
 
 def analyze(payload: Mapping[str, Any], timeout: float = DEFAULT_TIMEOUT) -> ApiResult:
-    return _post("/analyze", payload, timeout)
+    return _report_from_run(_post("/api/v1/runs", payload, timeout))

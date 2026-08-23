@@ -1,0 +1,91 @@
+{
+  "schema_version": "delta.report.v1",
+  "outcome": "baseline_only",
+  "generated_as_of": "2023-12",
+  "case": {
+    "name": "unknown-enum-contract-fixture",
+    "target": "target",
+    "candidate_signals": ["source"],
+    "frequency": "monthly",
+    "n_observations": 48,
+    "train_end": "2023-12",
+    "lag_window": 1
+  },
+  "snapshot": {
+    "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "source": "upload",
+    "provenance": null
+  },
+  "transform_declarations": {"target": "diff", "source": "diff"},
+  "transform_diagnostics": [],
+  "data_audit": {
+    "date_axis": {
+      "continuous": true,
+      "expected_months": 48,
+      "present": 48,
+      "missing_months": [],
+      "duplicate_months": []
+    },
+    "signals": [],
+    "candidate_pool_available": true
+  },
+  "baseline": {"name": "persistence", "mae": 1.23},
+  "evaluation": null,
+  "noise_floor": {
+    "sample_count": 47,
+    "comparisons": 1,
+    "alpha": 0.05,
+    "threshold": 0.28
+  },
+  "relations": [
+    {
+      "source": "source",
+      "target": "target",
+      "lag": 1,
+      "transform": "diff",
+      "effect": {
+        "score": 0.1,
+        "weight": 0.1,
+        "sign": 1,
+        "noise_floor": 0.28,
+        "effect_size_vs_noise_floor": 0.36
+      },
+      "significance": {
+        "p_value": 0.5,
+        "fdr_threshold": 0.0,
+        "clears": false
+      },
+      "stability": null,
+      "uncertainty": null,
+      "sample_support": 1.0,
+      "lifecycle": {"state": "new_future_state", "points": 6},
+      "selected": false,
+      "reason_code": "future_reason_code",
+      "reason_text": "Future reason code should not break readers.",
+      "trajectory": null,
+      "future_optional_field": {"ok": true}
+    }
+  ],
+  "selection": {
+    "fit_status": "baseline_only_no_evidence",
+    "final_mode": "not_evaluated",
+    "selected_count": 0,
+    "selected_sources": []
+  },
+  "prediction_confidence": {
+    "confidence": null,
+    "components": {
+      "relation_stability": null,
+      "parameter_uncertainty": null,
+      "input_support": null,
+      "residual_uncertainty": null
+    },
+    "capped_by": null
+  },
+  "narrative": {
+    "headline": "Unknown enum fixture",
+    "lines": ["Reader must tolerate unknown relation enum values."]
+  },
+  "warnings": [],
+  "future_top_level_field": true
+}
