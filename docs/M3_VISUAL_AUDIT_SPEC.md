@@ -101,6 +101,8 @@ the field change, it must not carry selection or threshold weight.
 
 ## Four-State Screen Specification
 
+Public baseline-only screenshot: [m3_baseline_only_public.jpg](m3_baseline_only_public.jpg).
+
 | State | Trigger | Field | Encoding semantics | Streamlit implementation | Degradation |
 | --- | --- | --- | --- | --- | --- |
 | `ok` | `outcome=ok`, selected >= 1 | Decision header | Delta selected defendable relations | `delta-decision selected`, headline from narrative | If narrative missing, default selected headline |
