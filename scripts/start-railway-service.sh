@@ -10,7 +10,8 @@ case "${RAILWAY_SERVICE_NAME:-}" in
   web)
     : "${DELTA_API_BASE_URL:?DELTA_API_BASE_URL must point to the FastAPI service}"
     exec streamlit run src/nestor_delta_web/streamlit_app.py \
-      --server.address 0.0.0.0 --server.port "${PORT:-8501}" --server.headless true
+      --server.address 0.0.0.0 --server.port "${PORT:-8501}" --server.headless true \
+      --browser.gatherUsageStats false
     ;;
   *)
     echo "Unsupported Railway service: ${RAILWAY_SERVICE_NAME:-unset}" >&2

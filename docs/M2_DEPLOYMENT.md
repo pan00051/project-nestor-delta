@@ -17,7 +17,7 @@ uvicorn nestor_delta_service.app:app --host 0.0.0.0 --port $PORT --workers 1
 Streamlit service `web`:
 
 ```sh
-streamlit run src/nestor_delta_web/streamlit_app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
+streamlit run src/nestor_delta_web/streamlit_app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true --browser.gatherUsageStats false
 ```
 
 Runtime: Python `3.10.14`, locked by the Docker base image. Railway does not use
@@ -39,6 +39,12 @@ the package into `site-packages`, `cases/` must move to package data first.
 Single-worker constraint: FastAPI is explicitly started with `--workers 1`
 because `RunStore` is process-local. Multi-worker deployment is prohibited until
 run storage is backed by shared storage.
+
+Cold-start measurement: Railway Serverless is enabled for both services so an
+instance can sleep after Railway's inactivity window. Streamlit usage telemetry
+is disabled to avoid background egress keeping `web` awake. The recorded M2
+cold-start values must come from the first public request after actual sleep,
+not from local import time, image build time, or a warm process restart.
 
 Deployment exclusions: `.railwayignore` excludes local files before `railway up`
 creates its upload archive. `.dockerignore` applies the same exclusions to the
