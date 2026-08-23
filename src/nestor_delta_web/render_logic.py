@@ -84,6 +84,8 @@ def fmt_p_value(value: Any) -> str:
     number = float(value)
     if 0.0 < number < 1e-12:
         return "< 1e-12"
+    if 0.0 < number < 0.0001:
+        return f"{number:.1e}"
     return f"{number:.4f}"
 
 

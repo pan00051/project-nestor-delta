@@ -90,6 +90,8 @@ class NullNeverZero(unittest.TestCase):
     def test_tiny_p_value_formats_as_bound_not_zero(self):
         self.assertEqual(rl.fmt_p_value(1e-300), "< 1e-12")
         self.assertNotEqual(rl.fmt_p_value(1e-300), "0.0000")
+        self.assertEqual(rl.fmt_p_value(0.00003), "3.0e-05")
+        self.assertNotEqual(rl.fmt_p_value(0.00003), "0.0000")
         self.assertEqual(rl.fmt_p_value(None), "—")
 
     def test_nullable_selected_is_preserved(self):
