@@ -1,0 +1,545 @@
+{
+  "spec": {
+    "n_months": 216,
+    "start": "2008-01",
+    "train_end": "2023-12",
+    "max_lag": 3,
+    "injected_lag": 2,
+    "injected_r": -0.55,
+    "injected_beta": -0.658553,
+    "seed_positive": 20260823,
+    "seed_negative": 20260826,
+    "screen": {
+      "applied_to": "data properties only, never pipeline output",
+      "max_spurious_abs_r": 0.13,
+      "true_r_band": [
+        0.5,
+        0.62
+      ],
+      "runner_up_max_abs_r": 0.25
+    }
+  },
+  "fixtures": {
+    "s_gt_1_positive": {
+      "file": "s_gt_1_positive.csv",
+      "nature": "calibration control \u2014 synthetic, not a real-world causal case",
+      "sha256": "823ffad12aa0e30bcfb51a38f673f76727a37cd7dc426827367dcec944521a43",
+      "rows": 216,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      },
+      "diagnostics": {
+        "true_driver": {
+          "corr_by_lag": {
+            "0": -0.16,
+            "1": 0.0079,
+            "2": -0.589,
+            "3": 0.0223
+          },
+          "argmax_lag": 2,
+          "peak_corr": -0.589,
+          "level_lag1_acf": 0.9828
+        },
+        "decoy_1": {
+          "corr_by_lag": {
+            "0": -0.0384,
+            "1": 0.1142,
+            "2": -0.0013,
+            "3": 0.0357
+          },
+          "argmax_lag": 1,
+          "peak_corr": 0.1142,
+          "level_lag1_acf": 0.9791
+        },
+        "decoy_2": {
+          "corr_by_lag": {
+            "0": -0.074,
+            "1": 0.0839,
+            "2": -0.1091,
+            "3": 0.0384
+          },
+          "argmax_lag": 2,
+          "peak_corr": -0.1091,
+          "level_lag1_acf": 0.9954
+        },
+        "decoy_3": {
+          "corr_by_lag": {
+            "0": -0.0333,
+            "1": 0.0211,
+            "2": 0.0441,
+            "3": -0.0434
+          },
+          "argmax_lag": 2,
+          "peak_corr": 0.0441,
+          "level_lag1_acf": 0.9858
+        }
+      }
+    },
+    "s_gt_2_negative": {
+      "file": "s_gt_2_negative.csv",
+      "nature": "calibration control \u2014 synthetic, not a real-world causal case",
+      "sha256": "e10234e80cfdae18ccbc024dde3c1841688c97c3352ea9e57b2c453e054fb7d4",
+      "rows": 216,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "noise_1",
+          "noise_2",
+          "noise_3",
+          "noise_4"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "noise_1": "diff",
+          "noise_2": "diff",
+          "noise_3": "diff",
+          "noise_4": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      },
+      "diagnostics": {
+        "noise_1": {
+          "corr_by_lag": {
+            "0": -0.033,
+            "1": -0.0261,
+            "2": 0.0416,
+            "3": -0.0218
+          },
+          "argmax_lag": 2,
+          "peak_corr": 0.0416,
+          "level_lag1_acf": 0.9802
+        },
+        "noise_2": {
+          "corr_by_lag": {
+            "0": -0.0061,
+            "1": 0.0324,
+            "2": 0.1103,
+            "3": -0.0344
+          },
+          "argmax_lag": 2,
+          "peak_corr": 0.1103,
+          "level_lag1_acf": 0.9844
+        },
+        "noise_3": {
+          "corr_by_lag": {
+            "0": 0.0795,
+            "1": -0.0206,
+            "2": -0.1158,
+            "3": -0.0182
+          },
+          "argmax_lag": 2,
+          "peak_corr": -0.1158,
+          "level_lag1_acf": 0.9755
+        },
+        "noise_4": {
+          "corr_by_lag": {
+            "0": -0.046,
+            "1": -0.0108,
+            "2": 0.0798,
+            "3": -0.0105
+          },
+          "argmax_lag": 2,
+          "peak_corr": 0.0798,
+          "level_lag1_acf": 0.9957
+        }
+      }
+    }
+  },
+  "sweep": {
+    "sweep_r015": {
+      "file": "sweep_r015.csv",
+      "sha256": "7a895906364d54eefc4d475eb8b369ee20c5f89111ba3434257c98ea834e7192",
+      "injected_r": -0.15,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r020": {
+      "file": "sweep_r020.csv",
+      "sha256": "fd4c7982f937bcfb0877a1a427c6a81b58b986d6ff750d0a35ca0f26eceadfd8",
+      "injected_r": -0.2,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r025": {
+      "file": "sweep_r025.csv",
+      "sha256": "2fb68f6da36e58b8623bac0a4f65b59bd368cf4eedd1a5db26e6e3abd9454f82",
+      "injected_r": -0.25,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r030": {
+      "file": "sweep_r030.csv",
+      "sha256": "b6b4274461fee75ef4ab1b9301ac29c8f2bca07f6bc1e76aad594f9384b9f253",
+      "injected_r": -0.3,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r035": {
+      "file": "sweep_r035.csv",
+      "sha256": "d733c738357238d5f929f7d933af73fc81f074328fd7ae9e36996b7d7ff468c8",
+      "injected_r": -0.35,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r040": {
+      "file": "sweep_r040.csv",
+      "sha256": "6240c9652701619dd26b367fc3553704c0c58ed52fc0f6c373360344e46a8dc8",
+      "injected_r": -0.4,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r045": {
+      "file": "sweep_r045.csv",
+      "sha256": "fa801c749a69c9222ca2be5df1d942170071e2d232f7f9caa14f72338d77e82d",
+      "injected_r": -0.45,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r050": {
+      "file": "sweep_r050.csv",
+      "sha256": "f1a5cf0bc50aa5c2083e2fd43f87d41bb213b9afa6d3a39e52eb943960ebee0d",
+      "injected_r": -0.5,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r055": {
+      "file": "sweep_r055.csv",
+      "sha256": "823ffad12aa0e30bcfb51a38f673f76727a37cd7dc426827367dcec944521a43",
+      "injected_r": -0.55,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "sweep_r060": {
+      "file": "sweep_r060.csv",
+      "sha256": "c1dc4c0f1bf65471bf24ff41e0157f64e02ca417d39fef720c975912b367abc5",
+      "injected_r": -0.6,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    }
+  },
+  "drift": {
+    "constant": {
+      "file": "s_gt_5_constant.csv",
+      "sha256": "823ffad12aa0e30bcfb51a38f673f76727a37cd7dc426827367dcec944521a43",
+      "description": "beta constant \u2014 reference case, same shape as S-GT-1",
+      "full_sample_abs_r": 0.589,
+      "first_quarter_abs_r": 0.6309,
+      "last_quarter_abs_r": 0.6318,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "linear_decay": {
+      "file": "s_gt_5_linear_decay.csv",
+      "sha256": "7bf89cc4093467bce2e6c5e2b1df5c50902af616d9c7382535f807979ba7a9ce",
+      "description": "beta falls linearly from beta_max to 0 across the sample",
+      "full_sample_abs_r": 0.3549,
+      "first_quarter_abs_r": 0.5918,
+      "last_quarter_abs_r": 0.2767,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "regime_off": {
+      "file": "s_gt_5_regime_off.csv",
+      "sha256": "9ad5cc9e7d2da1422f67887ce194ea01dbb48bd43b85d6e68590a882f9e95255",
+      "description": "beta_max for the first 70% of months, then exactly 0",
+      "full_sample_abs_r": 0.4647,
+      "first_quarter_abs_r": 0.6309,
+      "last_quarter_abs_r": 0.2125,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "regime_late": {
+      "file": "s_gt_5_regime_late.csv",
+      "sha256": "be05e2a15b1949f04a70e7513f284db73df12922652f282888697f8960e25e0b",
+      "description": "exactly 0 for the first 30% of months, then beta_max",
+      "full_sample_abs_r": 0.5005,
+      "first_quarter_abs_r": 0.2294,
+      "last_quarter_abs_r": 0.6318,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    },
+    "intermittent": {
+      "file": "s_gt_5_intermittent.csv",
+      "sha256": "beb7141399e619919579d4e2b6c611a3c192895836da71daa5e5ed7aa95381eb",
+      "description": "beta_max and 0 in alternating 24-month blocks",
+      "full_sample_abs_r": 0.3962,
+      "first_quarter_abs_r": 0.4864,
+      "last_quarter_abs_r": 0.4181,
+      "request": {
+        "date_column": "date",
+        "target": "synthetic_target",
+        "candidate_signals": [
+          "true_driver",
+          "decoy_1",
+          "decoy_2",
+          "decoy_3"
+        ],
+        "transform_declarations": {
+          "synthetic_target": "diff",
+          "true_driver": "diff",
+          "decoy_1": "diff",
+          "decoy_2": "diff",
+          "decoy_3": "diff"
+        },
+        "train_end": "2023-12",
+        "lag_window": 3
+      }
+    }
+  }
+}

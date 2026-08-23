@@ -710,10 +710,7 @@ def _relation_views(
                 "stability": relation.stability,
                 "uncertainty": relation.uncertainty,
                 "sample_support": min(1.0, relation.sample_count / reference),
-                "lifecycle": {
-                    "state": _lifecycle_state(analysis_input, train_rows, relation.source),
-                    "points": None,
-                },
+                "lifecycle": _lifecycle_block(analysis_input, train_rows, relation.source),
                 "selected": None,
                 "reason_code": "not_selected",
                 "reason_text": "",
@@ -749,17 +746,28 @@ def _s9_relation_objects(
     for relation in ranking:
         trajectory = target_source_trajectory(rolling, analysis_input.target, relation.source)
         lifecycle = classify_relation_lifecycle(trajectory)
-        by_source[relation.source] = lifecycle.relation
+        by_source[relation.source] = RelationWeight(
+            source=relation.source,
+            target=relation.target,
+            lag=relation.lag,
+            weight=relation.weight,
+            score=relation.score,
+            sample_count=relation.sample_count,
+            transform=relation.transform,
+            stability=lifecycle.relation.stability,
+            uncertainty=lifecycle.relation.uncertainty,
+            selected=relation.selected,
+        )
     return [by_source.get(relation.source, relation) for relation in ranking]
 
 
-def _lifecycle_state(
+def _lifecycle_block(
     analysis_input: AnalysisInput,
     train_rows: Sequence[Mapping[str, float]],
     source: str,
-) -> str:
+) -> dict[str, Any]:
     if len(train_rows) <= analysis_input.lag_window + 8:
-        return "birth"
+        return {"state": "birth", "points": None}
     window_size = min(36, max(analysis_input.lag_window + 6, len(train_rows) // 3))
     steps = range(window_size + analysis_input.lag_window + 1, len(train_rows) + 1, 6)
     try:
@@ -771,11 +779,12 @@ def _lifecycle_state(
             window_size,
             analysis_input.transform_declarations,
         )
-        return classify_relation_lifecycle(
+        lifecycle = classify_relation_lifecycle(
             target_source_trajectory(rolling, analysis_input.target, source)
-        ).state
+        )
+        return {"state": lifecycle.state, "points": lifecycle.points}
     except ValueError:
-        return "birth"
+        return {"state": "birth", "points": None}
 
 
 def _apply_gate_decisions(
@@ -805,12 +814,13 @@ def _apply_gate_decisions(
 
 
 def _baseline_block(analysis_input: AnalysisInput) -> dict[str, Any]:
-    if analysis_input.baseline_test_start is None:
-        return {"name": "persistence", "mae": None}
+    baseline_test_start = analysis_input.baseline_test_start or _first_baseline_label_date(
+        analysis_input
+    )
     label_rows = [
         index
         for index, date in enumerate(analysis_input.dates)
-        if index >= analysis_input.lag_window and date >= analysis_input.baseline_test_start
+        if index >= analysis_input.lag_window and date >= baseline_test_start
     ]
     if not label_rows:
         return {"name": "persistence", "mae": None}
@@ -818,6 +828,15 @@ def _baseline_block(analysis_input: AnalysisInput) -> dict[str, Any]:
     predicted = predict_persistence(analysis_input.rows, label_rows, analysis_input.target)
     mae = sum(abs(left - right) for left, right in zip(actual, predicted)) / len(actual)
     return {"name": "persistence", "mae": mae}
+
+
+def _first_baseline_label_date(analysis_input: AnalysisInput) -> str:
+    train_dates = [
+        date
+        for index, date in enumerate(analysis_input.dates)
+        if index >= analysis_input.lag_window and date <= analysis_input.train_end
+    ]
+    return train_dates[0] if train_dates else analysis_input.train_end
 
 
 def _noise_floor_block(

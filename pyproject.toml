@@ -19,3 +19,8 @@ evaluation_protocol = "EVALUATION.md"
 report_schema = "delta.report.v1"
 current_milestone = "S1-S10 and Website W0-W5 complete"
 current_sprint = "Awaiting next-sprint decision"
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: slow-running tests",
+]

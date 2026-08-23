@@ -277,6 +277,18 @@ One object per candidate relation from source to target:
 }
 ```
 
+`effect.score` is the absolute Pearson correlation on explicitly transformed
+data, computed over the full training window for the reported best lag.
+`effect.weight` is the signed version of the same estimate. S9 rolling windows
+provide `stability`, `uncertainty`, and `lifecycle`; they must not replace the
+full-window `effect.score`.
+
+`noise_floor` and `effect_size_vs_noise_floor` are diagnostic calibration
+fields, not an Evidence Gate threshold in v1. Selection is decided by the
+FDR-corrected effect test plus stability, uncertainty, and sample-support gates.
+Frontend surfaces must not render the noise-floor comparison as a pass/fail
+badge.
+
 `stability`, `uncertainty`, `selected`, confidence fields, and `trajectory` are
 nullable. Null means insufficient evidence or not run in W1.
 
