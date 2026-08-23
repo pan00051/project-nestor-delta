@@ -1,0 +1,33 @@
+# Nestor Delta M2 thin-slice deployment.
+# Topology: two web services. FastAPI and Streamlit have different process
+# models and independent cold-start measurements, and the cross-origin UI->API
+# shape exercises the CORS boundary before a later standalone frontend exists.
+services:
+  - type: web
+    name: nestor-delta-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-web.txt
+    # Run from the source checkout, not from an installed wheel, so adapter.py's
+    # repository-root case lookup can resolve cases/. Do not raise workers
+    # above 1 until RunStore has shared storage; it is process-local.
+    startCommand: uvicorn nestor_delta_service.app:app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.14
+      - key: PYTHONPATH
+        value: src
+
+  - type: web
+    name: nestor-delta-web
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-web.txt
+    startCommand: streamlit run src/nestor_delta_web/streamlit_app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.14
+      - key: PYTHONPATH
+        value: src
+      - key: DELTA_API_BASE_URL
+        value: https://nestor-delta-api.onrender.com

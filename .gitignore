@@ -2,8 +2,11 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+private/
 
 # Sprint 1 generated artifacts; keep directory placeholders tracked.
 data/synthetic/*.csv
 data/synthetic_drift/*.csv
+data/synthetic*/
+reports/*
 !reports/.gitkeep

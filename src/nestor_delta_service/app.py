@@ -107,11 +107,13 @@ def create_app():
         status, report = analyze_payload(payload)
         return JSONResponse(status_code=status, content=report)
 
+    @app.post("/api/v1/audit", dependencies=[Depends(allow_request)])
     @app.post("/audit")
     def audit(payload: dict[str, Any]):
         status, report = audit_payload(payload)
         return JSONResponse(status_code=status, content=report)
 
+    @app.post("/api/v1/snapshot", dependencies=[Depends(allow_request)])
     @app.post("/snapshot")
     def snapshot(payload: dict[str, Any]):
         status, report = snapshot_payload(payload)

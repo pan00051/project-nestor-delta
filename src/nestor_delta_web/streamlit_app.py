@@ -506,25 +506,29 @@ elif mode == "Upload CSV":
 
 else:
     st.info("Eurostat catalog search is not part of W5. Use the verified preset or provide an exact dataset/filter definition.")
-    preset_name = st.selectbox("Verified definition", ["(manual)", *presets.EUROSTAT_PRESETS])
-    preset = presets.EUROSTAT_PRESETS.get(preset_name, {})
+    preset_id = st.selectbox(
+        "Verified definition",
+        ["(manual)", *presets.EUROSTAT_PRESETS],
+        format_func=lambda value: value if value == "(manual)" else presets.preset_label(value),
+    )
+    preset = presets.EUROSTAT_PRESETS.get(preset_id, {})
     default_series = json.dumps(
         preset.get("series", [{"name": "", "dataset": "", "filters": {"freq": "M", "geo": ""}}]),
         indent=2,
     )
-    with st.expander("Eurostat series definition", expanded=preset_name == "(manual)"):
-        series_json = st.text_area("Series JSON", default_series, height=220, key=f"series_json_{preset_name}")
+    with st.expander("Eurostat series definition", expanded=preset_id == "(manual)"):
+        series_json = st.text_area("Series JSON", default_series, height=220, key=f"series_json_{preset_id}")
     left, middle, right = st.columns(3)
-    start = left.text_input("Start (YYYY-MM)", preset.get("start", ""), key=f"start_{preset_name}")
-    end = middle.text_input("End (YYYY-MM)", preset.get("end", ""), key=f"end_{preset_name}")
-    lag_window = right.number_input("Lag window", 1, 12, int(preset.get("lag_window", 3)), key=f"lag_{preset_name}")
-    target = st.text_input("Target signal", preset.get("target", ""), key=f"target_{preset_name}")
+    start = left.text_input("Start (YYYY-MM)", preset.get("start", ""), key=f"start_{preset_id}")
+    end = middle.text_input("End (YYYY-MM)", preset.get("end", ""), key=f"end_{preset_id}")
+    lag_window = right.number_input("Lag window", 1, 12, int(preset.get("lag_window", 3)), key=f"lag_{preset_id}")
+    target = st.text_input("Target signal", preset.get("target", ""), key=f"target_{preset_id}")
     candidate_text = st.text_input(
         "Candidate signals",
         ",".join(preset.get("candidate_signals", [])),
-        key=f"candidates_{preset_name}",
+        key=f"candidates_{preset_id}",
     )
-    train_end = st.text_input("Training cutoff (YYYY-MM)", preset.get("train_end", ""), key=f"train_{preset_name}")
+    train_end = st.text_input("Training cutoff (YYYY-MM)", preset.get("train_end", ""), key=f"train_{preset_id}")
     try:
         series = json.loads(series_json) if series_json.strip() else []
         series_error = None
@@ -532,8 +536,11 @@ else:
         series, series_error = [], str(exc)
         st.error(f"Series JSON is invalid: {series_error}")
     candidates = [signal.strip() for signal in candidate_text.split(",") if signal.strip()]
+    eurostat_request: dict[str, Any] = {"series": series, "start": start, "end": end}
+    if preset_id != "(manual)":
+        eurostat_request["snapshots"] = presets.frozen_snapshot_payload(preset_id)
     euro_request = {
-        "eurostat": {"series": series, "start": start, "end": end},
+        "eurostat": eurostat_request,
         "target": target,
         "candidate_signals": candidates,
         "train_end": train_end,

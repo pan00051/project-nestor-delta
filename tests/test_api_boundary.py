@@ -37,6 +37,7 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         body = response.json()
         self.assertEqual(body["api_version"], "v1")
         self.assertEqual(body["report_schema_version"], SCHEMA_VERSION)
+        self.assertRegex(body["pipeline_version"], r"^s10\.sha256\.[0-9a-f]{12}$")
         self.assertEqual(body["execution"], {"mode": "sync"})
         self.assertEqual(
             body["run_retention"],
@@ -45,6 +46,16 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertTrue(body["inputs"]["csv_upload"])
         self.assertIn("spain_retail_eurostat_2008_2025", body["inputs"]["bundled_cases"])
         self.assertEqual(body["eurostat"]["dataset_search"], False)
+        self.assertEqual(
+            body["eurostat"]["presets"],
+            [
+                {
+                    "id": "es_industry_vs_construction_confidence",
+                    "label": "ES industry vs construction confidence",
+                    "dataset": "ei_bssi_m_r2",
+                }
+            ],
+        )
         self.assertEqual(
             body["features"],
             {"pdf_export": False, "report_persistence": False, "sharing": False},
@@ -61,6 +72,21 @@ class ApiBoundaryV1Tests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers["access-control-allow-origin"], "*")
+
+    def test_audit_and_snapshot_have_versioned_paths_and_legacy_aliases(self) -> None:
+        payload = {"case_name": "spain_retail_eurostat_2008_2025"}
+
+        versioned_audit = self.client.post("/api/v1/audit", json=payload)
+        legacy_audit = self.client.post("/audit", json=payload)
+        versioned_snapshot = self.client.post("/api/v1/snapshot", json=payload)
+        legacy_snapshot = self.client.post("/snapshot", json=payload)
+
+        self.assertEqual(versioned_audit.status_code, 200)
+        self.assertEqual(legacy_audit.status_code, 200)
+        self.assertEqual(versioned_audit.json(), legacy_audit.json())
+        self.assertEqual(versioned_snapshot.status_code, 200)
+        self.assertEqual(legacy_snapshot.status_code, 200)
+        self.assertEqual(versioned_snapshot.json(), legacy_snapshot.json())
 
     def test_post_run_returns_completed_envelope_and_get_returns_same_report(self) -> None:
         response = self.client.post(

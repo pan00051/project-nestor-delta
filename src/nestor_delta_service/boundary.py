@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections import OrderedDict
 from datetime import datetime, timezone
+from pathlib import Path
+from threading import RLock
 from time import perf_counter
 from typing import Any, Mapping
 from uuid import uuid4
@@ -14,9 +17,26 @@ from .adapter import SUPPORTED_CASES
 from .errors import SCHEMA_VERSION, not_found
 
 API_VERSION = "v1"
-PIPELINE_VERSION = "s10.2026.08.1"
 RUN_STORE_MAX = 100
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _pipeline_version() -> str:
+    digest = hashlib.sha256()
+    paths = (
+        Path(__file__).with_name("adapter.py"),
+        *sorted((REPO_ROOT / "src" / "nestor_delta").glob("*.py")),
+    )
+    for path in paths:
+        digest.update(path.relative_to(REPO_ROOT).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return f"s10.sha256.{digest.hexdigest()[:12]}"
+
+
+PIPELINE_VERSION = _pipeline_version()
 
 
 class RunStore:
@@ -25,19 +45,23 @@ class RunStore:
     def __init__(self, max_runs: int = RUN_STORE_MAX):
         self.max_runs = max_runs
         self._items: OrderedDict[str, dict[str, Any]] = OrderedDict()
+        self._lock = RLock()
 
     def put(self, envelope: dict[str, Any]) -> None:
         run_id = str(envelope["run"]["run_id"])
-        self._items[run_id] = envelope
-        self._items.move_to_end(run_id)
-        while len(self._items) > self.max_runs:
-            self._items.popitem(last=False)
+        with self._lock:
+            self._items[run_id] = envelope
+            self._items.move_to_end(run_id)
+            while len(self._items) > self.max_runs:
+                self._items.popitem(last=False)
 
     def get(self, run_id: str) -> dict[str, Any] | None:
-        return self._items.get(run_id)
+        with self._lock:
+            return self._items.get(run_id)
 
     def clear(self) -> None:
-        self._items.clear()
+        with self._lock:
+            self._items.clear()
 
 
 RUN_STORE = RunStore()
@@ -59,7 +83,7 @@ def capabilities() -> dict[str, Any]:
         },
         "eurostat": {
             "enabled": True,
-            "presets": sorted(presets.EUROSTAT_PRESETS),
+            "presets": presets.capability_presets(),
             "dataset_search": False,
         },
         "execution": {"mode": "sync"},

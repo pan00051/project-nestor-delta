@@ -4,10 +4,17 @@ import sys
 import unittest
 import base64
 import hashlib
+import json
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = REPO_ROOT / "src"
+EUROSTAT_FIXTURE = (
+    REPO_ROOT
+    / "fixtures"
+    / "eurostat"
+    / "ei_bssi_m_r2_es_industry_construction_2005_2023.json"
+)
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
@@ -25,6 +32,23 @@ from nestor_delta_service.eurostat import (  # noqa: E402
 
 
 class EurostatIntakeTests(unittest.TestCase):
+    def test_frozen_eurostat_fixture_hash_matches_recorded_snapshot(self) -> None:
+        fixture = json.loads(EUROSTAT_FIXTURE.read_text(encoding="utf-8"))
+        snapshot = build_eurostat_snapshot(
+            {
+                "start": fixture["start"],
+                "end": fixture["end"],
+                "series": fixture["series"],
+                "snapshots": fixture["snapshots"],
+            }
+        )
+
+        self.assertEqual(snapshot.snapshot_hash, fixture["snapshot_sha256"])
+        self.assertEqual(
+            snapshot.snapshot_hash,
+            "7f16537206cbb37b1b3b9ee33b9b233eb6b50865d59a03169d3651a30a3664ca",
+        )
+
     def test_build_snapshot_from_local_jsonstat_payloads(self) -> None:
         snapshot = build_eurostat_snapshot(_eurostat_payload())
 

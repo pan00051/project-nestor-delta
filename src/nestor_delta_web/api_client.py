@@ -80,11 +80,11 @@ def health(timeout: float = 5.0) -> ApiResult:
 
 
 def snapshot(payload: Mapping[str, Any], timeout: float = DEFAULT_TIMEOUT) -> ApiResult:
-    return _post("/snapshot", payload, timeout)
+    return _post("/api/v1/snapshot", payload, timeout)
 
 
 def audit(payload: Mapping[str, Any], timeout: float = DEFAULT_TIMEOUT) -> ApiResult:
-    return _post("/audit", payload, timeout)
+    return _post("/api/v1/audit", payload, timeout)
 
 
 def analyze(payload: Mapping[str, Any], timeout: float = DEFAULT_TIMEOUT) -> ApiResult:
