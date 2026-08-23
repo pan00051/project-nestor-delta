@@ -714,7 +714,9 @@ def _relation_views(
                 "selected": None,
                 "reason_code": "not_selected",
                 "reason_text": "",
-                "trajectory": None,
+                "trajectory": _trajectory_block(
+                    analysis_input, train_rows, relation.source
+                ),
             }
         )
     return views, relation_objects
@@ -785,6 +787,41 @@ def _lifecycle_block(
         return {"state": lifecycle.state, "points": lifecycle.points}
     except ValueError:
         return {"state": "birth", "points": None}
+
+
+def _trajectory_block(
+    analysis_input: AnalysisInput,
+    train_rows: Sequence[Mapping[str, float]],
+    source: str,
+) -> list[dict[str, Any]] | None:
+    if len(train_rows) <= analysis_input.lag_window + 8:
+        return None
+    window_size = min(36, max(analysis_input.lag_window + 6, len(train_rows) // 3))
+    steps = range(window_size + analysis_input.lag_window + 1, len(train_rows) + 1, 6)
+    try:
+        rolling = compute_rolling_transformed_relation_weights(
+            train_rows,
+            analysis_input.variables,
+            analysis_input.lag_window,
+            steps,
+            window_size,
+            analysis_input.transform_declarations,
+        )
+        trajectory = target_source_trajectory(rolling, analysis_input.target, source)
+    except ValueError:
+        return None
+    if not trajectory:
+        return None
+    return [
+        {
+            "step": point.step,
+            "date": analysis_input.dates[min(point.step - 1, len(analysis_input.dates) - 1)],
+            "score": point.score,
+            "sign": _sign(point.weight),
+            "lag": point.lag,
+        }
+        for point in trajectory
+    ]
 
 
 def _apply_gate_decisions(

@@ -11,6 +11,7 @@ import html
 import json
 from typing import Any, Mapping
 
+import pandas as pd
 import streamlit as st
 
 from nestor_delta_web import api_client as api
@@ -291,17 +292,33 @@ def render_relation_detail(view: Mapping[str, Any], raw: Mapping[str, Any]) -> N
     render_lifecycle(view["lifecycle"]["state"])
     st.markdown(_tone(view["reason_text"], view["lifecycle"]["tone"]), unsafe_allow_html=True)
     evidence = st.columns(4)
-    render_metric(evidence[0], "Score", rl.fmt_number(view["score"]), f"floor {rl.fmt_number(view['noise_floor'])}")
+    render_metric(evidence[0], "Score", rl.fmt_number(view["score"]))
     render_metric(evidence[1], "Stability", rl.fmt_number(view["stability"]), "insufficient" if view["stability"] is None else None)
     render_metric(evidence[2], "Uncertainty", rl.fmt_number(view["uncertainty"]), "insufficient" if view["uncertainty"] is None else None)
     render_metric(evidence[3], "Sample support", rl.fmt_number(view["sample_support"]), "insufficient" if view["sample_support"] is None else None)
     st.caption(
-        f"p={rl.fmt_number(view['p_value'], 4)} · FDR threshold={rl.fmt_number(view['fdr_threshold'], 4)} · "
+        f"p={rl.fmt_p_value(view['p_value'])} · FDR threshold={rl.fmt_p_value(view['fdr_threshold'])} · "
         f"clears FDR={'—' if view['clears_fdr'] is None else ('yes' if view['clears_fdr'] else 'no')}"
+    )
+    st.caption(
+        "Diagnostic comparison scale: "
+        f"noise floor {rl.fmt_number(view['noise_floor'])}; "
+        f"effect/noise {rl.fmt_number(view['effect_size'])}. "
+        "This scale is not part of the evidence gate."
     )
     if view["has_trajectory"]:
         trajectory = raw.get("trajectory") or []
-        st.line_chart({"score": [point.get("score") for point in trajectory]})
+        frame = pd.DataFrame(
+            [
+                {"date": point.get("date"), "score": point.get("score")}
+                for point in trajectory
+                if point.get("date") is not None and point.get("score") is not None
+            ]
+        )
+        if frame.empty:
+            st.caption("Lifecycle trajectory was returned without dated score points, so no timeline chart is shown.")
+        else:
+            st.line_chart(frame, x="date", y="score")
     else:
         st.caption("Lifecycle trajectory was not returned, so no timeline chart is shown.")
 
@@ -404,7 +421,7 @@ def show_result(result: "api.ApiResult") -> str:
 st.markdown("<div class='delta-brandline'>Nestor Delta · evidence before certainty</div>", unsafe_allow_html=True)
 st.title("Relationship Reliability Workbench")
 st.markdown(
-    "<div class='delta-lede'>Audit monthly data, declare how each signal is transformed, and see which directed relationships survive the noise floor, lifecycle, and evidence gate.</div>",
+    "<div class='delta-lede'>Audit monthly data, declare how each signal is transformed, and see which directed relationships survive FDR, stability, uncertainty, and sample-support checks.</div>",
     unsafe_allow_html=True,
 )
 

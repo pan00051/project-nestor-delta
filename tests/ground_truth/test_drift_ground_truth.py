@@ -45,6 +45,13 @@ DRIFT = MANIFEST.get("drift") or {}
 
 ALIVE = {"birth", "strengthening", "stable"}
 ENDING = {"decaying", "dead"}
+EXPECTED_LIFECYCLE = {
+    "constant": "stable",
+    "linear_decay": "decaying",
+    "regime_off": "decaying",
+    "regime_late": "strengthening",
+    "intermittent": "stable",
+}
 
 pytestmark = pytest.mark.skipif(
     not DRIFT, reason="run: python generate_ground_truth.py --drift"
@@ -104,3 +111,16 @@ def test_sgt5_constant_relation_is_not_reported_decaying() -> None:
     rel = _driver("constant")
     state = rel["lifecycle"]["state"]
     assert state in ALIVE, f"time-invariant relation reported as {state!r}"
+
+
+@pytest.mark.parametrize("profile, expected", sorted(EXPECTED_LIFECYCLE.items()))
+def test_sgt5_lifecycle_matches_constructed_profile(profile: str, expected: str) -> None:
+    """Each drift fixture has a concrete end-of-sample lifecycle truth."""
+    rel = _driver(profile)
+    state = rel["lifecycle"]["state"]
+    first = DRIFT[profile]["first_quarter_abs_r"]
+    last = DRIFT[profile]["last_quarter_abs_r"]
+    assert state == expected, (
+        f"{profile}: first-quarter |r|={first}, last-quarter |r|={last}, "
+        f"expected lifecycle {expected!r} but got {state!r}"
+    )

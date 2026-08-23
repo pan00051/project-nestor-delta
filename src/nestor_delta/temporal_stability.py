@@ -85,10 +85,12 @@ def classify_relation_lifecycle(
 
     scores = [item.score for item in ordered]
     recent_scores = scores[-recent_points:]
+    early_scores = scores[:recent_points]
     prior_scores = scores[:-recent_points]
     recent_mean = mean(recent_scores)
+    early_mean = mean(early_scores)
     prior_mean = mean(prior_scores) if prior_scores else recent_mean
-    slope = _least_squares_slope(scores[-max(recent_points * 2, 3) :])
+    full_slope = _least_squares_slope(scores)
 
     # S9 endorsement threshold: a relation must clear stability AND strength
     # before it can be labeled stable or strengthening. Pure noise on the
@@ -99,15 +101,26 @@ def classify_relation_lifecycle(
         and relation.stability >= stable_floor
         and recent_mean >= score_floor
     )
-    rising = recent_mean > prior_mean + 0.08 and slope > 0.01
+    rising_from_absent = (
+        early_mean < score_floor
+        and recent_mean > prior_mean + 0.08
+        and full_slope > 0.01
+    )
+    falling_from_present = (
+        early_mean >= score_floor
+        and (
+            recent_mean < early_mean * 0.80
+            or (
+                full_slope < -0.005
+                and recent_mean < early_mean - 0.08
+            )
+        )
+    )
     if len(scores) >= dead_points and all(score < score_floor for score in scores[-dead_points:]):
         state: LifecycleState = "dead"
-    elif prior_mean >= score_floor and (
-        recent_mean < prior_mean * 0.65
-        or (slope < -0.025 and recent_mean < prior_mean - 0.08)
-    ):
+    elif falling_from_present:
         state = "decaying"
-    elif meets_endorsement_threshold and rising:
+    elif meets_endorsement_threshold and rising_from_absent:
         state = "strengthening"
     elif meets_endorsement_threshold:
         state = "stable"

@@ -170,7 +170,8 @@ def _correlation_p_value(score: float, sample_count: int) -> float:
         return 1.0
     clipped = min(0.999999, max(0.0, abs(score)))
     z_score = math.atanh(clipped) * math.sqrt(sample_count - 3)
-    return 2.0 * (1.0 - NormalDist().cdf(abs(z_score)))
+    p_value = 2.0 * NormalDist().cdf(-abs(z_score))
+    return max(p_value, 1e-300)
 
 
 def _decision_reason(

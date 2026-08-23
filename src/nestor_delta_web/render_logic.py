@@ -77,6 +77,16 @@ def fmt_number(value: Any, digits: int = 3) -> str:
     return f"{float(value):.{digits}f}"
 
 
+def fmt_p_value(value: Any) -> str:
+    """A p-value display string. Tiny non-zero values are not rounded to 0."""
+    if value is None:
+        return "—"
+    number = float(value)
+    if 0.0 < number < 1e-12:
+        return "< 1e-12"
+    return f"{number:.4f}"
+
+
 def fmt_percent(value: Any, digits: int = 1) -> str:
     if value is None:
         return "—"
