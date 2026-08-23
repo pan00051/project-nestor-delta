@@ -88,6 +88,28 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertEqual(legacy_snapshot.status_code, 200)
         self.assertEqual(versioned_snapshot.json(), legacy_snapshot.json())
 
+    def test_all_business_routes_use_the_auth_dependency(self) -> None:
+        business_paths = {
+            "/api/v1/runs",
+            "/api/v1/runs/{run_id}",
+            "/api/v1/capabilities",
+            "/analyze",
+            "/api/v1/audit",
+            "/audit",
+            "/api/v1/snapshot",
+            "/snapshot",
+        }
+
+        checked = set()
+        for route in self.client.app.routes:
+            if route.path not in business_paths:
+                continue
+            dependency_calls = {item.call for item in route.dependant.dependencies}
+            self.assertIn(app_module.allow_request, dependency_calls, route.path)
+            checked.add(route.path)
+
+        self.assertEqual(checked, business_paths)
+
     def test_post_run_returns_completed_envelope_and_get_returns_same_report(self) -> None:
         response = self.client.post(
             "/api/v1/runs",

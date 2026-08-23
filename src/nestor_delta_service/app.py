@@ -102,19 +102,19 @@ def create_app():
     def capabilities():
         return capabilities_payload()
 
-    @app.post("/analyze")
+    @app.post("/analyze", dependencies=[Depends(allow_request)])
     def analyze(payload: dict[str, Any]):
         status, report = analyze_payload(payload)
         return JSONResponse(status_code=status, content=report)
 
     @app.post("/api/v1/audit", dependencies=[Depends(allow_request)])
-    @app.post("/audit")
+    @app.post("/audit", dependencies=[Depends(allow_request)])
     def audit(payload: dict[str, Any]):
         status, report = audit_payload(payload)
         return JSONResponse(status_code=status, content=report)
 
     @app.post("/api/v1/snapshot", dependencies=[Depends(allow_request)])
-    @app.post("/snapshot")
+    @app.post("/snapshot", dependencies=[Depends(allow_request)])
     def snapshot(payload: dict[str, Any]):
         status, report = snapshot_payload(payload)
         return JSONResponse(status_code=status, content=report)
