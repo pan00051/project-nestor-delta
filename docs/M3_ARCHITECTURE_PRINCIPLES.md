@@ -38,11 +38,18 @@ Open gaps:
 
 ## Data-Dependent Branches
 
-`report = f(snapshot, params, effective_configuration, pipeline_version)` remains
-valid when the algorithm branches on data, provided every branch input is inside
-the snapshot or explicit params. The report must not depend on wall clock,
-caller identity, other users' data, machine state, remote config, or execution
-history.
+```
+effective_configuration = g(snapshot, analysis_params, pipeline_version)
+report                  = f(snapshot, analysis_params, pipeline_version)
+```
+
+The effective configuration is a published *result* of the first three terms,
+not a fourth independent input, so `report = f(snapshot, analysis_params,
+pipeline_version)` remains valid when the algorithm branches on data, provided
+every branch input is inside the snapshot or explicit params. Any override a
+user can set is an analysis param and belongs in the second term. The report
+must not depend on wall clock, caller identity, other users' data, machine state,
+remote config, or execution history.
 
 Any value that can change a conclusion must be visible in the Report. M3 starts
 this with an additive `configuration` block that publishes effective gate terms,

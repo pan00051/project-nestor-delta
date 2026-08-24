@@ -1,9 +1,25 @@
 # Nestor — Insight ⇄ Delta Integration Boundary (v1)
 
-**Status:** v1 draft · agreed scope, not yet implemented.
-**Relationship to `WEBSITE_CONTRACT_W0.md`:** W0 remains the single source of truth for the
-**analysis contract** (Report JSON v1 schema, S1–S10 field mapping, outcome semantics,
-frontend IA). This document does **not** replace or restate it. It governs only the
+**Status:** v1 · partly implemented. The §2 endpoints and the §3 Report/Run split are live as
+of M2. §4.3 is **partly** live: Pydantic models generate a committed JSON Schema and the Delta
+side validates against it, but the dual-repo shared artifact, the build-blocking non-additive
+schema diff, and the Insight-side CI do not exist yet. The §2.4 async migration and §2.9 auth
+enforcement remain deferred by decision. Per-section implementation status is stated where it
+differs from this line; do not read the header as a blanket claim.
+**Amendment log:** 2026-08-24 (M3) — P2 gains `effective_configuration`; §2.8 gains `ledger`;
+§3.1 gains `configuration`. 2026-08-24 (doc repair, reviewed) — Status now states §4.3's
+partial implementation rather than claiming it whole; §1 and §2.8 corrected to shipped values;
+§2.6 records the deployment interaction; §3.1 places the ledger; §4.4 records which artifact is
+authoritative for what; §5.6/§5.7 carry two existing rules the document never held. P2 and §2.7
+are reconciled on a three-term key (review decision), and the in-Report reproducibility string
+was corrected to match — moving `pipeline_version` from `77f014d78885` to `3665b88553ad` with no
+change to any calculation, threshold, or numerical analytical output; the Report metadata
+output itself changed. §1 states what a version change does and does not assert; §1.1 fixes the
+scope of each identifier. §2.8 response freshness remains Open.
+**Relationship to `WEBSITE_CONTRACT_W0.md`:** W0 remains the source of truth for the
+**semantic analysis contract** (S1–S10 field mapping, outcome meaning, and frontend IA). The
+Pydantic models and committed JSON Schema govern machine shape and nullability (§4.3–§4.4).
+This document does **not** replace or restate W0. It governs only the
 **product-to-product boundary**: resource shape, the Report/Run split, and how v1 is allowed
 to evolve. Where the two documents overlap, W0 wins.
 
@@ -28,14 +44,21 @@ Insight, not in Delta.
 **P2 — Report is a pure function; Run is an execution record.**
 
 ```
-report = f(snapshot_id, analysis_params, effective_configuration, pipeline_version)
+effective_configuration = g(snapshot_id, analysis_params, pipeline_version)
+report                  = f(snapshot_id, analysis_params, pipeline_version)
 ```
 
-Nothing outside that tuple may affect a single byte of `report`. Same snapshot,
-same params, same effective configuration, same version → byte-identical report,
-on any machine, at any wall-clock time. This is the product's credibility claim
-(Delta is a relationship lie-detector), and it is what makes `snapshot.hash`
-meaningful.
+Nothing outside those three terms may affect a single byte of `report`. Same snapshot, same
+params, same version → byte-identical report, on any machine, at any wall-clock time. This is
+the product's credibility claim (Delta is a relationship lie-detector), and it is what makes
+`snapshot.hash` meaningful.
+
+The **effective configuration is a published result, not a fourth input.** The algorithm may
+branch on its own data, and `report.configuration` exists so a consumer can see which branch
+ran (§3.1) — but every branch input must already be inside the snapshot or the explicit params,
+which is what keeps `f` a three-term function. Any override a user can set is an analysis
+param and belongs in the second term. If a value ever influences the outcome without being
+derivable from those three, that is a violation of P2, not a reason to add a fourth term.
 
 **P3 — `baseline_only` is a success.**
 HTTP `200`, `outcome: "baseline_only"`. It is the product's signature state, not an error
@@ -45,17 +68,54 @@ and not "no data". No error code may ever be minted for it. (W0 §1.)
 
 ---
 
-## 1. Version identifiers — three distinct things
+## 1. Version identifiers
 
 | Identifier | Lives in | Changes when | Example |
 |---|---|---|---|
 | `api_version` | URL path + Run envelope | transport/resource shape changes | `v1` |
 | `schema_version` | Report body | Report JSON schema changes | `delta.report.v1` **(frozen — do not rename)** |
-| `pipeline_version` | Report body | S1–S10 analysis code changes | `s10.2026.08.1` |
+| `pipeline_version` | Report body | the report-producing analysis **or adapter** implementation changes | `s10.sha256.3665b88553ad` |
 
 `pipeline_version` is the field that explains "same data, different result". It is part of the
 reproducibility triple (P2) and therefore belongs in the Report, alongside
 `producer: "nestor-delta"`.
+
+**What a version change does and does not assert.** It identifies *source-level provenance*:
+the implementation that produced this Report is byte-identical to the implementation that
+produced any other Report carrying the same value. It does **not** by itself imply that
+numerical outputs changed. A corrected comment, a reworded metadata string, or a refactor that
+leaves every number identical will all move it, and that is correct — the Report's content and
+its stated semantics are part of what the field covers. Reading a moved version as "the maths
+changed" is a misreading of the field, not a defect in it.
+
+The converse also holds and matters more: two Reports sharing a value were produced by the same
+implementation, which is the guarantee the field exists to give.
+
+**`pipeline_version` is derived, never hand-written.** It is a SHA-256 over the contents of
+`versioning.py`, `adapter.py`, and every module under `src/nestor_delta/`, rendered as
+`s10.sha256.<first 12 hex>`. The example above is a real value, not a placeholder: an earlier
+hand-authored example string from this document was copied into code as the live value and
+stayed constant across a release that changed every report's numbers — the exact failure the
+field exists to prevent. Any example shown here must be a value the code actually produced.
+
+### 1.1 Scope of each identifier — do not widen `pipeline_version`
+
+The API layer (`app.py`, `boundary.py`, `schema.py`, `errors.py`, `eurostat.py`) is deliberately
+**outside** the hash, as is the web build. That is the correct boundary: folding routing, CORS,
+ledger, or caching changes into `pipeline_version` would produce version movements unrelated to
+the Report, which devalues the one field whose worth is that every movement means something
+about the Report.
+
+| Identity | Covers | Lives in |
+|---|---|---|
+| `pipeline_version` | Report computation and assembly | Report body |
+| `api_version`, `schema_version` | compatibility boundaries | URL/Run envelope, Report body |
+| `service_build_version` / `deployment_revision` *(planned)* | API deployment identity | `capabilities` and/or `health` |
+| `web_build_version` *(planned, if the web tier needs independent verification)* | web deployment identity | web build surface |
+
+Until the planned identifiers exist, **a current `pipeline_version` proves only that the
+analysis and adapter build is current.** It is not evidence that the API deployment or the web
+deployment is up to date; those must be verified separately.
 
 `schema_version` keeps its already-frozen literal `"delta.report.v1"`. It is asserted by the
 existing test suite; renaming it is a breaking change with no benefit.
@@ -148,6 +208,11 @@ only, lost on restart) so `GET /api/v1/runs/{run_id}` is real rather than a perm
 Insight must not treat a run as durable until capabilities says otherwise. Shipping a GET
 endpoint that silently always 404s is worse than not shipping it.
 
+**Deployment interaction.** The store is process-local, so any platform behaviour that ends
+the process — a serverless sleep, a restart, a redeploy — empties it before `max_runs` is
+reached. `max_runs: 100` is a ceiling, not a promise. Deployments that advertise retention
+must keep the API process resident.
+
 ### 2.7 Idempotency
 
 Because `snapshot_id` is content-addressed (§3.2), the reproducibility triple
@@ -155,17 +220,29 @@ Because `snapshot_id` is content-addressed (§3.2), the reproducibility triple
 submission of an identical triple **may** return the existing run instead of recomputing.
 Optional in v1; the key must exist regardless.
 
+The key is three-term because `effective_configuration` is derived from exactly these three
+(P2) and so adds nothing to it. Adding a fourth term here would not make the key stricter — it
+would only hide the fact that a configuration not derivable from the triple is a P2 violation.
+
 ### 2.8 `GET /api/v1/capabilities`
 
-Unauthenticated, cheap, cacheable. Minimum contents:
+Unauthenticated and cheap. Minimum contents:
 
 ```jsonc
 {
   "api_version": "v1",
   "report_schema_version": "delta.report.v1",
-  "pipeline_version": "s10.2026.08.1",
+  "pipeline_version": "s10.sha256.3665b88553ad",
   "inputs": { "bundled_cases": ["..."], "csv_upload": true, "max_upload_bytes": 5242880 },
-  "eurostat": { "enabled": true, "presets": ["ei_bssi_m_r2"], "dataset_search": false },
+  "eurostat": {
+    "enabled": true,
+    "presets": [
+      { "id": "es_industry_vs_construction_confidence",
+        "label": "ES industry vs construction confidence",
+        "dataset": "ei_bssi_m_r2" }
+    ],
+    "dataset_search": false
+  },
   "execution": { "mode": "sync" },
   "run_retention": { "mode": "in_memory_process_lifetime", "max_runs": 100 },
   "ledger": { "enabled": true, "durable": true, "path": "/data/relationship_ledger.jsonl" },
@@ -173,8 +250,21 @@ Unauthenticated, cheap, cacheable. Minimum contents:
 }
 ```
 
+Preset entries are three-part by contract: `id` is the stable identifier consumers key on,
+`label` is display text that may change freely, and `dataset` is the machine-readable source
+code. Never key on `label`.
+
 This is how Insight learns which Eurostat presets exist without hardcoding them, and how it
 learns the day `execution.mode` flips to `"async"`.
+
+> **Open — response freshness.** Capabilities is the discovery surface §5.6 tells consumers to
+> trust in place of hardcoded values, and it carries `pipeline_version`, the provenance field.
+> A stale response is indistinguishable from a correct one and silently defeats both purposes.
+> Observed: a fetch to the canonical URL returned a superseded `pipeline_version` with the
+> `ledger` block absent, while a fetch to the same endpoint with a cache-busting query
+> parameter returned the current values, moments apart. The mechanism is not yet diagnosed —
+> naming a cache would already presume the cause. Until it is, every verification fetch must
+> carry a cache-busting parameter, and no `Cache-Control` policy is prescribed here.
 
 ### 2.9 Auth entry point
 
@@ -193,7 +283,7 @@ local UI, and that there is exactly one place to implement enforcement later.
 
 | Field | Home | Why |
 |---|---|---|
-| `schema_version`, `producer`, `pipeline_version` | Report | part of the reproducibility triple |
+| `schema_version`, `producer`, `pipeline_version` | Report | part of the reproducibility tuple |
 | `configuration` | Report | effective parameter values and the rules that selected them |
 | `generated_as_of` | Report | **data date** of the past-only boundary — not wall clock |
 | `snapshot.hash`, `snapshot.source`, `snapshot.provenance` | Report | describes the input |
@@ -212,6 +302,11 @@ field nothing enforces.
 `created_at` (Run, wall clock) and `generated_as_of` (Report, data date) must never appear
 side by side. Keeping them in different objects is the structural guard against the
 look-ahead bug this distinction exists to prevent.
+
+**The selected-relation ledger is a Run-boundary sidecar, not Report content.** It is an
+append-only record of relations a completed run selected, written outside the Report body so
+the Report stays a pure function. Its contents and durability rules live in
+`WEBSITE_BACKEND_CONTRACT.md`; capabilities advertises it per §2.8.
 
 ### 3.2 Snapshot identity
 
@@ -259,6 +354,12 @@ Open enums (will grow): `reason_code`, error `code`, `lifecycle.state`.
 
 ### 4.3 Schema as an executable artifact
 
+**Status: partly implemented.** Live today: Pydantic models generate the committed JSON Schema,
+and Delta-side tests validate responses against it, including the unknown-enum / extra-field
+fixture. Not built: the versioned artifact shared by both repos, the build failure on a
+non-additive schema diff, and the Insight-side CI. The bullets below are the target, not a
+description of the current pipeline.
+
 The contract is maintained by CI, not by prose. Documents drift; tests do not.
 
 - Pydantic models are the source; JSON Schema is generated from them and committed.
@@ -273,6 +374,30 @@ The contract is maintained by CI, not by prose. Documents drift; tests do not.
 
 A schema change that lands without regenerating the shared artifact is the failure mode this
 section exists to prevent.
+
+### 4.4 Which artifact is authoritative
+
+When the project docs, the repository docs, the code, and a live deployment disagree, the
+answer depends on *what kind of question* is being asked. There is no single winner.
+
+| Question | Authority |
+|---|---|
+| What shape is this field, is it nullable, what type? | Pydantic models + the committed JSON Schema |
+| Is this number correct — does the detector detect? | The frozen S7–S10 rules + the ground-truth fixtures |
+| What does this field *mean*, and what may a surface do with it? | The accepted contracts and specs — `WEBSITE_CONTRACT_W0.md` first, then this document, then the visual spec |
+| What is actually running right now? | The deployment itself: capabilities fetched with a cache-busting parameter, service logs, and inspection of real storage |
+
+**"Code plus tests wins" is explicitly rejected as a general rule.** Code and its tests can
+encode the same mistake together and stay green indefinitely. The worked example is in this
+project's own history: `effect.score` was read from a 36-month rolling window while being
+presented as the full-sample effect, overstating the product's headline number by 14% in the
+over-claiming direction — and all 132 tests passed throughout. What caught it was a fixture
+whose answer was known by construction, which is why algorithmic truth sits with ground truth
+rather than with the test suite at large.
+
+The practical rule that follows: a decision is not settled until the artifact named above for
+its kind of question has been changed. Updating prose alone settles nothing; updating code
+alone settles nothing a reader can discover.
 
 ---
 
@@ -299,7 +424,11 @@ as `forecast_available`, and Insight must not expect them. Derive from the sourc
 selected or not (W0 §3). Counting the array is not counting the selected relations.
 
 **5.6 Discover, don't hardcode.** Eurostat presets, bundled cases, upload limits and feature
-flags come from `/api/v1/capabilities`.
+flags come from `/api/v1/capabilities`. Key on preset `id`, never on `label` (§2.8).
+
+**5.7 Never render `noise_floor` as a gate.** It is a diagnostic comparison scale and gates
+nothing in v1 (W0 §3). A UI that shows it as a threshold, a floor beneath a score, or a
+pass/fail badge is asserting a selection rule that does not exist.
 
 ---
 
@@ -313,9 +442,9 @@ Deferred by decision, not by oversight:
   the atomic unit; fetching parts separately risks serving pieces from different runs. If
   payload size becomes a real problem, add `GET /api/v1/reports/{id}?include=audit,transforms`
   rather than independent resources.
-- **Durable persistence, accounts, tenancy enforcement, share links, PDF export, public
-  deployment** — no fields or endpoints are being designed for these beyond the reserved
-  `requested_by` / `tenant_id` slots in the Run envelope and the auth stub in §2.9.
+- **Durable persistence, accounts, tenancy enforcement, share links, PDF export** — no fields
+  or endpoints are being designed for these beyond the reserved `requested_by` / `tenant_id`
+  slots in the Run envelope and the auth stub in §2.9.
 - **Generic Eurostat dataset search / indicator catalogue** — not implemented; capabilities
   reports `dataset_search: false`.
 - Anything governed by `WEBSITE_CONTRACT_W0.md`.

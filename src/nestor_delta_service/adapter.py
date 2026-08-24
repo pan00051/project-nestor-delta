@@ -855,8 +855,8 @@ def _configuration_block(
     return {
         "reproducibility": {
             "rule": (
-                "same snapshot, same analysis params, same effective "
-                "configuration, same pipeline_version -> same report"
+                "effective configuration is derived from snapshot, analysis "
+                "params, and pipeline_version; same three inputs -> same report"
             )
         },
         "inputs": {
