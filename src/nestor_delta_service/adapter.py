@@ -36,8 +36,15 @@ from nestor_delta.temporal_stability import classify_relation_lifecycle
 
 from .eurostat import build_eurostat_snapshot
 from .errors import SCHEMA_VERSION, ServiceError, analysis_failure, not_found, validation_error
+from .versioning import PIPELINE_VERSION
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+EVIDENCE_GATE_CONFIG = {
+    "alpha": 0.05,
+    "min_stability": 0.45,
+    "max_uncertainty": 0.20,
+    "min_sample_support": 0.50,
+}
 SUPPORTED_CASES = {
     "spain_retail_eurostat_2008_2025": REPO_ROOT
     / "cases"
@@ -165,13 +172,18 @@ def build_report(analysis_input: AnalysisInput) -> dict[str, Any]:
     ranking = rank_target_sources(weights, analysis_input.target)
     relation_views, relation_objects = _relation_views(analysis_input, train_rows, ranking)
     gate = select_relations_with_evidence(
-        relation_objects, max_lag=analysis_input.lag_window, target=analysis_input.target
+        relation_objects,
+        max_lag=analysis_input.lag_window,
+        target=analysis_input.target,
+        **EVIDENCE_GATE_CONFIG,
     )
     relation_views = _apply_gate_decisions(relation_views, gate)
     outcome = "ok" if gate.selected_relations else "baseline_only"
 
     return {
         "schema_version": SCHEMA_VERSION,
+        "producer": "nestor-delta",
+        "pipeline_version": PIPELINE_VERSION,
         "outcome": outcome,
         "generated_as_of": analysis_input.train_end,
         "case": {
@@ -184,6 +196,9 @@ def build_report(analysis_input: AnalysisInput) -> dict[str, Any]:
             "lag_window": analysis_input.lag_window,
         },
         "snapshot": _snapshot_block(analysis_input),
+        "configuration": _configuration_block(
+            analysis_input, train_rows, relation_objects
+        ),
         "transform_declarations": dict(transforms),
         "transform_diagnostics": audit["transform_diagnostics"],
         "data_audit": audit["data_audit"],
@@ -729,7 +744,7 @@ def _s9_relation_objects(
 ) -> list[RelationWeight]:
     if len(train_rows) <= analysis_input.lag_window + 8:
         return list(ranking)
-    window_size = min(36, max(analysis_input.lag_window + 6, len(train_rows) // 3))
+    window_size = _rolling_window_size(analysis_input, train_rows)
     if window_size <= analysis_input.lag_window:
         return list(ranking)
     steps = range(window_size + analysis_input.lag_window + 1, len(train_rows) + 1, 6)
@@ -770,7 +785,7 @@ def _lifecycle_block(
 ) -> dict[str, Any]:
     if len(train_rows) <= analysis_input.lag_window + 8:
         return {"state": "birth", "points": None}
-    window_size = min(36, max(analysis_input.lag_window + 6, len(train_rows) // 3))
+    window_size = _rolling_window_size(analysis_input, train_rows)
     steps = range(window_size + analysis_input.lag_window + 1, len(train_rows) + 1, 6)
     try:
         rolling = compute_rolling_transformed_relation_weights(
@@ -796,7 +811,7 @@ def _trajectory_block(
 ) -> list[dict[str, Any]] | None:
     if len(train_rows) <= analysis_input.lag_window + 8:
         return None
-    window_size = min(36, max(analysis_input.lag_window + 6, len(train_rows) // 3))
+    window_size = _rolling_window_size(analysis_input, train_rows)
     steps = range(window_size + analysis_input.lag_window + 1, len(train_rows) + 1, 6)
     try:
         rolling = compute_rolling_transformed_relation_weights(
@@ -822,6 +837,74 @@ def _trajectory_block(
         }
         for point in trajectory
     ]
+
+
+def _configuration_block(
+    analysis_input: AnalysisInput,
+    train_rows: Sequence[Mapping[str, float]],
+    relation_objects: Sequence[RelationWeight],
+) -> dict[str, Any]:
+    relation_sample_count = (
+        max(relation.sample_count for relation in relation_objects)
+        if relation_objects
+        else 0
+    )
+    comparisons = max(
+        1, analysis_input.lag_window * len(analysis_input.candidate_signals)
+    )
+    return {
+        "reproducibility": {
+            "rule": (
+                "same snapshot, same analysis params, same effective "
+                "configuration, same pipeline_version -> same report"
+            )
+        },
+        "inputs": {
+            "source": analysis_input.source,
+            "train_end": analysis_input.train_end,
+            "lag_window": analysis_input.lag_window,
+            "candidate_count": len(analysis_input.candidate_signals),
+            "train_observations": len(train_rows),
+            "transform_declarations": dict(analysis_input.transform_declarations),
+        },
+        "effect": {
+            "score_scope": "full_train_window",
+            "ranking": "score_descending_then_source",
+        },
+        "rolling_lifecycle": {
+            "window_rule": "min(36, max(lag_window + 6, train_observations // 3))",
+            "effective_window": (
+                _rolling_window_size(analysis_input, train_rows)
+                if len(train_rows) > analysis_input.lag_window + 8
+                else None
+            ),
+            "step_interval": 6,
+            "state_rule": "S9 end-of-sample trajectory classifier",
+        },
+        "noise_floor": {
+            "role": "diagnostic_not_gate",
+            "sample_count": relation_sample_count,
+            "comparisons_rule": "lag_window * candidate_count",
+            "comparisons": comparisons,
+            "alpha": EVIDENCE_GATE_CONFIG["alpha"],
+        },
+        "evidence_gate": {
+            "selection_terms": [
+                "FDR",
+                "stability",
+                "uncertainty",
+                "sample_support",
+            ],
+            **EVIDENCE_GATE_CONFIG,
+        },
+    }
+
+
+def _rolling_window_size(
+    analysis_input: AnalysisInput,
+    train_rows: Sequence[Mapping[str, float]],
+) -> int:
+    return min(36, max(analysis_input.lag_window + 6, len(train_rows) // 3))
 
 
 def _apply_gate_decisions(

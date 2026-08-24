@@ -3,18 +3,6 @@
     "Baseline": {
       "additionalProperties": true,
       "properties": {
-        "mae": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Mae"
-        },
         "name": {
           "anyOf": [
             {
@@ -26,6 +14,18 @@
           ],
           "default": null,
           "title": "Name"
+        },
+        "mae": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mae"
         }
       },
       "title": "Baseline",
@@ -34,6 +34,30 @@
     "Case": {
       "additionalProperties": true,
       "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
+        },
         "candidate_signals": {
           "anyOf": [
             {
@@ -61,18 +85,6 @@
           "default": null,
           "title": "Frequency"
         },
-        "lag_window": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Lag Window"
-        },
         "n_observations": {
           "anyOf": [
             {
@@ -85,30 +97,6 @@
           "default": null,
           "title": "N Observations"
         },
-        "name": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Name"
-        },
-        "target": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Target"
-        },
         "train_end": {
           "anyOf": [
             {
@@ -120,6 +108,18 @@
           ],
           "default": null,
           "title": "Train End"
+        },
+        "lag_window": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lag Window"
         }
       },
       "title": "Case",
@@ -128,30 +128,6 @@
     "Effect": {
       "additionalProperties": true,
       "properties": {
-        "effect_size_vs_noise_floor": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Effect Size Vs Noise Floor"
-        },
-        "noise_floor": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Noise Floor"
-        },
         "score": {
           "anyOf": [
             {
@@ -163,6 +139,18 @@
           ],
           "default": null,
           "title": "Score"
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight"
         },
         "sign": {
           "anyOf": [
@@ -176,7 +164,7 @@
           "default": null,
           "title": "Sign"
         },
-        "weight": {
+        "noise_floor": {
           "anyOf": [
             {
               "type": "number"
@@ -186,7 +174,19 @@
             }
           ],
           "default": null,
-          "title": "Weight"
+          "title": "Noise Floor"
+        },
+        "effect_size_vs_noise_floor": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effect Size Vs Noise Floor"
         }
       },
       "title": "Effect",
@@ -199,18 +199,9 @@
           "title": "Code",
           "type": "string"
         },
-        "detail": {
-          "anyOf": [
-            {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Detail"
+        "message": {
+          "title": "Message",
+          "type": "string"
         },
         "field": {
           "anyOf": [
@@ -224,9 +215,18 @@
           "default": null,
           "title": "Field"
         },
-        "message": {
-          "title": "Message",
-          "type": "string"
+        "detail": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
         }
       },
       "required": [
@@ -239,18 +239,6 @@
     "Lifecycle": {
       "additionalProperties": true,
       "properties": {
-        "points": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Points"
-        },
         "state": {
           "anyOf": [
             {
@@ -262,6 +250,18 @@
           ],
           "default": null,
           "title": "State"
+        },
+        "points": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Points"
         }
       },
       "title": "Lifecycle",
@@ -304,17 +304,17 @@
     "PredictionConfidence": {
       "additionalProperties": true,
       "properties": {
-        "capped_by": {
+        "confidence": {
           "anyOf": [
             {
-              "type": "string"
+              "type": "number"
             },
             {
               "type": "null"
             }
           ],
           "default": null,
-          "title": "Capped By"
+          "title": "Confidence"
         },
         "components": {
           "anyOf": [
@@ -329,17 +329,17 @@
           "default": null,
           "title": "Components"
         },
-        "confidence": {
+        "capped_by": {
           "anyOf": [
             {
-              "type": "number"
+              "type": "string"
             },
             {
               "type": "null"
             }
           ],
           "default": null,
-          "title": "Confidence"
+          "title": "Capped By"
         }
       },
       "title": "PredictionConfidence",
@@ -348,16 +348,29 @@
     "RelationView": {
       "additionalProperties": true,
       "properties": {
-        "effect": {
+        "source": {
           "anyOf": [
             {
-              "$ref": "#/$defs/Effect"
+              "type": "string"
             },
             {
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "title": "Source"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
         },
         "lag": {
           "anyOf": [
@@ -371,6 +384,76 @@
           "default": null,
           "title": "Lag"
         },
+        "transform": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Transform"
+        },
+        "effect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Effect"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "significance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Significance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stability": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stability"
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncertainty"
+        },
+        "sample_support": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Support"
+        },
         "lifecycle": {
           "anyOf": [
             {
@@ -381,6 +464,18 @@
             }
           ],
           "default": null
+        },
+        "selected": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected"
         },
         "reason_code": {
           "anyOf": [
@@ -406,77 +501,6 @@
           "default": null,
           "title": "Reason Text"
         },
-        "sample_support": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Sample Support"
-        },
-        "selected": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Selected"
-        },
-        "significance": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Significance"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "source": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Source"
-        },
-        "stability": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Stability"
-        },
-        "target": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Target"
-        },
         "trajectory": {
           "anyOf": [
             {
@@ -492,30 +516,6 @@
           ],
           "default": null,
           "title": "Trajectory"
-        },
-        "transform": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Transform"
-        },
-        "uncertainty": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Uncertainty"
         }
       },
       "title": "RelationView",
@@ -524,18 +524,6 @@
     "Selection": {
       "additionalProperties": true,
       "properties": {
-        "final_mode": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Final Mode"
-        },
         "fit_status": {
           "anyOf": [
             {
@@ -547,6 +535,18 @@
           ],
           "default": null,
           "title": "Fit Status"
+        },
+        "final_mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Final Mode"
         },
         "selected_count": {
           "anyOf": [
@@ -582,17 +582,17 @@
     "Significance": {
       "additionalProperties": true,
       "properties": {
-        "clears": {
+        "p_value": {
           "anyOf": [
             {
-              "type": "boolean"
+              "type": "number"
             },
             {
               "type": "null"
             }
           ],
           "default": null,
-          "title": "Clears"
+          "title": "P Value"
         },
         "fdr_threshold": {
           "anyOf": [
@@ -606,17 +606,17 @@
           "default": null,
           "title": "Fdr Threshold"
         },
-        "p_value": {
+        "clears": {
           "anyOf": [
             {
-              "type": "number"
+              "type": "boolean"
             },
             {
               "type": "null"
             }
           ],
           "default": null,
-          "title": "P Value"
+          "title": "Clears"
         }
       },
       "title": "Significance",
@@ -637,6 +637,18 @@
           "default": null,
           "title": "Hash"
         },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
         "provenance": {
           "anyOf": [
             {
@@ -649,18 +661,6 @@
           ],
           "default": null,
           "title": "Provenance"
-        },
-        "source": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Source"
         }
       },
       "title": "Snapshot",
@@ -669,64 +669,37 @@
   },
   "additionalProperties": true,
   "properties": {
-    "baseline": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Baseline"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
     },
-    "case": {
+    "producer": {
       "anyOf": [
         {
-          "$ref": "#/$defs/Case"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "data_audit": {
-      "anyOf": [
-        {
-          "additionalProperties": true,
-          "type": "object"
+          "type": "string"
         },
         {
           "type": "null"
         }
       ],
       "default": null,
-      "title": "Data Audit"
+      "title": "Producer"
     },
-    "error": {
+    "pipeline_version": {
       "anyOf": [
         {
-          "$ref": "#/$defs/ErrorBody"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "evaluation": {
-      "anyOf": [
-        {
-          "additionalProperties": true,
-          "type": "object"
+          "type": "string"
         },
         {
           "type": "null"
         }
       ],
       "default": null,
-      "title": "Evaluation"
+      "title": "Pipeline Version"
+    },
+    "outcome": {
+      "title": "Outcome",
+      "type": "string"
     },
     "generated_as_of": {
       "anyOf": [
@@ -740,68 +713,10 @@
       "default": null,
       "title": "Generated As Of"
     },
-    "narrative": {
+    "case": {
       "anyOf": [
         {
-          "$ref": "#/$defs/Narrative"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "noise_floor": {
-      "anyOf": [
-        {
-          "additionalProperties": true,
-          "type": "object"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Noise Floor"
-    },
-    "outcome": {
-      "title": "Outcome",
-      "type": "string"
-    },
-    "prediction_confidence": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/PredictionConfidence"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "relations": {
-      "anyOf": [
-        {
-          "items": {
-            "$ref": "#/$defs/RelationView"
-          },
-          "type": "array"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Relations"
-    },
-    "schema_version": {
-      "title": "Schema Version",
-      "type": "string"
-    },
-    "selection": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Selection"
+          "$ref": "#/$defs/Case"
         },
         {
           "type": "null"
@@ -819,6 +734,19 @@
         }
       ],
       "default": null
+    },
+    "configuration": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Configuration"
     },
     "transform_declarations": {
       "anyOf": [
@@ -851,6 +779,104 @@
       "default": null,
       "title": "Transform Diagnostics"
     },
+    "data_audit": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data Audit"
+    },
+    "baseline": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Baseline"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "evaluation": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Evaluation"
+    },
+    "noise_floor": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Noise Floor"
+    },
+    "relations": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/RelationView"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Relations"
+    },
+    "selection": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Selection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "prediction_confidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PredictionConfidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "narrative": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Narrative"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "warnings": {
       "anyOf": [
         {
@@ -863,6 +889,17 @@
       ],
       "default": null,
       "title": "Warnings"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ErrorBody"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [

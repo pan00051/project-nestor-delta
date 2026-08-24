@@ -95,10 +95,13 @@ class PredictionConfidence(FlexibleModel):
 
 class ReportJsonV1(FlexibleModel):
     schema_version: str
+    producer: Optional[str] = None
+    pipeline_version: Optional[str] = None
     outcome: str
     generated_as_of: Optional[str] = None
     case: Optional[Case] = None
     snapshot: Optional[Snapshot] = None
+    configuration: Optional[Dict[str, Any]] = None
     transform_declarations: Optional[Dict[str, str]] = None
     transform_diagnostics: Optional[List[Dict[str, Any]]] = None
     data_audit: Optional[Dict[str, Any]] = None
@@ -115,4 +118,3 @@ class ReportJsonV1(FlexibleModel):
 
 def report_json_schema() -> dict[str, Any]:
     return ReportJsonV1.model_json_schema()
-

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-import hashlib
+import json
+import logging
+import os
 from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,28 +17,13 @@ from nestor_delta_web import presets
 
 from .adapter import SUPPORTED_CASES
 from .errors import SCHEMA_VERSION, not_found
+from .versioning import PIPELINE_VERSION
 
 API_VERSION = "v1"
 RUN_STORE_MAX = 100
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 REPO_ROOT = Path(__file__).resolve().parents[2]
-
-
-def _pipeline_version() -> str:
-    digest = hashlib.sha256()
-    paths = (
-        Path(__file__).with_name("adapter.py"),
-        *sorted((REPO_ROOT / "src" / "nestor_delta").glob("*.py")),
-    )
-    for path in paths:
-        digest.update(path.relative_to(REPO_ROOT).as_posix().encode("utf-8"))
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-        digest.update(b"\0")
-    return f"s10.sha256.{digest.hexdigest()[:12]}"
-
-
-PIPELINE_VERSION = _pipeline_version()
+LOGGER = logging.getLogger(__name__)
 
 
 class RunStore:
@@ -65,10 +52,30 @@ class RunStore:
 
 
 RUN_STORE = RunStore()
+LEDGER_LOCK = RLock()
+DEFAULT_RELATIONSHIP_LEDGER_PATH = Path("/tmp/nestor_delta_relationship_ledger.jsonl")
 
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def relationship_ledger_path() -> Path:
+    return Path(
+        os.environ.get(
+            "NESTOR_RELATIONSHIP_LEDGER_PATH",
+            str(DEFAULT_RELATIONSHIP_LEDGER_PATH),
+        )
+    )
+
+
+def relationship_ledger_status() -> dict[str, Any]:
+    configured_path = os.environ.get("NESTOR_RELATIONSHIP_LEDGER_PATH")
+    return {
+        "enabled": True,
+        "durable": bool(configured_path),
+        "path": str(relationship_ledger_path()),
+    }
 
 
 def capabilities() -> dict[str, Any]:
@@ -91,6 +98,7 @@ def capabilities() -> dict[str, Any]:
             "mode": "in_memory_process_lifetime",
             "max_runs": RUN_STORE.max_runs,
         },
+        "ledger": relationship_ledger_status(),
         "features": {
             "pdf_export": False,
             "report_persistence": False,
@@ -143,6 +151,49 @@ def completed_envelope(
         duration_ms=int((perf_counter() - started_at) * 1000),
         report_id=str(uuid4()),
     )
+
+
+def append_relationship_ledger(envelope: Mapping[str, Any]) -> None:
+    """Append selected-relation outcome candidates outside the Report body."""
+    try:
+        report = envelope.get("report")
+        run = envelope.get("run") or {}
+        if not isinstance(report, Mapping):
+            return
+        selected = [
+            relation
+            for relation in report.get("relations", []) or []
+            if isinstance(relation, Mapping) and relation.get("selected") is True
+        ]
+        if not selected:
+            return
+
+        path = relationship_ledger_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        snapshot = report.get("snapshot") or {}
+        case = report.get("case") or {}
+        with LEDGER_LOCK:
+            with path.open("a", encoding="utf-8") as handle:
+                for relation in selected:
+                    effect = relation.get("effect") or {}
+                    entry = {
+                        "mode": "realtime",
+                        "run_id": run.get("run_id"),
+                        "snapshot_hash": snapshot.get("hash"),
+                        "target": relation.get("target") or case.get("target"),
+                        "source": relation.get("source"),
+                        "lag": relation.get("lag"),
+                        "sign": effect.get("sign"),
+                        "score": effect.get("score"),
+                        "stability": relation.get("stability"),
+                        "generated_as_of": report.get("generated_as_of"),
+                        "pipeline_version": report.get("pipeline_version"),
+                    }
+                    handle.write(json.dumps(entry, sort_keys=True) + "\n")
+    except Exception:
+        LOGGER.exception(
+            "relationship ledger append failed; analysis response will continue"
+        )
 
 
 def failed_envelope(

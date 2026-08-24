@@ -28,12 +28,14 @@ Insight, not in Delta.
 **P2 — Report is a pure function; Run is an execution record.**
 
 ```
-report = f(snapshot_id, analysis_params, pipeline_version)
+report = f(snapshot_id, analysis_params, effective_configuration, pipeline_version)
 ```
 
-Nothing outside that tuple may affect a single byte of `report`. Same triple → byte-identical
-report, on any machine, at any wall-clock time. This is the product's credibility claim
-(Delta is a relationship lie-detector), and it is what makes `snapshot.hash` meaningful.
+Nothing outside that tuple may affect a single byte of `report`. Same snapshot,
+same params, same effective configuration, same version → byte-identical report,
+on any machine, at any wall-clock time. This is the product's credibility claim
+(Delta is a relationship lie-detector), and it is what makes `snapshot.hash`
+meaningful.
 
 **P3 — `baseline_only` is a success.**
 HTTP `200`, `outcome: "baseline_only"`. It is the product's signature state, not an error
@@ -166,6 +168,7 @@ Unauthenticated, cheap, cacheable. Minimum contents:
   "eurostat": { "enabled": true, "presets": ["ei_bssi_m_r2"], "dataset_search": false },
   "execution": { "mode": "sync" },
   "run_retention": { "mode": "in_memory_process_lifetime", "max_runs": 100 },
+  "ledger": { "enabled": true, "durable": true, "path": "/data/relationship_ledger.jsonl" },
   "features": { "pdf_export": false, "report_persistence": false, "sharing": false }
 }
 ```
@@ -191,6 +194,7 @@ local UI, and that there is exactly one place to implement enforcement later.
 | Field | Home | Why |
 |---|---|---|
 | `schema_version`, `producer`, `pipeline_version` | Report | part of the reproducibility triple |
+| `configuration` | Report | effective parameter values and the rules that selected them |
 | `generated_as_of` | Report | **data date** of the past-only boundary — not wall clock |
 | `snapshot.hash`, `snapshot.source`, `snapshot.provenance` | Report | describes the input |
 | analysis params (`target`, `candidate_signals`, `transform_declarations`, `train_end`, `max_lag`) | Report (`case`) | inputs to `f` |

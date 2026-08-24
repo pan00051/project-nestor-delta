@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
+import logging
 from time import perf_counter
 from typing import Any, Optional
 
 from .adapter import analyze_payload, audit_payload, snapshot_payload
 from .boundary import (
     RUN_STORE,
+    append_relationship_ledger,
     capabilities as capabilities_payload,
     completed_envelope,
     failed_envelope,
+    relationship_ledger_status,
     run_not_found,
     utc_now,
 )
 from .errors import SCHEMA_VERSION
+
+LOGGER = logging.getLogger(__name__)
 
 try:  # FastAPI is a deployment dependency, not needed for adapter unit tests.
     from fastapi import Depends, FastAPI, Header
@@ -48,6 +53,7 @@ def submit_run(payload: dict[str, Any], client: Optional[str] = None) -> tuple[i
             started_at=started_at,
         )
         RUN_STORE.put(envelope)
+        append_relationship_ledger(envelope)
         return status, envelope
     if status == 500:
         envelope = failed_envelope(
@@ -66,6 +72,12 @@ def create_app():
         raise RuntimeError("FastAPI is not installed. Install deployment dependencies first.")
 
     app = FastAPI(title="Nestor Delta API", version="0.1.0")
+    ledger = relationship_ledger_status()
+    LOGGER.info(
+        "relationship ledger path=%s durable=%s",
+        ledger["path"],
+        ledger["durable"],
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

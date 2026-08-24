@@ -161,6 +161,8 @@ Top-level report shape:
 ```json
 {
   "schema_version": "delta.report.v1",
+  "producer": "nestor-delta",
+  "pipeline_version": "s10.sha256.000000000000",
   "outcome": "ok | baseline_only | validation_error | analysis_failure | not_found",
   "generated_as_of": "2023-12",
   "case": {
@@ -176,6 +178,32 @@ Top-level report shape:
     "hash": null,
     "source": "case | upload | eurostat",
     "provenance": null
+  },
+  "configuration": {
+    "inputs": {
+      "source": "case",
+      "train_end": "2023-12",
+      "lag_window": 3,
+      "candidate_count": 4,
+      "train_observations": 192,
+      "transform_declarations": {}
+    },
+    "effect": {
+      "score_scope": "full_train_window",
+      "ranking": "score_descending_then_source"
+    },
+    "noise_floor": {
+      "role": "diagnostic_not_gate",
+      "comparisons": 12,
+      "alpha": 0.05
+    },
+    "evidence_gate": {
+      "selection_terms": ["FDR", "stability", "uncertainty", "sample_support"],
+      "alpha": 0.05,
+      "min_stability": 0.45,
+      "max_uncertainty": 0.2,
+      "min_sample_support": 0.5
+    }
   },
   "transform_declarations": {},
   "transform_diagnostics": [
@@ -241,8 +269,9 @@ Top-level report shape:
 W2 fills `data_audit` and `transform_diagnostics` in both `/audit` and
 `/analyze`. For the same input, those two blocks must match byte-for-byte.
 W3 fills `snapshot.hash` for case, upload, and Eurostat sources, and fills
-Eurostat provenance when data is fetched through the adapter. `evaluation` and
-`trajectory` may still be null. Detailed rolling trajectories are later work.
+Eurostat provenance when data is fetched through the adapter. M3 adds
+`configuration` so reports publish the effective parameters and rules that can
+change conclusions. `evaluation` may still be null.
 
 ## RelationView
 
@@ -289,6 +318,10 @@ FDR-corrected effect test plus stability, uncertainty, and sample-support gates.
 Frontend surfaces must not render the noise-floor comparison as a pass/fail
 badge.
 
+Lifecycle labels must be displayed with the corresponding `stability` value
+when they carry visual weight. A valid state such as `stable` can still hide
+uneven temporal support unless the numeric stability is shown beside it.
+
 `stability`, `uncertainty`, `selected`, confidence fields, and `trajectory` are
 nullable. Null means insufficient evidence or not run in W1.
 
@@ -307,6 +340,20 @@ nullable. Null means insufficient evidence or not run in W1.
 
 `final_mode` and lifecycle state are independent. Never merge them into one
 health score.
+
+## Selected-Relation Ledger
+
+The selected-relation ledger is not part of Report JSON. It is an append-only
+Run-boundary sidecar for completed API runs with selected relations. Each JSONL
+row records `run_id`, `snapshot_hash`, `target`, `source`, relation
+`lag`/`sign`/`score`/`stability`, `generated_as_of`, and `pipeline_version`.
+The default path is `/tmp/nestor_delta_relationship_ledger.jsonl`; deployments
+can set `NESTOR_RELATIONSHIP_LEDGER_PATH` for durable storage.
+
+Ledger writes are fail-soft: append failures are logged but never fail the
+analysis request. `/api/v1/capabilities` reports `ledger.enabled`,
+`ledger.durable`, and the resolved `ledger.path` so deployments cannot silently
+pretend that an ephemeral `/tmp` ledger is durable.
 
 ## Error Format
 
