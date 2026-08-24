@@ -82,6 +82,8 @@ def fmt_p_value(value: Any) -> str:
     if value is None:
         return "—"
     number = float(value)
+    if number == 0.0:
+        return "< 1e-12"
     if 0.0 < number < 1e-12:
         return "< 1e-12"
     if 0.0 < number < 0.0001:
@@ -263,6 +265,78 @@ def relation_view(relation: Mapping[str, Any]) -> dict[str, Any]:
 
 def relation_views(report: Mapping[str, Any]) -> list[dict[str, Any]]:
     return [relation_view(r) for r in report.get("relations", [])]
+
+
+def relation_expander_label(view: Mapping[str, Any]) -> str:
+    """Collapsed relation label. Lifecycle is paired with stability per F.2."""
+    selection = "insufficient" if view["selected"] is None else (
+        "selected" if view["selected"] else "not selected"
+    )
+    lifecycle = (view.get("lifecycle") or {}).get("label")
+    return (
+        f"{view['source']} → {view['target']} · "
+        f"{lifecycle} / stability {fmt_number(view.get('stability'))} · {selection}"
+    )
+
+
+def _fmt_plain(value: Any) -> str:
+    if value is None:
+        return "—"
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, float):
+        return f"{value:g}"
+    if isinstance(value, list):
+        return ", ".join(map(str, value)) if value else "—"
+    if isinstance(value, Mapping):
+        if not value:
+            return "—"
+        return ", ".join(f"{key}={value[key]}" for key in sorted(value))
+    return str(value)
+
+
+def configuration_rows(report: Mapping[str, Any]) -> list[dict[str, str]]:
+    """Effective configuration rows for display. Missing old-report blocks stay quiet."""
+    config = report.get("configuration")
+    if not isinstance(config, Mapping):
+        return []
+
+    inputs = config.get("inputs") or {}
+    effect = config.get("effect") or {}
+    rolling = config.get("rolling_lifecycle") or {}
+    noise = config.get("noise_floor") or {}
+    gate = config.get("evidence_gate") or {}
+    reproducibility = config.get("reproducibility") or {}
+
+    rows = [
+        ("Inputs", "Source", inputs.get("source")),
+        ("Inputs", "Training cutoff", inputs.get("train_end")),
+        ("Inputs", "Lag window", inputs.get("lag_window")),
+        ("Inputs", "Candidate count", inputs.get("candidate_count")),
+        ("Inputs", "Training observations", inputs.get("train_observations")),
+        ("Inputs", "Transform declarations", inputs.get("transform_declarations")),
+        ("Effect", "Score scope", effect.get("score_scope")),
+        ("Effect", "Ranking", effect.get("ranking")),
+        ("Rolling lifecycle", "Window rule", rolling.get("window_rule")),
+        ("Rolling lifecycle", "Effective window", rolling.get("effective_window")),
+        ("Rolling lifecycle", "Step interval", rolling.get("step_interval")),
+        ("Rolling lifecycle", "State rule", rolling.get("state_rule")),
+        ("Noise floor", "Role", noise.get("role")),
+        ("Noise floor", "Comparisons rule", noise.get("comparisons_rule")),
+        ("Noise floor", "Comparisons", noise.get("comparisons")),
+        ("Noise floor", "Alpha", noise.get("alpha")),
+        ("Evidence gate", "Selection terms", gate.get("selection_terms")),
+        ("Evidence gate", "Alpha", gate.get("alpha")),
+        ("Evidence gate", "Minimum stability", gate.get("min_stability")),
+        ("Evidence gate", "Maximum uncertainty", gate.get("max_uncertainty")),
+        ("Evidence gate", "Minimum sample support", gate.get("min_sample_support")),
+        ("Reproducibility", "Rule", reproducibility.get("rule")),
+    ]
+    return [
+        {"section": section, "setting": setting, "value": _fmt_plain(value)}
+        for section, setting, value in rows
+        if value is not None
+    ]
 
 
 # ---------------------------------------------------------------- audit + transforms

@@ -88,6 +88,8 @@ class NullNeverZero(unittest.TestCase):
         self.assertEqual(rl.fmt_number(0.0), "0.000")
 
     def test_tiny_p_value_formats_as_bound_not_zero(self):
+        self.assertEqual(rl.fmt_p_value(0.0), "< 1e-12")
+        self.assertNotEqual(rl.fmt_p_value(0.0), "0.0000")
         self.assertEqual(rl.fmt_p_value(1e-300), "< 1e-12")
         self.assertNotEqual(rl.fmt_p_value(1e-300), "0.0000")
         self.assertEqual(rl.fmt_p_value(0.00003), "3.0e-05")
@@ -150,6 +152,63 @@ class Lifecycle(unittest.TestCase):
             [step["state"] for step in steps if step["active"]],
             ["decaying"],
         )
+
+    def test_relation_expander_pairs_lifecycle_with_stability(self):
+        view = rl.relation_view(MOCKS["ok__with_selection"]["relations"][0])
+        label = rl.relation_expander_label(view)
+        self.assertIn(view["lifecycle"]["label"], label)
+        self.assertIn("stability", label)
+        self.assertIn(rl.fmt_number(view["stability"]), label)
+
+
+class ConfigurationDisplay(unittest.TestCase):
+    def test_old_reports_without_configuration_stay_quiet(self):
+        self.assertEqual(rl.configuration_rows(MOCKS["ok__with_selection"]), [])
+
+    def test_effective_configuration_is_exposed_as_rows(self):
+        report = {
+            "configuration": {
+                "reproducibility": {"rule": "same three inputs -> same report"},
+                "inputs": {
+                    "source": "case",
+                    "train_end": "2023-12",
+                    "lag_window": 3,
+                    "candidate_count": 2,
+                    "train_observations": 192,
+                    "transform_declarations": {"target": "diff", "signal": "log_diff"},
+                },
+                "effect": {
+                    "score_scope": "full_train_window",
+                    "ranking": "score_descending_then_source",
+                },
+                "rolling_lifecycle": {
+                    "window_rule": "min(36, max(lag_window + 6, train_observations // 3))",
+                    "effective_window": 36,
+                    "step_interval": 6,
+                    "state_rule": "S9 end-of-sample trajectory classifier",
+                },
+                "noise_floor": {
+                    "role": "diagnostic_not_gate",
+                    "comparisons_rule": "lag_window * candidate_count",
+                    "comparisons": 6,
+                    "alpha": 0.05,
+                },
+                "evidence_gate": {
+                    "selection_terms": ["FDR", "stability", "uncertainty", "sample_support"],
+                    "alpha": 0.05,
+                    "min_stability": 0.45,
+                    "max_uncertainty": 0.2,
+                    "min_sample_support": 0.5,
+                },
+            }
+        }
+        rows = rl.configuration_rows(report)
+        rendered = {(row["section"], row["setting"]): row["value"] for row in rows}
+        self.assertEqual(rendered[("Inputs", "Lag window")], "3")
+        self.assertEqual(rendered[("Rolling lifecycle", "Effective window")], "36")
+        self.assertEqual(rendered[("Evidence gate", "Minimum stability")], "0.45")
+        self.assertIn("stability", rendered[("Evidence gate", "Selection terms")])
+        self.assertIn("signal=log_diff", rendered[("Inputs", "Transform declarations")])
 
 
 class UserReportSummary(unittest.TestCase):

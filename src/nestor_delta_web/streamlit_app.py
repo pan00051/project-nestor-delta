@@ -13,7 +13,6 @@ from typing import Any, Mapping
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 from nestor_delta_web import api_client as api
 from nestor_delta_web import build_info as bi
@@ -29,25 +28,39 @@ st.set_page_config(
 _CSS = """
 <style>
 :root{
-  --delta-bg:#f4f4f1;--delta-surface:#fcfcfb;--delta-soft:#eeeee9;
-  --delta-ink:#11110f;--delta-muted:#66645f;--delta-faint:#8b8982;
-  --delta-line:#dcdad3;--delta-accent:#1769c2;--delta-good:#1f7438;
-  --delta-warn:#9a6800;--delta-serious:#b44924;
-  --delta-sidebar:#eaeae5;--delta-primary-ink:#fcfcfb;
-  color-scheme:light dark;
+  --delta-bg:light-dark(#f4f4f1,#0B0F14);
+  --delta-surface:light-dark(#fcfcfb,#121820);
+  --delta-soft:light-dark(#eeeee9,#18212B);
+  --delta-ink:light-dark(#11110f,#E6EDF3);
+  --delta-muted:light-dark(#66645f,#8B949E);
+  --delta-faint:light-dark(#8b8982,#8B949E);
+  --delta-line:light-dark(#dcdad3,rgba(255,255,255,0.08));
+  --delta-accent:#1769c2;
+  --delta-good:light-dark(#1f7438,#7bc88b);
+  --delta-warn:light-dark(#9a6800,#d8a847);
+  --delta-serious:light-dark(#b44924,#e07b62);
+  --delta-sidebar:light-dark(#eaeae5,#121820);
+  --delta-primary-ink:light-dark(#fcfcfb,#E6EDF3);
+  --delta-status-good-bg:light-dark(#eef6ef,rgba(31,116,56,.18));
+  --delta-status-good-line:light-dark(#a9c9b2,rgba(123,200,139,.38));
+  --delta-status-warn-bg:light-dark(#fbf5e5,rgba(154,104,0,.18));
+  --delta-status-warn-line:light-dark(#dbc99a,rgba(216,168,71,.38));
+  --delta-status-serious-bg:light-dark(#fbede7,rgba(180,73,36,.18));
+  --delta-status-serious-line:light-dark(#dfb39f,rgba(224,123,98,.38));
 }
-[data-testid="stAppViewContainer"], [data-testid="stHeader"]{background:var(--delta-bg)}
-[data-testid="stMainBlockContainer"]{max-width:1040px;padding-top:2rem;padding-bottom:5rem}
+[data-testid="stAppViewContainer"], [data-testid="stHeader"]{background:var(--delta-bg);color:var(--delta-ink)}
+[data-testid="stMainBlockContainer"]{max-width:1040px;padding-top:4.25rem;padding-bottom:5rem}
 [data-testid="stSidebar"]{background:var(--delta-sidebar);border-right:1px solid var(--delta-line)}
 [data-testid="stAppViewContainer"]{overflow-x:hidden}
 h1,h2,h3,p,div{letter-spacing:0}
-h1{font-size:2.15rem!important;line-height:1.12!important;margin-bottom:.45rem!important}
+h1{font-size:2.15rem!important;line-height:1.12!important;margin-bottom:.45rem!important;color:var(--delta-ink)}
 h2{font-size:1.25rem!important;margin-top:2.25rem!important}
 h3{font-size:1rem!important}
-.delta-brandline{display:flex;flex-wrap:nowrap;gap:.35rem;max-width:100%;overflow:visible;white-space:normal;font-size:.76rem;line-height:1.35;letter-spacing:.08em;text-transform:uppercase;color:var(--delta-faint);font-weight:650}
-.delta-brandline span{flex-shrink:0;white-space:nowrap}
+[data-testid="stMarkdownContainer"] h1,[data-testid="stMarkdownContainer"] h2,[data-testid="stMarkdownContainer"] h3{color:var(--delta-ink)!important}
+.delta-brandline{display:block;max-width:100%;overflow:visible;white-space:normal;min-height:1.45em;padding-top:.08rem;margin:0 0 1.15rem;font-size:.76rem;line-height:1.45;letter-spacing:.08em;text-transform:uppercase;color:var(--delta-faint);font-weight:650}
+.delta-brandline span{display:inline;white-space:nowrap}
+.delta-brandline .sep{display:inline-block;margin:0 .35rem}
 .delta-lede{max-width:760px;color:var(--delta-muted);font-size:.95rem;line-height:1.6;margin-bottom:1.4rem}
-.delta-scroll-anchor{display:block;position:relative;top:-.9rem;width:1px;height:1px;overflow:hidden}
 .delta-section{border-top:1px solid var(--delta-line);padding-top:1.1rem;margin-top:1.8rem}
 .delta-section-kicker{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--delta-faint);font-weight:700}
 .delta-section-title{font-size:1.1rem;font-weight:700;color:var(--delta-ink);margin:.15rem 0 .2rem}
@@ -65,9 +78,9 @@ h3{font-size:1rem!important}
 .delta-decision .summary{font-size:.9rem;line-height:1.55;color:var(--delta-muted);max-width:800px}
 .delta-context{font-size:.78rem;color:var(--delta-muted);padding:.55rem 0;border-bottom:1px solid var(--delta-line);overflow-wrap:anywhere}
 .delta-status{display:inline-flex;align-items:center;border:1px solid var(--delta-line);border-radius:999px;padding:.16rem .55rem;font-size:.72rem;font-weight:650;color:var(--delta-muted)}
-.delta-status.good{color:var(--delta-good);border-color:#a9c9b2;background:#eef6ef}
-.delta-status.warn{color:var(--delta-warn);border-color:#dbc99a;background:#fbf5e5}
-.delta-status.serious{color:var(--delta-serious);border-color:#dfb39f;background:#fbede7}
+.delta-status.good{color:var(--delta-good);border-color:var(--delta-status-good-line);background:var(--delta-status-good-bg)}
+.delta-status.warn{color:var(--delta-warn);border-color:var(--delta-status-warn-line);background:var(--delta-status-warn-bg)}
+.delta-status.serious{color:var(--delta-serious);border-color:var(--delta-status-serious-line);background:var(--delta-status-serious-bg)}
 .delta-status.muted{color:var(--delta-faint)}
 .delta-relation{border-top:1px solid var(--delta-line);padding:.9rem 0 .25rem;margin-top:.45rem}
 .delta-relation-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
@@ -82,30 +95,11 @@ h3{font-size:1rem!important}
 [data-testid="stMetricValue"]{font-size:1.35rem}
 [data-testid="stExpander"]{border:1px solid var(--delta-line);border-radius:6px;background:var(--delta-surface)}
 [data-testid="stDataFrame"]{border:1px solid var(--delta-line)}
+[data-testid="stMetricLabel"], [data-testid="stCaptionContainer"]{color:var(--delta-muted)}
 .stButton>button,.stDownloadButton>button{border-radius:6px;min-height:2.5rem}
 [data-testid="stBaseButton-primary"]{background:var(--delta-accent);border-color:var(--delta-accent);color:var(--delta-primary-ink)}
-@media(prefers-color-scheme:dark){
-  :root{
-    --delta-bg:#0B0F14;--delta-surface:#121820;--delta-soft:#18212B;
-    --delta-ink:#E6EDF3;--delta-muted:#8B949E;--delta-faint:#8B949E;
-    --delta-line:rgba(255,255,255,0.08);--delta-sidebar:#121820;
-    --delta-good:#7bc88b;--delta-warn:#d8a847;--delta-serious:#e07b62;
-    --delta-primary-ink:#E6EDF3;
-  }
-  [data-testid="stAppViewContainer"], [data-testid="stHeader"]{background:var(--delta-bg)}
-  [data-testid="stSidebar"]{background:var(--delta-sidebar)}
-  [data-testid="stToolbar"], [data-testid="stDecoration"]{background:transparent}
-  [data-testid="stMarkdownContainer"], [data-testid="stMetricLabel"], [data-testid="stCaptionContainer"]{color:var(--delta-muted)}
-  h1,h2,h3,[data-testid="stMetricValue"]{color:var(--delta-ink)}
-  .delta-decision,[data-testid="stExpander"]{background:var(--delta-surface)}
-  [data-testid="stMetric"],[data-testid="stDataFrame"]{background:transparent}
-  .delta-step.active{background:rgba(23,105,194,.16)}
-  .delta-status.good{color:var(--delta-good);border-color:rgba(123,200,139,.38);background:rgba(31,116,56,.18)}
-  .delta-status.warn{color:var(--delta-warn);border-color:rgba(216,168,71,.38);background:rgba(154,104,0,.18)}
-  .delta-status.serious{color:var(--delta-serious);border-color:rgba(224,123,98,.38);background:rgba(180,73,36,.18)}
-}
 @media(max-width:720px){
-  [data-testid="stMainBlockContainer"]{padding-left:1rem;padding-right:1rem;padding-top:1.25rem}
+  [data-testid="stMainBlockContainer"]{padding-left:1rem;padding-right:1rem;padding-top:3.5rem}
   .delta-brandline{display:block;line-height:1.4}
   .delta-brandline span{display:block;white-space:normal}
   .delta-brandline .sep{display:none}
@@ -132,29 +126,6 @@ def render_section(number: str, title: str, copy: str) -> None:
         f"<div class='delta-section-copy'>{_e(copy)}</div></div>",
         unsafe_allow_html=True,
     )
-
-
-def render_pending_scroll(state: Any) -> None:
-    target = state.pop("_scroll_target", None)
-    if not target:
-        return
-    components.html(
-        f"""
-        <script>
-        const target = parent.document.getElementById({json.dumps(target)});
-        if (target) {{
-          setTimeout(() => target.scrollIntoView({{behavior: "smooth", block: "start"}}), 180);
-        }}
-        </script>
-        """,
-        height=0,
-    )
-
-
-def set_scroll_on_success(state: Any, result: "api.ApiResult", success_views: tuple[str, ...], target: str) -> None:
-    view = rl.classify_response(result.status, result.body, result.transport)
-    if view in success_views:
-        state["_scroll_target"] = target
 
 
 def render_metric(container: Any, label: str, value: Any, note: Any = None) -> None:
@@ -247,7 +218,6 @@ def render_audit_and_declarations(
     rows = rl.audit_signal_rows(data_audit)
     persistent = [row for row in rows if row["persistent"]]
 
-    st.markdown("<span id='delta-analysis-section' class='delta-scroll-anchor'></span>", unsafe_allow_html=True)
     render_section(
         "02",
         "Audit the data and declare transforms",
@@ -377,13 +347,20 @@ def render_relation_detail(view: Mapping[str, Any], raw: Mapping[str, Any]) -> N
         st.caption("Lifecycle trajectory was not returned, so no timeline chart is shown.")
 
 
+def render_configuration(body: Mapping[str, Any]) -> None:
+    rows = rl.configuration_rows(body)
+    if not rows:
+        return
+    with st.expander("Effective configuration"):
+        st.dataframe(rows, width="stretch", hide_index=True)
+
+
 def render_report(body: Mapping[str, Any]) -> None:
     decision = rl.report_decision(body)
     context = rl.report_context(body)
     tone = decision["tone"]
     eyebrow = "Baseline retained" if tone == "baseline" else "Evidence gate passed"
     st.markdown(
-        f"<span id='delta-report-section' class='delta-scroll-anchor'></span>"
         f"<div class='delta-section'><div class='delta-section-kicker'>03 · Report</div></div>"
         f"<div class='delta-context'>{_e(context['target'])} · {_e(context['frequency'])} · "
         f"{_e(context['observations'])} observations · as known at {_e(context['generated_as_of'])}</div>"
@@ -417,6 +394,8 @@ def render_report(body: Mapping[str, Any]) -> None:
     for warning in body.get("warnings") or []:
         st.warning(str(warning))
 
+    render_configuration(body)
+
     st.markdown("### Relationship evidence")
     views = rl.relation_views(body)
     raw_relations = body.get("relations") or []
@@ -424,12 +403,7 @@ def render_report(body: Mapping[str, Any]) -> None:
         st.info("The report contains no candidate relationship rows.")
     for index, view in enumerate(views):
         raw = raw_relations[index] if index < len(raw_relations) else {}
-        selection = "insufficient" if view["selected"] is None else ("selected" if view["selected"] else "not selected")
-        label = (
-            f"{view['source']} → {view['target']} · "
-            f"{view['lifecycle']['label']} · {selection}"
-        )
-        with st.expander(label, expanded=view["selected"] is True):
+        with st.expander(rl.relation_expander_label(view), expanded=view["selected"] is True):
             render_relation_detail(view, raw)
 
     with st.expander("Analyst table"):
@@ -501,7 +475,6 @@ with st.sidebar:
     )
 
 ss = st.session_state
-render_pending_scroll(ss)
 render_steps(current_phase(mode, ss))
 render_section("01", "Choose data", "Start from a bundled case, an aligned monthly CSV, or a verified Eurostat definition.")
 
@@ -518,7 +491,6 @@ if mode == "Bundled case":
         ss["case_name"] = case
         ss.pop("report", None)
         ss.pop("report_request", None)
-        set_scroll_on_success(ss, ss["audit"], ("audit_ok",), "delta-analysis-section")
         st.rerun()
 
     current_request = None
@@ -531,7 +503,6 @@ if mode == "Bundled case":
                 with st.spinner("Analyzing relationships..."):
                     ss["report"] = api.analyze(current_request)
                 ss["report_request"] = current_request
-                set_scroll_on_success(ss, ss["report"], ("report_ok", "report_baseline"), "delta-report-section")
                 st.rerun()
     if ss.get("report") and ss.get("report_request") == current_request:
         report_view = show_result(ss["report"])
@@ -565,7 +536,6 @@ elif mode == "Upload CSV":
             ss["payload_up"] = payload
             ss.pop("report_up", None)
             ss.pop("report_up_request", None)
-            set_scroll_on_success(ss, ss["audit_up"], ("audit_ok",), "delta-analysis-section")
             st.rerun()
 
         current_upload_request = None
@@ -579,7 +549,6 @@ elif mode == "Upload CSV":
                     with st.spinner("Analyzing relationships..."):
                         ss["report_up"] = api.analyze(current_upload_request)
                     ss["report_up_request"] = current_upload_request
-                    set_scroll_on_success(ss, ss["report_up"], ("report_ok", "report_baseline"), "delta-report-section")
                     st.rerun()
         if ss.get("report_up") and ss.get("report_up_request") == current_upload_request:
             report_view = show_result(ss["report_up"])
@@ -655,7 +624,6 @@ else:
                 ss["audit_e_request"] = frozen_payload
                 ss.pop("report_e", None)
                 ss.pop("report_e_request", None)
-                set_scroll_on_success(ss, ss["audit_e"], ("audit_ok",), "delta-analysis-section")
                 st.rerun()
 
     current_euro_request = None
@@ -669,7 +637,6 @@ else:
                 with st.spinner("Analyzing the frozen snapshot..."):
                     ss["report_e"] = api.analyze(current_euro_request)
                 ss["report_e_request"] = current_euro_request
-                set_scroll_on_success(ss, ss["report_e"], ("report_ok", "report_baseline"), "delta-report-section")
                 st.rerun()
     if ss.get("report_e") and ss.get("report_e_request") == current_euro_request:
         report_view = show_result(ss["report_e"])
