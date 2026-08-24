@@ -78,6 +78,11 @@ def create_app():
         ledger["path"],
         ledger["durable"],
     )
+    logging.getLogger("uvicorn.error").info(
+        "relationship ledger path=%s durable=%s",
+        ledger["path"],
+        ledger["durable"],
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
