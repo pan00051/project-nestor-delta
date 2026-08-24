@@ -1,3 +1,6 @@
-# Core analysis and its test suite use only the Python standard library.
+# The core analysis pipeline uses only the Python standard library.
+# Its unittest-style tests do too, but they are not the whole suite: the 26
+# ground-truth tests are pytest-collected plain functions, so running the
+# complete suite requires pytest (declared in pyproject.toml [dev]).
 # Website dependencies are intentionally separated in requirements-web.txt.
 # Use Python >=3.9, as declared in pyproject.toml.

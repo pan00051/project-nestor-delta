@@ -7,6 +7,12 @@ requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
+dev = [
+    # The complete suite is pytest-collected: the 26 ground-truth tests are
+    # plain functions, not unittest.TestCase. >=7 is required for the
+    # `pythonpath` ini option below.
+    "pytest>=7",
+]
 web = [
     "fastapi>=0.115,<1",
     "requests>=2.31,<3",
@@ -21,6 +27,13 @@ current_milestone = "S1-S10 and Website W0-W5 complete"
 current_sprint = "Awaiting next-sprint decision"
 
 [tool.pytest.ini_options]
+# Makes a bare `pytest` collect the complete suite (171). Without them a bare
+# `pytest` fails to import, and the 26 ground-truth tests - the only ones that
+# check whether the detector detects - are easy to omit by accident.
+# This does NOT affect `unittest discover`, which cannot collect the
+# ground-truth tests at all: they are plain functions, not unittest.TestCase.
+pythonpath = ["src", "tests/ground_truth"]
+testpaths = ["tests"]
 markers = [
     "slow: slow-running tests",
 ]

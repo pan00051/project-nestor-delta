@@ -34,5 +34,5 @@ PYTHONPATH=src streamlit run src/nestor_delta_web/streamlit_app.py
 
 ## Tests (no backend needed)
 ```bash
-python -m unittest tests.test_website_frontend
+python -m pytest tests/test_website_frontend.py -q
 ```

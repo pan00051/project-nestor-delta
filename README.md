@@ -29,11 +29,17 @@ or invent a conclusion.
 
 ## Quick Start
 
-Core tests require Python 3.9 or newer and use the standard library:
+Tests require Python 3.9 or newer. Run the complete suite with pytest
+(`pip install -e '.[dev]'`):
 
 ```bash
-python3 -m unittest discover -s tests
+python3 -m pytest -q          # 171 tests
 ```
+
+`python3 -m unittest discover -s tests` runs only the 145 unittest-style tests.
+It **cannot** collect the 26 ground-truth tests, which are plain functions - and
+those are the only tests that check whether the detector actually detects. Use
+it as a stdlib-only smoke check, never as the acceptance run.
 
 Run the website with two processes:
 

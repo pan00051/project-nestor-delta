@@ -9,8 +9,12 @@ dependencies. Run commands from the repository root with Python 3.9 or newer.
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
-python -m unittest discover -s tests
+python -m pip install -e '.[dev]'
+python -m pytest -q
 ```
+
+Expect **171 passed**. `python -m unittest discover -s tests` collects only 145;
+it cannot see the ground-truth tests and must not be used to accept a change.
 
 `requirements-lock.txt` is intentionally empty of packages: the core pipeline
 and full unit-test suite use the Python standard library. Website dependencies
