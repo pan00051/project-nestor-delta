@@ -14,7 +14,7 @@ be shown — and can touch — without the author driving it.
 
 | Document | Role |
 |---|---|
-| `WEBSITE_CONTRACT_W0.md` | Semantic analysis contract — authoritative on S1–S10 field mapping, outcome meaning, and frontend IA; machine shape belongs to Pydantic + the committed JSON Schema |
+| `WEBSITE_CONTRACT_W0.md` | Analysis contract — authoritative on schema and outcome semantics |
 | `API_BOUNDARY_V1.md` | Insight⇄Delta integration contract — **the dependency contract of M1** |
 | **this document** | **The execution plan for this cycle** — sequencing and acceptance only |
 
@@ -695,8 +695,10 @@ deployment on its own. It has stopped being decoration.
 `pipeline_version` is therefore no evidence that the API deployment or the web deployment is up
 to date. Widening the hash to cover them would be the wrong repair: it would produce version
 movements unrelated to the Report and devalue the one field whose worth is that every movement
-means something about the Report. Separate `service_build_version` / `web_build_version`
-identifiers are the right split (`API_BOUNDARY_V1.md` §1.1).
+means something about the Report. The separate identifier for that question is
+`source_revision`, reported by both tiers (`API_BOUNDARY_V1.md` §1.1) — and it is a *source
+revision*, not a deployment identity: equal values mean the same commit, not the same
+deployment.
 
 **The online M0 run proves nothing this round.** Only `test_ground_truth.py` was run online
 (13 passed) rather than the whole directory as in M2 (21, now 26). The lifecycle fix is
@@ -1231,9 +1233,8 @@ reason to add a fourth term. `M3_ARCHITECTURE_PRINCIPLES.md` and the in-Report
 `configuration.reproducibility.rule` string were brought into line.
 
 **Reproducibility metadata corrected from a four-term to a three-term dependency statement.
-Analytical calculations, thresholds, and numerical outputs are unchanged; the Report metadata
-output itself changed. S-GT-1 `effect.score` remains `0.5844220533473201`.**
-`pipeline_version` moves `s10.sha256.77f014d78885` →
+Analytical calculations, thresholds, and outputs are unchanged; S-GT-1 `effect.score` remains
+`0.5844220533473201`.** `pipeline_version` moves `s10.sha256.77f014d78885` →
 `s10.sha256.3665b88553ad`. Existing archived fixtures keep the old value, correctly: they are
 genuine historical evidence of what the older build produced.
 
@@ -1250,3 +1251,122 @@ genuine historical evidence of what the older build produced.
   document asserts, name what would have to change for it to be false — proposed, not yet agreed.
 - **Whether M3.5 runs as a milestone at all**, or is folded into M4 and M5 keeping only the two
   safety items. Proposed, not yet agreed.
+
+---
+
+## Appendix L — Source revision: a build-identity mechanism, and the review that made it honest
+
+Closes the gap Appendix F and §J named but could not fix: `pipeline_version` detects a stale
+**analysis-and-adapter** build and nothing else, so a stale API or web deployment had no signal
+at all. The mechanism now exists. Recorded here in full because the first attempt was wrong in
+four ways, and the four are more instructive than the result.
+
+### L.1 What the mechanism is
+
+`source_revision` — the commit a running process was built from — reported by
+`/api/v1/capabilities`, `/health`, and the web sidebar. Resolution order:
+`RAILWAY_GIT_COMMIT_SHA` → `NESTOR_BUILD_SHA` → local `git rev-parse` → `"unknown"`. Candidates
+are accepted only as 7–40 hex characters after stripping; blank and malformed values are skipped
+rather than passed through. Platform value first, so a stale hand-set variable can never shadow
+an authoritative one.
+
+Deliberately outside the `pipeline_version` hash, and verified so: the hash was recomputed after
+the change and is unchanged at `s10.sha256.3665b88553ad`. Adding build identity produced no
+version movement — which is the §1.1 boundary working as designed rather than as asserted.
+
+### L.2 The four corrections
+
+**1. It would have reported `"unknown"` in production, and only production would have said so.**
+The first version resolved from `NESTOR_BUILD_SHA`, `RAILWAY_GIT_COMMIT_SHA`, then `git`. Direct
+inspection of both live services found none of the three available: neither variable is set, the
+deploy is a CLI upload so Railway reports `repo: null` and injects no commit variable, and the
+image excludes `.git` via `.dockerignore` / `.railwayignore`. Every source was unavailable.
+
+A field whose only live value is `"unknown"` is the B.4 defect class again, in the very
+mechanism built to detect a related one. The fix is `scripts/deploy-railway.sh`: a single deploy
+entry point that refuses a dirty tree, stamps `NESTOR_BUILD_SHA` with the current commit, deploys
+immediately, and verifies. The stamping and the deploy must not be separated, and the variable
+must never be set by hand in a dashboard — a variable that survives the next deploy is a
+hardcoded version string, exactly the defect §B.3 recorded `pipeline_version` having had.
+
+**2. It was named for something it cannot prove.** `service_build_version` claims deployment
+identity. What the value actually is, is a source revision: locally it read `c1ca10b13077`, a git
+SHA, and it changes with every commit. Two tiers reporting the same value were built from the
+same commit — they were not necessarily deployed together, and API and web are independent
+deployments that can drift while agreeing here.
+
+Renamed to `source_revision` in the field, the caption, and the documentation. A true deployment
+identity remains **unavailable**: CLI-upload deploys expose no platform deployment variable. That
+absence is now recorded rather than papered over by a name.
+
+**3. Its parsing was not honest.** Measured on the first version: `NESTOR_BUILD_SHA="   "`
+resolved to `""` — and worse, a blank value shadowed a valid platform SHA, because presence was
+tested rather than validity. `"not-a-sha"` was passed straight through. Now every candidate is
+stripped, lowercased, and matched against `\A[0-9a-f]{7,40}\Z`; a failing candidate is skipped
+and resolution continues to the next source, including for `git` output (`fatal: not a
+repository` no longer becomes a revision).
+
+**4. The panel consumed the staleness it was built to reveal.** The sidebar reads `/health`, and
+`api_client.health()` fetched a fixed URL with no cache-buster while stale responses from the
+canonical capabilities URL were an open, undiagnosed finding (§J.3-3). A health panel served from
+that same staleness could confirm a deploy that never happened. `/health` is now cache-busted per
+call.
+
+### L.3 Two decisions taken during the fix
+
+- **The rename** (L.2-2) extended beyond the caption the review asked for, to the JSON field and
+  the contract. The field was unshipped, so the change was free; a name that overstates is the
+  defect class this project exists to refuse.
+- **`pytest` was an undeclared dependency.** `requirements-lock.txt` stated that the core
+  analysis "and its test suite use only the Python standard library". That is false for the
+  complete suite: the 26 ground-truth tests are pytest-collected plain functions, and pytest was
+  installed in the working virtualenv while declared nowhere. Added as
+  `[project.optional-dependencies] dev = ["pytest>=7"]` (the `pythonpath` ini option requires 7),
+  and the claim in `requirements-lock.txt` corrected.
+
+### L.4 The test-command trap, closed at the root
+
+`unittest discover -s tests` collects 145 and cannot collect the 26 ground-truth tests at all —
+they are plain functions, not `unittest.TestCase`. Those 26 are the only tests that check whether
+the detector detects (§A.2). The trap existed because the correct invocation required remembering
+an environment prefix.
+
+`pyproject.toml` now sets `pythonpath = ["src", "tests/ground_truth"]` and `testpaths =
+["tests"]`, so a bare `pytest` collects all 171 and there is no prefix to forget. This does
+**not** change `unittest discover`, and the three documents that recommended it — `README.md`,
+`REPRODUCIBILITY.md`, `docs/WEBSITE_FRONTEND_RUN.md` — were corrected to `pytest` with the
+145-vs-171 distinction stated.
+
+Noted, not fixed: five of eighteen test modules insert `src` into `sys.path` themselves while the
+rest rely on ambient path, and a bare `import nestor_delta` from the repository root fails. The
+pyproject setting makes the path uniform under pytest; the per-file hacks remain.
+
+### L.5 What is verified, and what is not
+
+Verified: `tests/test_build_identity.py` passes — 5 tests carrying 13 resolution cases run against
+**both** implementations, with an explicit drift assertion (the web package may not import
+anything named `nestor_delta*`, so the helper is duplicated; the test module is not under that
+restriction and drives both copies through one table). All eight changed Python files compile.
+The frontend-isolation assertion was reproduced with no violation. `pipeline_version` recomputed
+and unchanged.
+
+Not verified at the time of writing: the full suite. `test_api_boundary.py` gained a `/health`
+versus `capabilities` cross-check that needs FastAPI, and `test_website_frontend.py` covers the
+two web files that changed. Both require the project virtualenv, which is macOS-built and cannot
+run in the review environment. `python -m pytest -q` must pass before these changes are committed.
+
+Also unverified: the Railway CLI flag syntax inside `scripts/deploy-railway.sh`. It differs
+between major CLI versions and could not be checked without network access. The script says so
+and instructs the reader to correct the flags there rather than working around them by hand.
+
+### L.6 Still open after this round
+
+- **Capabilities response freshness** (§J.3-3) — still undiagnosed. Two `curl -sI` calls against
+  the canonical and cache-busted URLs will settle whether it is a cache; no `Cache-Control`
+  policy is prescribed until it does. Until then every verification fetch carries a cache-buster.
+- **`ledger.durable`** (§J.3-1) — the contract now describes the real limitation, but the signal
+  still reports only that a non-default path was configured.
+- **A true deployment identity** — not merely a source revision. Unavailable while deploys are
+  CLI uploads.
+- The standing acceptance item (§K.5) and whether M3.5 runs as a milestone at all (§K.5) remain
+  proposed rather than agreed.

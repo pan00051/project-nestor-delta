@@ -16,6 +16,7 @@ from uuid import uuid4
 from nestor_delta_web import presets
 
 from .adapter import SUPPORTED_CASES
+from .build_info import SOURCE_REVISION
 from .errors import SCHEMA_VERSION, not_found
 from .versioning import PIPELINE_VERSION
 
@@ -83,6 +84,7 @@ def capabilities() -> dict[str, Any]:
         "api_version": API_VERSION,
         "report_schema_version": SCHEMA_VERSION,
         "pipeline_version": PIPELINE_VERSION,
+        "source_revision": SOURCE_REVISION,
         "inputs": {
             "bundled_cases": sorted(SUPPORTED_CASES),
             "csv_upload": True,

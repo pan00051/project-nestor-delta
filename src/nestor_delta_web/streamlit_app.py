@@ -16,6 +16,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from nestor_delta_web import api_client as api
+from nestor_delta_web import build_info as bi
 from nestor_delta_web import presets
 from nestor_delta_web import render_logic as rl
 
@@ -492,6 +493,12 @@ with st.sidebar:
     st.caption(f"Backend · {status}")
     st.code(api.base_url(), language=None)
     st.caption("Report schema · delta.report.v1")
+    api_revision = bi.UNKNOWN
+    if isinstance(health.body, dict):
+        api_revision = str(health.body.get("source_revision") or bi.UNKNOWN)
+    st.caption(
+        f"Source revision · web {bi.SOURCE_REVISION[:12]} · api {api_revision[:12]}"
+    )
 
 ss = st.session_state
 render_pending_scroll(ss)

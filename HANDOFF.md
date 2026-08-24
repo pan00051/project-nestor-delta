@@ -38,9 +38,46 @@ from this file.
   (`app.py`, `boundary.py`, `schema.py`, `errors.py`, `eurostat.py`) and the web
   build are **outside** the hash and must not be folded into it. A current
   `pipeline_version` therefore proves the analysis and adapter build is current;
-  it is not evidence that the API or web deployment is. Separate
-  `service_build_version` / `web_build_version` identifiers are planned for
-  that — see `docs/API_BOUNDARY_V1.md` §1.1.
+  it is not evidence that the API or web deployment is.
+- **`source_revision`** covers that second question, on both tiers:
+  `capabilities`, `/health`, and the web sidebar. It is a *source revision*, not
+  a deployment identity — equal values mean same commit, not same deployment,
+  and API and web deploy independently. A true deployment identity is
+  unavailable: CLI-upload deploys expose no platform commit variable.
+  `"unknown"` in production is a defect, not a default. See
+  `docs/API_BOUNDARY_V1.md` §1.1.
+- **Deploy only through `scripts/deploy-railway.sh <service> [health-url]`.** It
+  refuses a dirty tree, stamps `NESTOR_BUILD_SHA` with the current commit, and
+  deploys immediately, so the value cannot outlive the code it names. Never set
+  that variable by hand in the Railway dashboard. Sequence and gate below.
+
+### Deploy sequence
+
+One service at a time, API first, only through the script.
+
+1. `scripts/deploy-railway.sh api <api-url>/health`
+2. **The gate for the second deploy is that the first one *verified*, not that
+   it *succeeded*.** `source_revision` must equal the commit you deployed. If it
+   comes back `unknown`, the stamped variable never reached the process — stop
+   there and fix that. Deploying the second service at that point only doubles a
+   surface that cannot say what it is.
+3. `scripts/deploy-railway.sh web <web-url>` — web exposes no `/health` of its
+   own; read the sidebar `Source revision` caption instead.
+
+**Why API first.** The web sidebar reads `source_revision` from the API's
+`/health`. Deploying web first shows `api unknown` until the API catches up:
+correct behaviour, but a confusing signal to start from.
+
+**Both tiers should carry the same commit unless a split is intended.** The
+likeliest reason to edit between the two deploys is correcting the Railway CLI
+flags inside the script — and that produces a new commit. If it happens,
+re-deploy the API from the corrected commit before deploying web, rather than
+letting the two tiers drift apart by accident.
+
+**Every verification fetch carries a cache-buster.** `/api/v1/capabilities` has
+been observed returning stale responses from its canonical URL and the mechanism
+is still undiagnosed; an uncached check could confirm a deploy that never
+happened.
 - API: `/api/v1/runs`, `/api/v1/runs/{run_id}`, `/api/v1/capabilities`,
   `/api/v1/audit`, `/api/v1/snapshot`, plus `/analyze`, `/audit`, `/snapshot`
   as retained unversioned aliases, plus `/health` and `/schema/report`.

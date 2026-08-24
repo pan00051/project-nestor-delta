@@ -10,6 +10,7 @@ This module never imports `nestor_delta`. It only speaks HTTP.
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any, Mapping, Optional
 
 import requests
@@ -67,7 +68,11 @@ def _report_from_run(result: ApiResult) -> ApiResult:
 
 
 def health(timeout: float = 5.0) -> ApiResult:
-    url = f"{base_url()}/health"
+    # Cache-busted on every call. Stale `/api/v1/capabilities` responses have
+    # been observed from the canonical URL and the mechanism is not yet
+    # diagnosed; a health panel served from that same staleness would hide the
+    # very thing it exists to reveal.
+    url = f"{base_url()}/health?cb={uuid.uuid4().hex}"
     try:
         resp = requests.get(url, timeout=timeout)
         return ApiResult(resp.status_code, resp.json())

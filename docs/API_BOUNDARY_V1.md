@@ -110,12 +110,31 @@ about the Report.
 |---|---|---|
 | `pipeline_version` | Report computation and assembly | Report body |
 | `api_version`, `schema_version` | compatibility boundaries | URL/Run envelope, Report body |
-| `service_build_version` / `deployment_revision` *(planned)* | API deployment identity | `capabilities` and/or `health` |
-| `web_build_version` *(planned, if the web tier needs independent verification)* | web deployment identity | web build surface |
+| `source_revision` | the commit a running process was built from | `capabilities` and `/health`; the web sidebar |
 
-Until the planned identifiers exist, **a current `pipeline_version` proves only that the
-analysis and adapter build is current.** It is not evidence that the API deployment or the web
-deployment is up to date; those must be verified separately.
+**A current `pipeline_version` proves only that the analysis and adapter build is current.** It
+is not evidence that the API deployment or the web deployment is up to date; those are checked
+with `source_revision`.
+
+**`source_revision` is a source revision, not a deployment identity, and the distinction is
+load-bearing.** It answers "which commit is this process running". It does **not** say when the
+process was deployed, and two tiers reporting the same value were built from the same source
+rather than deployed together — API and web are independent deployments and can drift apart
+while agreeing here. A true deployment identity is not available: this project deploys by CLI
+upload, so the platform exposes no commit or deployment variable of its own.
+
+Resolution order is `RAILWAY_GIT_COMMIT_SHA` (platform, absent for CLI-upload deploys), then
+`NESTOR_BUILD_SHA` (stamped per deploy by `scripts/deploy-railway.sh`), then a local
+`git rev-parse`, then `"unknown"`. Platform first, so a stale hand-set variable can never
+shadow an authoritative one. Candidates are accepted only as 7–40 hex characters after
+stripping; blank and malformed values are skipped rather than passed through.
+
+`NESTOR_BUILD_SHA` **must be written immediately before each deploy and never set by hand in a
+dashboard.** A variable that survives the next deploy is a hardcoded version string — the exact
+defect §1 records `pipeline_version` having had.
+
+**`"unknown"` in a live deployment is a defect, not a benign default.** It means the process
+cannot say what it is, and the field must not be read as "current".
 
 `schema_version` keeps its already-frozen literal `"delta.report.v1"`. It is asserted by the
 existing test suite; renaming it is a breaking change with no benefit.

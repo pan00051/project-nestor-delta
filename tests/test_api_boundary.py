@@ -51,6 +51,15 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertEqual(body["api_version"], "v1")
         self.assertEqual(body["report_schema_version"], SCHEMA_VERSION)
         self.assertRegex(body["pipeline_version"], r"^s10\.sha256\.[0-9a-f]{12}$")
+        # Source revision - NOT a deployment identity, and distinct from
+        # pipeline_version. Resolution rules live in tests/test_build_identity.py.
+        # Here the contract is only that the field is well formed and that
+        # /health reports the same value. Whether it is "unknown" is a
+        # deployment check the suite cannot make.
+        self.assertRegex(body["source_revision"], r"^(?:[0-9a-f]{7,40}|unknown)$")
+        health = self.client.get("/health")
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(health.json()["source_revision"], body["source_revision"])
         self.assertEqual(body["execution"], {"mode": "sync"})
         self.assertEqual(
             body["run_retention"],

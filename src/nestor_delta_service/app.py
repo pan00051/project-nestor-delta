@@ -17,6 +17,7 @@ from .boundary import (
     run_not_found,
     utc_now,
 )
+from .build_info import SOURCE_REVISION
 from .errors import SCHEMA_VERSION
 
 LOGGER = logging.getLogger(__name__)
@@ -93,7 +94,11 @@ def create_app():
 
     @app.get("/health")
     def health() -> dict[str, str]:
-        return {"status": "ok", "schema_version": SCHEMA_VERSION}
+        return {
+            "status": "ok",
+            "schema_version": SCHEMA_VERSION,
+            "source_revision": SOURCE_REVISION,
+        }
 
     @app.get("/schema/report")
     def report_schema() -> dict[str, str]:
