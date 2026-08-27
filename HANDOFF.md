@@ -22,6 +22,15 @@ from this file.
   revision itself is under review (see "Next Decision").
 - Analysis pipeline S1-S10: complete and independently reviewed.
 - Website W0-W5: complete.
+- Product direction: non-commercial portfolio and personal-analysis system.
+  SaaS-like capabilities are lightweight access/display features only
+  (invite-gated access, saved reports, shareable read-only outputs). Billing,
+  To B / To C growth, organization workspaces, and enterprise tenancy are not
+  goals.
+- SDD direction: development-time algorithm exploration is allowed to move fast.
+  Full frozen verification is required for public claims, milestone acceptance,
+  deployment acceptance, and resume/portfolio language, not for every temporary
+  debugging pass.
 - Report contract: `delta.report.v1`. M2 added a content-derived
   `pipeline_version`; M3 added `producer` and a `configuration` block that
   publishes the effective gate terms, the rolling-window rule, the diagnostic
@@ -111,10 +120,14 @@ happened.
 
 ### Last recorded acceptance
 
-M3, at `ad77fd3`: **171 passed in 37.42s** locally, re-verified during the
-documentation review. 26 ground-truth tests passed against the deployment.
-`effect.score` on the S-GT-1 control is `0.5844220533473201`, unchanged across
-M0 through M3.
+Current deployed source revision `01a9e6ca2637`: **179 passed** locally. API and
+web were deployed to Railway with `NESTOR_BUILD_SHA=01a9e6ca2637`; API `/health`
+reported `source_revision=01a9e6ca2637`.
+
+Historical M3, at `ad77fd3`: **171 passed in 37.42s** locally, re-verified
+during the documentation review. 26 ground-truth tests passed against the
+deployment. `effect.score` on the S-GT-1 control is `0.5844220533473201`,
+unchanged across M0 through M3.
 
 Run the suite with the full command below. `unittest discover` alone collects
 145 and silently omits the 26 pytest-style ground-truth functions, which are
@@ -134,16 +147,12 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
    record that cannot be rebuilt later. The contract now states this limitation
    rather than the guarantee it used to claim; the signal itself is still to be
    fixed.
-2. The relation expander label shows a lifecycle state without its `stability`
-   value, which the visual spec forbids. The collapsed list is the scan surface.
-3. A fetch to the canonical `/api/v1/capabilities` URL returned a superseded
+2. A fetch to the canonical `/api/v1/capabilities` URL returned a superseded
    `pipeline_version` with the `ledger` block absent, while the same endpoint
    with a cache-busting parameter returned current values moments apart. The
    mechanism is undiagnosed — do not assume a cache. Every verification fetch
    must carry a cache-busting parameter until it is.
-4. `configuration` reaches the report body but nothing renders it; the deployed
-   web build predates it.
-5. All ground-truth fixtures are n=216, so the rolling-window branch has no
+3. All ground-truth fixtures are n=216, so the rolling-window branch has no
    boundary fixture.
 
 ## Non-Negotiable Boundaries
@@ -156,8 +165,10 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
    error must not feed back into selection.
 4. The frontend displays Report JSON values and explicit empty/error states; it
    must not infer missing intervals, confidence, trajectories, or conclusions.
-5. Core analysis reads frozen snapshots. A future SQL layer may manage intake
-   and audit data, but must export a hashed immutable snapshot before analysis.
+5. Core analysis reads frozen snapshots for claims and accepted reports. Future
+   live-data intake may be used for personal analysis and exploration, but any
+   live result used as public evidence must first become a hashed immutable
+   snapshot with source, timestamp, parameters, and version recorded.
 6. Existing frozen S0-S10 reports are historical evidence and are not rewritten
    to make newer results look cleaner.
 7. **Evidence-gate thresholds may not be loosened.** They now live in two
@@ -174,25 +185,18 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
 
 ## Next Decision
 
-**Under review — do not start implementation work until it closes.** The
-milestone documents had drifted from the shipped system, and the repair pass is
-finished and awaiting cross-review. Three revisions to how milestones are
-accepted are proposed but not agreed:
+Direction reset: make Delta's practical value stronger than its narrative
+value. The next implementation decision should choose between:
 
-1. **Open.** Add a standing acceptance item — for every field a surface
-   renders, and every guarantee a document asserts, name what would have to
-   change for it to be false. If nothing would, it is decoration.
-2. **Decided.** Authority is split by the kind of question being asked; see
-   `docs/API_BOUNDARY_V1.md` §4.4. "Code plus tests wins" was considered and
-   rejected: code and its tests can encode the same mistake together, as they
-   did for 132 green tests while `effect.score` was wrong.
-3. **Open.** Fold M3.5 into M4 and M5 rather than running it as a milestone,
-   keeping only the two items that are safety rather than fidelity: the ledger
-   durability signal and capabilities response freshness.
+1. A lightweight invite-gated portfolio access layer.
+2. Personal-analysis/report-history persistence.
+3. Live-data intake for exploratory value discovery, with a frozen-snapshot path
+   before any result becomes public evidence.
+4. M4 demo fidelity work: four-state charts plus the CSV human-acceptance
+   checklist.
 
-Once that closes, the outstanding milestone work is M4 (charts plus the CSV
-human-acceptance checklist — the only Demo DoD item not yet reachable) and M5
-(rehearsal and freeze).
+Do not default to billing, To B / To C positioning, organization workspaces,
+enterprise tenancy, or a complete SaaS account system.
 
 ## Resume Checklist
 

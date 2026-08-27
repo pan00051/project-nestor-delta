@@ -8,6 +8,16 @@ only adequately supported evidence before prediction.
 It reports co-movement and predictive usefulness, not causation. An honest
 `baseline_only` result is a valid outcome.
 
+Nestor Delta is a non-commercial portfolio and personal-analysis project. Its
+SaaS shape is intentionally light: a deployed demo, optional invite-gated
+access, report history, and shareable read-only outputs are in scope when they
+help demonstrate the work. Billing, growth funnels, organization workspaces,
+enterprise tenancy, and To B / To C product obligations are not goals.
+
+Development separates exploration from evidence. Algorithm experiments may be
+debugged and iterated rapidly; only frozen data, fixed parameters, versioned
+runs, and passing acceptance commands become public claims.
+
 ## What Is Included
 
 The completed pipeline covers:
@@ -33,7 +43,7 @@ Tests require Python 3.9 or newer. Run the complete suite with pytest
 (`pip install -e '.[dev]'`):
 
 ```bash
-python3 -m pytest -q          # 171 tests
+python3 -m pytest -q          # 179 tests
 ```
 
 `python3 -m unittest discover -s tests` runs only the 145 unittest-style tests.
