@@ -1,6 +1,6 @@
 # Q3 执行规格 — `capabilities` 陈旧响应
 
-**状态：** 规格草案，待 GPT 补充与审查后开工。
+**状态：** 执行中。D1/D2 已由 Codex 在 2026-08-28 取证；F1 已实现，待部署后复验。
 **上位文档：** `docs/REMEDIATION_Q_V1.md` Q3 · `docs/API_BOUNDARY_V1.md` §2.8（Open — response freshness）
 
 ---
@@ -19,8 +19,9 @@
 
 - `boundary.capabilities()` 每次请求现构造字典，**应用层无任何缓存**。
 - `PIPELINE_VERSION` / `SOURCE_REVISION` 是模块导入时求值的常量；`relationship_ledger_status()` 每次现算。
-- 路由 `return dict`，走 FastAPI 默认 JSONResponse。
-- **全代码库无任何 `Cache-Control` / `max-age` / `no-store`**（已 grep `src/` `scripts/` `Dockerfile` `railway.json`）。
+- Q3 修复前，路由 `return dict`，走 FastAPI 默认 JSONResponse。
+- Q3 修复前，全代码库无任何 `Cache-Control` / `max-age` / `no-store`（已 grep `src/` `scripts/` `Dockerfile` `railway.json`）。
+- Q3 F1 后，`/health` 与 `/api/v1/capabilities` 显式返回 `Cache-Control: no-store`。
 - 关键线索：`ledger` 块是 M3（`78e2c2f`）才加入 capabilities 的。旧响应缺该块，
   说明它来自**旧代码**，而不是旧代码的新响应被改坏。
 
@@ -73,9 +74,9 @@
 被中间层施加启发式缓存是合规行为，不是谁的 bug。
 
 - 触及文件：`src/nestor_delta_service/app.py`
-- 实现选择（**待 GPT 定夺**）：逐路由返回带 header 的 `JSONResponse`，
-  还是加一个中间件统一处理 GET 响应。前者显式、影响面小；后者不易漏但会覆盖到未来新增端点。
-- 必须新增契约测试：`tests/test_api_boundary.py` 断言两个端点响应头含 `no-store`。
+- 实现选择：逐路由返回带 header 的 `JSONResponse`。理由是影响面小，只覆盖 provenance
+  端点，不改变 POST 分析、run store、audit 或 snapshot 的响应路径。
+- 契约测试：`tests/test_api_boundary.py` 断言两个端点响应头含 `no-store`。
 - **F1 不构成 Q3 的验收。** 若真因是 H2，它一行都没修到。
 
 ### F2 · 按诊断结果分支

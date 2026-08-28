@@ -34,6 +34,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised only without FastAPI
     JSONResponse = None  # type: ignore[assignment]
 
 _AUTH_HEADER = Header(default=None) if Header is not None else None
+_PROVENANCE_HEADERS = {"Cache-Control": "no-store"}
 
 def allow_request(
     authorization: Optional[str] = _AUTH_HEADER,  # type: ignore[assignment]
@@ -93,12 +94,15 @@ def create_app():
     )
 
     @app.get("/health")
-    def health() -> dict[str, str]:
-        return {
-            "status": "ok",
-            "schema_version": SCHEMA_VERSION,
-            "source_revision": SOURCE_REVISION,
-        }
+    def health():
+        return JSONResponse(
+            content={
+                "status": "ok",
+                "schema_version": SCHEMA_VERSION,
+                "source_revision": SOURCE_REVISION,
+            },
+            headers=_PROVENANCE_HEADERS,
+        )
 
     @app.get("/schema/report")
     def report_schema() -> dict[str, str]:
@@ -122,7 +126,7 @@ def create_app():
 
     @app.get("/api/v1/capabilities", dependencies=[Depends(allow_request)])
     def capabilities():
-        return capabilities_payload()
+        return JSONResponse(content=capabilities_payload(), headers=_PROVENANCE_HEADERS)
 
     @app.post("/analyze", dependencies=[Depends(allow_request)])
     def analyze(payload: dict[str, Any]):

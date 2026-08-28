@@ -125,6 +125,27 @@ web were deployed to Railway with `NESTOR_BUILD_SHA=01a9e6ca2637`; API `/health`
 reported `source_revision=01a9e6ca2637`, re-verified with a cache-buster during
 the Q-series audit.
 
+**Q3 response-freshness evidence, 2026-08-28 09:11-09:16 UTC.** Codex queried
+the production API from the local workspace against both canonical and
+cache-busted URLs. Canonical `/health` returned HTTP/2 200 with:
+`content-type: application/json`, `server: railway-hikari`,
+`x-railway-request-id: kaeVcSAdRSe-awrr0_TJvA`, `x-hikari-trace: cdg1.e9jw`,
+`x-railway-edge: cdg1`, and body
+`{"status":"ok","schema_version":"delta.report.v1","source_revision":"01a9e6ca2637"}`.
+Cache-busted `/health?cb=q3-codex-20260828-2` returned the same body and headers
+shape with request id `bfjJZi95TiOlEegF6WHkDg`. Canonical
+`/api/v1/capabilities` returned HTTP/2 200 with `server: railway-hikari`,
+`x-railway-request-id: 9w5TiDEYRW-W2kWVn6XIxQ`, `x-hikari-trace: cdg1.e9jw`,
+`x-railway-edge: cdg1`, `vary: accept-encoding`, no `Age`, no `ETag`, and no
+`Cache-Control`; cache-busted
+`/api/v1/capabilities?cb=q3-codex-20260828-1` returned the same body and headers
+shape with request id `SwDMa4gtSYq0hFexwUFZXw`. Ten consecutive canonical
+`/api/v1/capabilities` samples all returned
+`pipeline_version=s10.sha256.3665b88553ad`, `source_revision=01a9e6ca2637`, and
+a present `ledger` block. Result: the earlier stale response was not reproduced,
+and no new/old process jump was observed. F1 still applies because provenance
+endpoints had no explicit cache policy before this fix.
+
 **Q1 (dependency declaration) changes what that number costs to reproduce.** The
 179 figure was previously only reachable on a machine that had also installed
 the `web` extra, because `streamlit` pulls `numpy` and `pandas` in
@@ -159,11 +180,14 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
    record that cannot be rebuilt later. The contract now states this limitation
    rather than the guarantee it used to claim; the signal itself is still to be
    fixed.
-2. A fetch to the canonical `/api/v1/capabilities` URL returned a superseded
+2. A historical fetch to the canonical `/api/v1/capabilities` URL returned a superseded
    `pipeline_version` with the `ledger` block absent, while the same endpoint
    with a cache-busting parameter returned current values moments apart. The
-   mechanism is undiagnosed — do not assume a cache. Every verification fetch
-   must carry a cache-busting parameter until it is.
+   mechanism is not fully diagnosed — do not assume a cache. On 2026-08-28,
+   Codex could not reproduce the stale body in ten canonical samples and saw no
+   new/old process jump. F1 now gives `/health` and `/api/v1/capabilities`
+   `Cache-Control: no-store`, but every verification fetch must keep carrying a
+   cache-busting parameter until the deployed service is rechecked.
 3. All ground-truth fixtures are n=216, so the rolling-window branch has no
    boundary fixture.
 
