@@ -51,10 +51,13 @@
 `BLUEPRINT.md` §6.4 与 HANDOFF 提出的那条验收标准——「什么情况会让这条声明变成假的？」
 答案是：**什么都不用变，它当时就是假的。**
 
-**DoD（已达成）。** 在一个全新的 venv 中，只执行文档写明的两条命令，不设任何 `PYTHONPATH`：
+**DoD（已达成，Q1.1 后为当前形态）。** 在一个全新的 venv 中，按文档命令升级 pip、
+安装 dev extra 并运行完整套件，不设任何 `PYTHONPATH`：
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -e '.[dev]'
 .venv/bin/python -m pytest -q
 ```
 

@@ -131,9 +131,10 @@ the `web` extra, because `streamlit` pulls `numpy` and `pandas` in
 transitively - an accident of the environment, not a declaration. On a clean
 `[dev]`-only install the suite reported `1 failed, 178 passed`, and before
 `jsonschema`/`fastapi`/`httpx` were declared it did not reach assertions at all.
-`[dev]` now declares all six; the documented two-command reproduction yields
-`179 passed` in a fresh venv with no `PYTHONPATH` set. No algorithm, threshold,
-fixture, or output changed, so `pipeline_version` is unmoved.
+`[dev]` now declares all six, and Q1.1 records the required build backend plus
+pip >=21.3 floor; the documented reproduction yields `179 passed` in a fresh
+venv with no `PYTHONPATH` set. No algorithm, threshold, fixture, or output
+changed, so `pipeline_version` is unmoved.
 
 Historical M3, at `ad77fd3`: **171 passed in 37.42s** locally, re-verified
 during the documentation review. 26 ground-truth tests passed against the

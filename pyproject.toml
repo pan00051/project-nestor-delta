@@ -56,7 +56,7 @@ current_milestone = "S1-S10 and Website W0-W5 complete"
 current_sprint = "Awaiting next-sprint decision"
 
 [tool.pytest.ini_options]
-# Makes a bare `pytest` collect the complete suite (171). Without them a bare
+# Makes a bare `pytest` collect the complete suite (179). Without them a bare
 # `pytest` fails to import, and the 26 ground-truth tests - the only ones that
 # check whether the detector detects - are easy to omit by accident.
 # This does NOT affect `unittest discover`, which cannot collect the

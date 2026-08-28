@@ -1337,6 +1337,11 @@ an environment prefix.
 `REPRODUCIBILITY.md`, `docs/WEBSITE_FRONTEND_RUN.md` — were corrected to `pytest` with the
 145-vs-171 distinction stated.
 
+> The counts in the paragraph above are the values at the time of this record and are left
+> as written. The suite has since grown to **179**; `unittest discover` still collects 145.
+> Q1 additionally found that a bare `pytest` needed five undeclared packages before it could
+> reach those tests at all — see `docs/REMEDIATION_Q_V1.md`.
+
 Noted, not fixed: five of eighteen test modules insert `src` into `sys.path` themselves while the
 rest rely on ambient path, and a bare `import nestor_delta` from the repository root fails. The
 pyproject setting makes the path uniform under pytest; the per-file hacks remain.
