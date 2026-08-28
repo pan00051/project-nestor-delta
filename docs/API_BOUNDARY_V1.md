@@ -289,12 +289,19 @@ learns the day `execution.mode` flips to `"async"`.
 
 `ledger.configured` only reports deployment intent: whether
 `NESTOR_RELATIONSHIP_LEDGER_PATH` points away from the default `/tmp` path. `ledger.writable`
-is the result of a same-directory write/read/cleanup probe. `ledger.last_write_ok` is the most
-recent real append outcome, or `null` before any selected relation has been written in this
-process. `ledger.lines` is the current JSONL line count when the path is a readable file.
-`ledger.durable` is conservative: it is true only when a non-default path is configured and
-the current write probe passes. It does not prove cross-restart persistence; deployments that
-claim a durable record must still mount persistent storage and verify it outside the process.
+is a cached same-directory write/read/cleanup observation, refreshed at most once per 60
+seconds and updated immediately by a real append. `ledger.last_write_ok` is the most recent
+real append outcome, or `null` before any selected relation has been written to the observed
+path in this process. `ledger.lines` is counted once when a path is first observed and then
+incremented by this single writer after successful appends; it is not a full-file scan on the
+unauthenticated discovery path. `ledger.durable` is conservative: it is true only when a
+non-default path is configured and the latest write observation passes. Ordinary `/health`
+and `/api/v1/capabilities` requests inside the TTL read this bounded in-process observation
+without touching disk; the first request after expiry performs only the constant-size probe,
+not a full ledger scan while the prior line count is known. A new or newly recovered path is
+counted once to initialize that observation. None of these fields prove cross-restart
+persistence; deployments that claim a durable record must still mount persistent storage and
+verify it outside the process.
 
 > **Open — response freshness.** Capabilities is the discovery surface §5.6 tells consumers to
 > trust in place of hardcoded values, and it carries `pipeline_version`, the provenance field.

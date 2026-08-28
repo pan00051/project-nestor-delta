@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from jsonschema import validate
 from fastapi.testclient import TestClient
@@ -17,6 +18,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from nestor_delta_service import app as app_module  # noqa: E402
+from nestor_delta_service import boundary as boundary_module  # noqa: E402
 from nestor_delta_service.boundary import (  # noqa: E402
     RUN_STORE,
     RunStore,
@@ -116,6 +118,50 @@ class ApiBoundaryV1Tests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers["access-control-allow-origin"], "*")
+
+    def test_health_and_capabilities_reuse_cached_ledger_observation(self) -> None:
+        with patch.object(boundary_module, "_probe_relationship_ledger") as probe:
+            with patch.object(boundary_module, "_ledger_line_count") as line_count:
+                for _ in range(3):
+                    self.assertEqual(self.client.get("/health").status_code, 200)
+                    self.assertEqual(
+                        self.client.get("/api/v1/capabilities").status_code,
+                        200,
+                    )
+
+        probe.assert_not_called()
+        line_count.assert_not_called()
+
+    def test_ledger_probe_refresh_does_not_rescan_known_line_count(self) -> None:
+        with patch.object(
+            boundary_module,
+            "_probe_relationship_ledger",
+            return_value=(True, None),
+        ) as probe:
+            with patch.object(boundary_module, "_ledger_line_count") as line_count:
+                status = boundary_module.relationship_ledger_status(refresh=True)
+
+        self.assertEqual(status["lines"], 0)
+        probe.assert_called_once_with(self.ledger_path)
+        line_count.assert_not_called()
+
+    def test_ledger_probe_refreshes_after_ttl_without_rescanning_lines(self) -> None:
+        expired_at = (
+            boundary_module._LEDGER_OBSERVED_AT
+            + boundary_module.LEDGER_PROBE_TTL_SECONDS
+        )
+        with patch.object(boundary_module, "perf_counter", return_value=expired_at):
+            with patch.object(
+                boundary_module,
+                "_probe_relationship_ledger",
+                return_value=(True, None),
+            ) as probe:
+                with patch.object(boundary_module, "_ledger_line_count") as line_count:
+                    status = boundary_module.relationship_ledger_status()
+
+        self.assertTrue(status["writable"])
+        probe.assert_called_once_with(self.ledger_path)
+        line_count.assert_not_called()
 
     def test_audit_and_snapshot_have_versioned_paths_and_legacy_aliases(self) -> None:
         payload = {"case_name": "spain_retail_eurostat_2008_2025"}

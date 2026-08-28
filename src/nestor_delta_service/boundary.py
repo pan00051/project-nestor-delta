@@ -23,6 +23,7 @@ from .versioning import PIPELINE_VERSION
 API_VERSION = "v1"
 RUN_STORE_MAX = 100
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+LEDGER_PROBE_TTL_SECONDS = 60.0
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +56,8 @@ class RunStore:
 RUN_STORE = RunStore()
 LEDGER_LOCK = RLock()
 DEFAULT_RELATIONSHIP_LEDGER_PATH = Path("/tmp/nestor_delta_relationship_ledger.jsonl")
-_LEDGER_LAST_WRITE_OK: bool | None = None
+_LEDGER_OBSERVATION: dict[str, Any] | None = None
+_LEDGER_OBSERVED_AT = 0.0
 
 
 def utc_now() -> str:
@@ -72,8 +74,10 @@ def relationship_ledger_path() -> Path:
 
 
 def reset_relationship_ledger_observation() -> None:
-    global _LEDGER_LAST_WRITE_OK
-    _LEDGER_LAST_WRITE_OK = None
+    global _LEDGER_OBSERVATION, _LEDGER_OBSERVED_AT
+    with LEDGER_LOCK:
+        _LEDGER_OBSERVATION = None
+        _LEDGER_OBSERVED_AT = 0.0
 
 
 def _ledger_line_count(path: Path) -> int | None:
@@ -108,26 +112,61 @@ def _probe_relationship_ledger(path: Path) -> tuple[bool, str | None]:
             LOGGER.exception("relationship ledger probe cleanup failed")
 
 
-def relationship_ledger_status() -> dict[str, Any]:
-    configured_path = os.environ.get("NESTOR_RELATIONSHIP_LEDGER_PATH")
-    path = relationship_ledger_path()
-    with LEDGER_LOCK:
-        writable, probe_error = _probe_relationship_ledger(path)
+def _ledger_probe_error(path: Path, exc: Exception) -> str:
+    if path.exists() and not path.is_file():
+        return "ledger path is not a file"
+    return f"{exc.__class__.__name__}: {exc}"
+
+
+def _refresh_ledger_observation(
+    path: Path,
+    *,
+    previous: dict[str, Any] | None,
+) -> dict[str, Any]:
+    writable, probe_error = _probe_relationship_ledger(path)
+    lines = previous.get("lines") if previous is not None else None
+    if writable and lines is None:
         try:
-            lines = _ledger_line_count(path) if writable else None
+            lines = _ledger_line_count(path)
         except Exception as exc:
             writable = False
             lines = None
-            probe_error = f"{exc.__class__.__name__}: {exc}"
+            probe_error = _ledger_probe_error(path, exc)
+    elif not writable:
+        lines = None
     return {
-        "enabled": True,
-        "configured": bool(configured_path),
-        "durable": bool(configured_path) and writable,
         "writable": writable,
-        "last_write_ok": _LEDGER_LAST_WRITE_OK,
+        "last_write_ok": previous.get("last_write_ok") if previous is not None else None,
         "lines": lines,
         "path": str(path),
         "write_probe_error": probe_error,
+    }
+
+
+def relationship_ledger_status(*, refresh: bool = False) -> dict[str, Any]:
+    global _LEDGER_OBSERVATION, _LEDGER_OBSERVED_AT
+    configured_path = os.environ.get("NESTOR_RELATIONSHIP_LEDGER_PATH")
+    path = relationship_ledger_path()
+    now = perf_counter()
+    with LEDGER_LOCK:
+        same_path = (
+            _LEDGER_OBSERVATION is not None
+            and _LEDGER_OBSERVATION["path"] == str(path)
+        )
+        expired = now - _LEDGER_OBSERVED_AT >= LEDGER_PROBE_TTL_SECONDS
+        if not same_path or refresh or expired:
+            previous = _LEDGER_OBSERVATION if same_path else None
+            _LEDGER_OBSERVATION = _refresh_ledger_observation(
+                path,
+                previous=previous,
+            )
+            _LEDGER_OBSERVED_AT = now
+        observation = dict(_LEDGER_OBSERVATION)
+    return {
+        "enabled": True,
+        "configured": bool(configured_path),
+        "durable": bool(configured_path) and observation["writable"],
+        **observation,
     }
 
 
@@ -209,7 +248,8 @@ def completed_envelope(
 
 def append_relationship_ledger(envelope: Mapping[str, Any]) -> None:
     """Append selected-relation outcome candidates outside the Report body."""
-    global _LEDGER_LAST_WRITE_OK
+    global _LEDGER_OBSERVATION, _LEDGER_OBSERVED_AT
+    path: Path | None = None
     try:
         report = envelope.get("report")
         run = envelope.get("run") or {}
@@ -224,10 +264,10 @@ def append_relationship_ledger(envelope: Mapping[str, Any]) -> None:
             return
 
         path = relationship_ledger_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
         snapshot = report.get("snapshot") or {}
         case = report.get("case") or {}
         with LEDGER_LOCK:
+            path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("a", encoding="utf-8") as handle:
                 for relation in selected:
                     effect = relation.get("effect") or {}
@@ -245,9 +285,33 @@ def append_relationship_ledger(envelope: Mapping[str, Any]) -> None:
                         "pipeline_version": report.get("pipeline_version"),
                     }
                     handle.write(json.dumps(entry, sort_keys=True) + "\n")
-            _LEDGER_LAST_WRITE_OK = True
-    except Exception:
-        _LEDGER_LAST_WRITE_OK = False
+            if (
+                _LEDGER_OBSERVATION is not None
+                and _LEDGER_OBSERVATION["path"] == str(path)
+                and _LEDGER_OBSERVATION["lines"] is not None
+            ):
+                lines = int(_LEDGER_OBSERVATION["lines"]) + len(selected)
+            else:
+                lines = _ledger_line_count(path)
+            _LEDGER_OBSERVATION = {
+                "writable": True,
+                "last_write_ok": True,
+                "lines": lines,
+                "path": str(path),
+                "write_probe_error": None,
+            }
+            _LEDGER_OBSERVED_AT = perf_counter()
+    except Exception as exc:
+        if path is not None:
+            with LEDGER_LOCK:
+                _LEDGER_OBSERVATION = {
+                    "writable": False,
+                    "last_write_ok": False,
+                    "lines": None,
+                    "path": str(path),
+                    "write_probe_error": _ledger_probe_error(path, exc),
+                }
+                _LEDGER_OBSERVED_AT = perf_counter()
         LOGGER.exception(
             "relationship ledger append failed; analysis response will continue"
         )

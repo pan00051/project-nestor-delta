@@ -357,13 +357,17 @@ analysis request. `/api/v1/capabilities` reports `ledger.enabled`,
 `ledger.write_probe_error`.
 
 `ledger.durable` is now an observed current-process signal, not an environment
-variable mirror. It is true only when a non-default path is configured and a
-same-directory write/read/cleanup probe passes. `ledger.last_write_ok` reports
-the most recent real append outcome, or `null` before any selected relation has
-been written in the process. This still does not prove cross-restart
-persistence: a deployment that must accumulate a durable record has to mount a
-volume, set `NESTOR_RELATIONSHIP_LEDGER_PATH` to that mount, and verify the file
-out of band.
+variable mirror. It is true only when a non-default path is configured and the
+latest same-directory write observation passes. The probe is cached for 60
+seconds, while real appends update the observation immediately. `ledger.lines`
+is counted when a path is first observed or recovers, then incremented after
+successful single-process appends, so `/health` and `/api/v1/capabilities` do
+not scan the append-only file on every request. `ledger.last_write_ok` reports the most
+recent real append outcome, or `null` before any selected relation has been
+written to the observed path in the process. This still does not prove
+cross-restart persistence: a deployment that must accumulate a durable record
+has to mount a volume, set `NESTOR_RELATIONSHIP_LEDGER_PATH` to that mount, and
+verify the file out of band.
 
 ## Error Format
 

@@ -154,8 +154,25 @@ non-default path is configured and a same-directory write/read/cleanup probe
 passes. `/health` returns the same ledger block so probe failure is visible from
 the health surface. Real append failures still do not fail analysis requests;
 they flip `last_write_ok` false and continue logging fail-soft. Boundary: this
-proves current-process write health, not cross-restart persistence. Railway
-volume persistence must still be verified out of band after deploy.
+proves current-process write health, not cross-restart persistence. An external
+review caught that the first implementation probed and scanned the complete
+append-only file on every public health/discovery request. The observation is
+now cached for 60 seconds, the line count is initialized once per path or path
+recovery, and real appends update it incrementally. Repeated `/health` and
+`capabilities` requests inside the TTL perform no ledger I/O. Railway volume
+persistence must still be verified out of band after deploy.
+
+**Q4 hot-path follow-up acceptance, 2026-08-28.** The API boundary suite is
+`14 passed`; the complete required command `.venv/bin/python -m pytest -q` is
+`182 passed` (the prior 179 plus three cache/TTL regressions). A one-second
+read-only smoke run of `scripts/sample-q3-deploy-window.py` against production
+recorded both canonical and cache-busted responses with revision
+`01a9e6ca2637`, ledger present, and upstream zone `railway/us-west2`. Their
+`x-hikari-trace` values differed (`hkg1.aebn,hnd1.df23` versus
+`hkg1.aebn,hnd1.4cm0`) despite the same deployed revision, reinforcing that the
+field is not an application-instance identity. This was a sampler smoke test,
+not the time-limited deployment experiment. No deployment occurred; D5 remains
+reserved for the next API cutover.
 
 **Q1 (dependency declaration) changes what that number costs to reproduce.** The
 179 figure was previously only reachable on a machine that had also installed
@@ -192,7 +209,12 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
    Codex could not reproduce the stale body in ten canonical samples and saw no
    new/old process jump. F1 now gives `/health` and `/api/v1/capabilities`
    `Cache-Control: no-store`, but every verification fetch must keep carrying a
-   cache-busting parameter until the deployed service is rechecked.
+   cache-busting parameter until the deployed service is rechecked. The next API
+   deploy is a time-limited diagnostic window: start
+   `scripts/sample-q3-deploy-window.py` before the deploy action and keep it
+   running through cutover. Do not deploy first and reconstruct the evidence
+   afterward. Matching `x-hikari-trace` values are routing evidence, not proof
+   of one application instance.
 2. All ground-truth fixtures are n=216, so the rolling-window branch has no
    boundary fixture.
 
