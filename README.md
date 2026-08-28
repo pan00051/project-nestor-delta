@@ -46,8 +46,11 @@ or invent a conclusion.
 
 ## Quick Start
 
-Tests require Python 3.9 or newer. Run the complete suite with pytest
-(`pip install -e '.[dev]'`):
+Tests require Python 3.9 or newer **and pip 21.3 or newer** (editable installs
+of a pyproject-only project need PEP 660; the pip bundled with macOS Python 3.9
+is one release short and fails with a misleading `setup.py not found`). Run
+`python -m pip install --upgrade pip` first if in doubt, then install the dev
+extra with `pip install -e '.[dev]'` and run the complete suite:
 
 ```bash
 python3 -m pytest -q          # 179 tests

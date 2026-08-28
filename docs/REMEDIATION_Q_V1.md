@@ -61,8 +61,38 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 **before：** `1 failed, 178 passed`（补齐 `jsonschema`/`fastapi`/`httpx` 之前更早：collection 直接中断）
 **after：** `179 passed, 34 subtests passed`
 
-**变更范围：** 仅 `pyproject.toml` 的 `[dev]` extra。未触碰任何算法、阈值、fixture 或输出，
-因此 `pipeline_version` 不变。
+### Q1.1 — 补记：缺 `[build-system]` 与 pip 版本下限
+
+Q1 首次推送后，在作者本人的 macOS 机器上执行同一条命令仍然失败：
+
+```
+ERROR: File "setup.py" or "setup.cfg" not found. Directory cannot be installed
+in editable mode: ...  (A "pyproject.toml" file was found, but editable mode
+currently requires a setuptools-based build.)
+```
+
+两个叠加原因：
+
+1. `pyproject.toml` **没有 `[build-system]` 表**。缺了它，pip 会退回到旧的 setuptools 路径。
+   云端 pip 24.0 能隐式兜住，旧 pip 兜不住——所以这个缺陷在现代环境里完全不可见。
+2. pyproject-only 项目的 editable 安装依赖 PEP 660，**pip 21.3 才支持**。
+   macOS 自带 Python 3.9 的 pip 是 **21.2.4**，正好差一个版本。
+
+值得记下来的是报错信息本身在误导：它说「找不到 setup.py」，让人以为该去补 `setup.py`，
+而真正的原因是构建后端未声明 + pip 太旧。
+
+**修复：** 显式声明 `[build-system]`（`setuptools>=64` + `setuptools.build_meta`）与
+`[tool.setuptools.packages.find] where = ["src"]`（不依赖自动发现），
+并在 `README.md` 与 `REPRODUCIBILITY.md` 写明 pip 版本下限与升级命令。
+
+**验收：** 全新 venv 中 `179 passed`，且 `nestor_delta` / `nestor_delta_service` /
+`nestor_delta_web` 三个包均可导入。
+
+**教训（与 Q1 同源）：** 「在我的机器上能跑」这次是反过来的——**云端环境太新，把缺陷盖住了。**
+一条复现命令要在文档里出现，就得在**文档所声明的最低环境**下验证过，而不是只在最顺手的那台机器上。
+
+**变更范围：** 仅 `pyproject.toml`（`[dev]` extra、`[build-system]`、包发现）与三份文档的安装说明。
+未触碰任何算法、阈值、fixture 或输出，因此 `pipeline_version` 不变。
 
 ---
 

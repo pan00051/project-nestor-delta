@@ -9,9 +9,16 @@ dependencies. Run commands from the repository root with Python 3.9 or newer.
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
+python -m pip install --upgrade pip     # pip >= 21.3 required for PEP 660
 python -m pip install -e '.[dev]'
 python -m pytest -q
 ```
+
+**The pip upgrade line is not decoration.** Editable installs of a
+pyproject-only project need PEP 660, which arrived in pip 21.3. macOS ships a
+Python 3.9 whose bundled pip is 21.2.4, one release short, and it fails with
+`File "setup.py" or "setup.cfg" not found` rather than anything that names the
+real cause. Verified on the author's own machine.
 
 Expect **179 passed**. `python -m unittest discover -s tests` collects only 145;
 it cannot see the ground-truth tests and must not be used to accept a change.

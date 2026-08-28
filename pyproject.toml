@@ -1,3 +1,13 @@
+[build-system]
+# Declared explicitly. Without this table pip falls back to a legacy
+# setuptools path, and an older pip then refuses `-e` outright with
+# "File setup.py or setup.cfg not found" - which is what the documented
+# install command did on the author's own macOS Python 3.9 venv (pip 21.2.4).
+# PEP 660 editable installs additionally require pip >= 21.3; see
+# REPRODUCIBILITY.md.
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "nestor-delta"
 version = "0.1.0"
@@ -35,6 +45,9 @@ web = [
     "streamlit>=1.36,<2",
     "uvicorn[standard]>=0.30,<1",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.nestor_delta]
 evaluation_protocol = "EVALUATION.md"
