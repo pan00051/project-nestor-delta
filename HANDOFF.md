@@ -122,7 +122,18 @@ happened.
 
 Current deployed source revision `01a9e6ca2637`: **179 passed** locally. API and
 web were deployed to Railway with `NESTOR_BUILD_SHA=01a9e6ca2637`; API `/health`
-reported `source_revision=01a9e6ca2637`.
+reported `source_revision=01a9e6ca2637`, re-verified with a cache-buster during
+the Q-series audit.
+
+**Q1 (dependency declaration) changes what that number costs to reproduce.** The
+179 figure was previously only reachable on a machine that had also installed
+the `web` extra, because `streamlit` pulls `numpy` and `pandas` in
+transitively - an accident of the environment, not a declaration. On a clean
+`[dev]`-only install the suite reported `1 failed, 178 passed`, and before
+`jsonschema`/`fastapi`/`httpx` were declared it did not reach assertions at all.
+`[dev]` now declares all six; the documented two-command reproduction yields
+`179 passed` in a fresh venv with no `PYTHONPATH` set. No algorithm, threshold,
+fixture, or output changed, so `pipeline_version` is unmoved.
 
 Historical M3, at `ad77fd3`: **171 passed in 37.42s** locally, re-verified
 during the documentation review. 26 ground-truth tests passed against the
@@ -198,6 +209,17 @@ value. The next implementation decision should choose between:
 Do not default to billing, To B / To C positioning, organization workspaces,
 enterprise tenancy, or a complete SaaS account system.
 
+**Q series — audited defects, tracked separately.** See
+`docs/REMEDIATION_Q_V1.md`. Q1 (test dependency declaration) and Q2 (the
+reliability-is-not-veracity wording boundary) are closed with evidence. Q3
+(`capabilities` staleness) and Q4 (`ledger.durable` reports configuration, not
+writability) **must close before the M5 freeze** - both are credibility
+defects, not fidelity gaps. Q5 is the invite-gate above, specified small on
+purpose. Q6 (no ground-truth fixture on either side of the rolling-window
+boundary) is the recurrence condition for the `effect.score` class of failure
+and is worth more than it looks. Q7 is the live-intake frozen-snapshot path,
+deliberately after M5.
+
 ## Resume Checklist
 
 1. Read `docs/DEMO_MILESTONES_V1.md`, then
@@ -217,6 +239,7 @@ enterprise tenancy, or a complete SaaS account system.
 ## Important References
 
 - Milestone plan and acceptance records: `docs/DEMO_MILESTONES_V1.md`
+- Audited defects and remediation milestones: `docs/REMEDIATION_Q_V1.md`
 - Insight⇄Delta boundary: `docs/API_BOUNDARY_V1.md`
 - Analysis contract: `docs/WEBSITE_CONTRACT_W0.md`
 - Report contract: `docs/WEBSITE_BACKEND_CONTRACT.md`

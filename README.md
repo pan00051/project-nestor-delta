@@ -8,6 +8,13 @@ only adequately supported evidence before prediction.
 It reports co-movement and predictive usefulness, not causation. An honest
 `baseline_only` result is a valid outcome.
 
+It validates the **reliability of a relationship**, never the truthfulness of an
+input. Delta does not fact-check, verify, or score the veracity of any data or
+news it is given; source credibility is an input precondition, not an output.
+This holds for the planned live-data path too: a passing result means "this
+relationship cleared the evidence gate under these frozen conditions", never
+"this information has been verified as true".
+
 Nestor Delta is a non-commercial portfolio and personal-analysis project. Its
 SaaS shape is intentionally light: a deployed demo, optional invite-gated
 access, report history, and shareable read-only outputs are in scope when they
