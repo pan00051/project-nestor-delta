@@ -15,7 +15,9 @@ are reconciled on a three-term key (review decision), and the in-Report reproduc
 was corrected to match — moving `pipeline_version` from `77f014d78885` to `3665b88553ad` with no
 change to any calculation, threshold, or numerical analytical output; the Report metadata
 output itself changed. §1 states what a version change does and does not assert; §1.1 fixes the
-scope of each identifier. §2.8 response freshness remains Open.
+scope of each identifier. §2.8 response freshness remains Open. 2026-08-28 (Q4) —
+`ledger.durable` becomes an observed write-health signal instead of an environment-variable
+mirror.
 **Relationship to `WEBSITE_CONTRACT_W0.md`:** W0 remains the source of truth for the
 **semantic analysis contract** (S1–S10 field mapping, outcome meaning, and frontend IA). The
 Pydantic models and committed JSON Schema govern machine shape and nullability (§4.3–§4.4).
@@ -264,7 +266,16 @@ Unauthenticated and cheap. Minimum contents:
   },
   "execution": { "mode": "sync" },
   "run_retention": { "mode": "in_memory_process_lifetime", "max_runs": 100 },
-  "ledger": { "enabled": true, "durable": true, "path": "/data/relationship_ledger.jsonl" },
+  "ledger": {
+    "enabled": true,
+    "configured": true,
+    "durable": true,
+    "writable": true,
+    "last_write_ok": true,
+    "lines": 42,
+    "path": "/data/relationship_ledger.jsonl",
+    "write_probe_error": null
+  },
   "features": { "pdf_export": false, "report_persistence": false, "sharing": false }
 }
 ```
@@ -275,6 +286,15 @@ code. Never key on `label`.
 
 This is how Insight learns which Eurostat presets exist without hardcoding them, and how it
 learns the day `execution.mode` flips to `"async"`.
+
+`ledger.configured` only reports deployment intent: whether
+`NESTOR_RELATIONSHIP_LEDGER_PATH` points away from the default `/tmp` path. `ledger.writable`
+is the result of a same-directory write/read/cleanup probe. `ledger.last_write_ok` is the most
+recent real append outcome, or `null` before any selected relation has been written in this
+process. `ledger.lines` is the current JSONL line count when the path is a readable file.
+`ledger.durable` is conservative: it is true only when a non-default path is configured and
+the current write probe passes. It does not prove cross-restart persistence; deployments that
+claim a durable record must still mount persistent storage and verify it outside the process.
 
 > **Open — response freshness.** Capabilities is the discovery surface §5.6 tells consumers to
 > trust in place of hardcoded values, and it carries `pipeline_version`, the provenance field.

@@ -81,9 +81,12 @@ The default path is `/tmp/nestor_delta_relationship_ledger.jsonl`; set
 
 Ledger writes are fail-soft. A filesystem, permission, or capacity failure must
 be logged and must never turn a successful analysis into a failed request.
-Capabilities publish the resolved ledger path and whether it is configured as
-durable. Public deployments that claim to accumulate a record must mount a
-persistent volume and set `NESTOR_RELATIONSHIP_LEDGER_PATH` to that mount.
+Capabilities publish the resolved ledger path, whether a non-default path is
+configured, whether a current write probe passes, the latest real append
+outcome, and a conservative `durable` signal. Public deployments that claim to
+accumulate a durable record must mount persistent storage, set
+`NESTOR_RELATIONSHIP_LEDGER_PATH` to that mount, and verify persistence outside
+the process.
 
 Backtests may use the same shape but must be marked `mode: "backtest"`.
 

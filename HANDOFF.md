@@ -146,6 +146,17 @@ a present `ledger` block. Result: the earlier stale response was not reproduced,
 and no new/old process jump was observed. F1 still applies because provenance
 endpoints had no explicit cache policy before this fix.
 
+**Q4 ledger signal repair.** `capabilities.ledger.durable` no longer mirrors
+whether `NESTOR_RELATIONSHIP_LEDGER_PATH` is set. The ledger block now separates
+deployment intent from observation: `configured`, `writable`, `last_write_ok`,
+`lines`, `path`, and `write_probe_error`, with `durable` true only when a
+non-default path is configured and a same-directory write/read/cleanup probe
+passes. `/health` returns the same ledger block so probe failure is visible from
+the health surface. Real append failures still do not fail analysis requests;
+they flip `last_write_ok` false and continue logging fail-soft. Boundary: this
+proves current-process write health, not cross-restart persistence. Railway
+volume persistence must still be verified out of band after deploy.
+
 **Q1 (dependency declaration) changes what that number costs to reproduce.** The
 179 figure was previously only reachable on a machine that had also installed
 the `web` extra, because `streamlit` pulls `numpy` and `pandas` in
@@ -174,13 +185,7 @@ PYTHONPATH=src:tests/ground_truth .venv/bin/python -m pytest tests -q
 
 Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
 
-1. `capabilities.ledger.durable` reports only that a non-default path was
-   configured. It does not verify that the path is writable or persistent, and
-   writes are fail-soft, so a broken ledger reports healthy while losing a
-   record that cannot be rebuilt later. The contract now states this limitation
-   rather than the guarantee it used to claim; the signal itself is still to be
-   fixed.
-2. A historical fetch to the canonical `/api/v1/capabilities` URL returned a superseded
+1. A historical fetch to the canonical `/api/v1/capabilities` URL returned a superseded
    `pipeline_version` with the `ledger` block absent, while the same endpoint
    with a cache-busting parameter returned current values moments apart. The
    mechanism is not fully diagnosed — do not assume a cache. On 2026-08-28,
@@ -188,7 +193,7 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
    new/old process jump. F1 now gives `/health` and `/api/v1/capabilities`
    `Cache-Control: no-store`, but every verification fetch must keep carrying a
    cache-busting parameter until the deployed service is rechecked.
-3. All ground-truth fixtures are n=216, so the rolling-window branch has no
+2. All ground-truth fixtures are n=216, so the rolling-window branch has no
    boundary fixture.
 
 ## Non-Negotiable Boundaries

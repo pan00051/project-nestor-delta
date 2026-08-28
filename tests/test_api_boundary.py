@@ -17,7 +17,11 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from nestor_delta_service import app as app_module  # noqa: E402
-from nestor_delta_service.boundary import RUN_STORE, RunStore  # noqa: E402
+from nestor_delta_service.boundary import (  # noqa: E402
+    RUN_STORE,
+    RunStore,
+    reset_relationship_ledger_observation,
+)
 from nestor_delta_service.errors import SCHEMA_VERSION, analysis_failure  # noqa: E402
 from nestor_delta_service.schema import ReportJsonV1, report_json_schema  # noqa: E402
 from nestor_delta_web import render_logic as rl  # noqa: E402
@@ -34,6 +38,7 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.ledger_path = Path(self._ledger_dir.name) / "ledger.jsonl"
         self._old_ledger_path = os.environ.get("NESTOR_RELATIONSHIP_LEDGER_PATH")
         os.environ["NESTOR_RELATIONSHIP_LEDGER_PATH"] = str(self.ledger_path)
+        reset_relationship_ledger_observation()
         self.client = TestClient(app_module.create_app())
 
     def tearDown(self) -> None:
@@ -41,6 +46,7 @@ class ApiBoundaryV1Tests(unittest.TestCase):
             os.environ.pop("NESTOR_RELATIONSHIP_LEDGER_PATH", None)
         else:
             os.environ["NESTOR_RELATIONSHIP_LEDGER_PATH"] = self._old_ledger_path
+        reset_relationship_ledger_observation()
         self._ledger_dir.cleanup()
 
     def test_capabilities_are_truthful(self) -> None:
@@ -62,6 +68,7 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertEqual(health.status_code, 200)
         self.assertIn("no-store", health.headers["cache-control"])
         self.assertEqual(health.json()["source_revision"], body["source_revision"])
+        self.assertEqual(health.json()["ledger"], body["ledger"])
         self.assertEqual(body["execution"], {"mode": "sync"})
         self.assertEqual(
             body["run_retention"],
@@ -69,7 +76,16 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         )
         self.assertEqual(
             body["ledger"],
-            {"enabled": True, "durable": True, "path": str(self.ledger_path)},
+            {
+                "enabled": True,
+                "configured": True,
+                "durable": True,
+                "writable": True,
+                "last_write_ok": None,
+                "lines": 0,
+                "path": str(self.ledger_path),
+                "write_probe_error": None,
+            },
         )
         self.assertTrue(body["inputs"]["csv_upload"])
         self.assertIn("spain_retail_eurostat_2008_2025", body["inputs"]["bundled_cases"])
@@ -186,6 +202,11 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertEqual(ledger_entries[0]["stability"], rel["stability"])
         self.assertEqual(ledger_entries[0]["generated_as_of"], report["generated_as_of"])
         self.assertEqual(ledger_entries[0]["pipeline_version"], report["pipeline_version"])
+        ledger_status = self.client.get("/api/v1/capabilities").json()["ledger"]
+        self.assertTrue(ledger_status["durable"])
+        self.assertTrue(ledger_status["writable"])
+        self.assertTrue(ledger_status["last_write_ok"])
+        self.assertEqual(ledger_status["lines"], len(ledger_entries))
 
         get_response = self.client.get(f"/api/v1/runs/{run['run_id']}")
         self.assertEqual(get_response.status_code, 200)
@@ -213,6 +234,15 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["run"]["status"], "completed")
         self.assertEqual(response.json()["report"]["outcome"], "ok")
+
+        capabilities = self.client.get("/api/v1/capabilities")
+        ledger = capabilities.json()["ledger"]
+        self.assertFalse(ledger["durable"])
+        self.assertFalse(ledger["writable"])
+        self.assertFalse(ledger["last_write_ok"])
+        self.assertIsNone(ledger["lines"])
+        self.assertEqual(ledger["path"], self._ledger_dir.name)
+        self.assertEqual(ledger["write_probe_error"], "ledger path is not a file")
 
     def test_validation_error_creates_no_run(self) -> None:
         before = len(RUN_STORE._items)

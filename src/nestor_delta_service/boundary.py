@@ -55,6 +55,7 @@ class RunStore:
 RUN_STORE = RunStore()
 LEDGER_LOCK = RLock()
 DEFAULT_RELATIONSHIP_LEDGER_PATH = Path("/tmp/nestor_delta_relationship_ledger.jsonl")
+_LEDGER_LAST_WRITE_OK: bool | None = None
 
 
 def utc_now() -> str:
@@ -70,12 +71,63 @@ def relationship_ledger_path() -> Path:
     )
 
 
+def reset_relationship_ledger_observation() -> None:
+    global _LEDGER_LAST_WRITE_OK
+    _LEDGER_LAST_WRITE_OK = None
+
+
+def _ledger_line_count(path: Path) -> int | None:
+    if not path.exists():
+        return 0
+    if not path.is_file():
+        return None
+    with path.open("r", encoding="utf-8") as handle:
+        return sum(1 for _ in handle)
+
+
+def _probe_relationship_ledger(path: Path) -> tuple[bool, str | None]:
+    probe_path = path.parent / f".{path.name}.probe-{uuid4().hex}"
+    payload = "nestor-delta-ledger-probe\n"
+    try:
+        if path.exists() and not path.is_file():
+            return False, "ledger path is not a file"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with probe_path.open("w", encoding="utf-8") as handle:
+            handle.write(payload)
+        if probe_path.read_text(encoding="utf-8") != payload:
+            return False, "ledger write probe readback mismatch"
+        return True, None
+    except Exception as exc:
+        return False, f"{exc.__class__.__name__}: {exc}"
+    finally:
+        try:
+            probe_path.unlink()
+        except FileNotFoundError:
+            pass
+        except Exception:
+            LOGGER.exception("relationship ledger probe cleanup failed")
+
+
 def relationship_ledger_status() -> dict[str, Any]:
     configured_path = os.environ.get("NESTOR_RELATIONSHIP_LEDGER_PATH")
+    path = relationship_ledger_path()
+    with LEDGER_LOCK:
+        writable, probe_error = _probe_relationship_ledger(path)
+        try:
+            lines = _ledger_line_count(path) if writable else None
+        except Exception as exc:
+            writable = False
+            lines = None
+            probe_error = f"{exc.__class__.__name__}: {exc}"
     return {
         "enabled": True,
-        "durable": bool(configured_path),
-        "path": str(relationship_ledger_path()),
+        "configured": bool(configured_path),
+        "durable": bool(configured_path) and writable,
+        "writable": writable,
+        "last_write_ok": _LEDGER_LAST_WRITE_OK,
+        "lines": lines,
+        "path": str(path),
+        "write_probe_error": probe_error,
     }
 
 
@@ -157,6 +209,7 @@ def completed_envelope(
 
 def append_relationship_ledger(envelope: Mapping[str, Any]) -> None:
     """Append selected-relation outcome candidates outside the Report body."""
+    global _LEDGER_LAST_WRITE_OK
     try:
         report = envelope.get("report")
         run = envelope.get("run") or {}
@@ -192,7 +245,9 @@ def append_relationship_ledger(envelope: Mapping[str, Any]) -> None:
                         "pipeline_version": report.get("pipeline_version"),
                     }
                     handle.write(json.dumps(entry, sort_keys=True) + "\n")
+            _LEDGER_LAST_WRITE_OK = True
     except Exception:
+        _LEDGER_LAST_WRITE_OK = False
         LOGGER.exception(
             "relationship ledger append failed; analysis response will continue"
         )

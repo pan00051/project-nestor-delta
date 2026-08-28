@@ -352,14 +352,18 @@ can set `NESTOR_RELATIONSHIP_LEDGER_PATH` for durable storage.
 
 Ledger writes are fail-soft: append failures are logged but never fail the
 analysis request. `/api/v1/capabilities` reports `ledger.enabled`,
-`ledger.durable`, and the resolved `ledger.path`.
+`ledger.configured`, `ledger.durable`, `ledger.writable`,
+`ledger.last_write_ok`, `ledger.lines`, the resolved `ledger.path`, and any
+`ledger.write_probe_error`.
 
-`ledger.durable` currently reports that a non-default path was configured; it
-does not verify successful writes or storage persistence. Append failures are
-logged fail-soft. A deployment that must accumulate a record therefore has to
-confirm persistence out of band — by mounting a volume, setting
-`NESTOR_RELATIONSHIP_LEDGER_PATH` to that mount, and inspecting the file — and
-must not read `durable: true` as evidence that writes are landing.
+`ledger.durable` is now an observed current-process signal, not an environment
+variable mirror. It is true only when a non-default path is configured and a
+same-directory write/read/cleanup probe passes. `ledger.last_write_ok` reports
+the most recent real append outcome, or `null` before any selected relation has
+been written in the process. This still does not prove cross-restart
+persistence: a deployment that must accumulate a durable record has to mount a
+volume, set `NESTOR_RELATIONSHIP_LEDGER_PATH` to that mount, and verify the file
+out of band.
 
 ## Error Format
 

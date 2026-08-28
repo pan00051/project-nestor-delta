@@ -76,14 +76,18 @@ def create_app():
     app = FastAPI(title="Nestor Delta API", version="0.1.0")
     ledger = relationship_ledger_status()
     LOGGER.info(
-        "relationship ledger path=%s durable=%s",
+        "relationship ledger path=%s durable=%s writable=%s lines=%s",
         ledger["path"],
         ledger["durable"],
+        ledger["writable"],
+        ledger["lines"],
     )
     logging.getLogger("uvicorn.error").info(
-        "relationship ledger path=%s durable=%s",
+        "relationship ledger path=%s durable=%s writable=%s lines=%s",
         ledger["path"],
         ledger["durable"],
+        ledger["writable"],
+        ledger["lines"],
     )
     app.add_middleware(
         CORSMiddleware,
@@ -100,6 +104,7 @@ def create_app():
                 "status": "ok",
                 "schema_version": SCHEMA_VERSION,
                 "source_revision": SOURCE_REVISION,
+                "ledger": relationship_ledger_status(),
             },
             headers=_PROVENANCE_HEADERS,
         )
