@@ -153,10 +153,12 @@ API `/health` and `/api/v1/capabilities` report that revision with
 `Cache-Control: no-store`. The web remains on `01a9e6ca2637` because no web
 source changed in the intervening commits.
 
-**Q6 local acceptance, 2026-08-29.** Added two ground-truth boundary fixtures:
+**Q6 local acceptance, 2026-08-29.** Added three ground-truth boundary fixtures:
 `s_gt_6_pre_rolling_negative` (`train_observations=11`, no rolling,
 `effective_window=null`) and `s_gt_6_rolling_positive` (`train_observations=51`,
-rolling, `effective_window=17`). The rolling branch condition is
+rolling, `effective_window=17`), followed by Q6.1
+`s_gt_6_rolling_negative` (`train_observations=51`, rolling,
+`effective_window=17`). The rolling branch condition is
 `len(train_rows) <= lag_window + 8` skips rolling; `len(train_rows) > lag_window + 8`
 enters rolling (`src/nestor_delta_service/adapter.py:745`, `:786`, `:812`), with
 window size `min(36, max(lag_window + 6, len(train_rows) // 3))`
@@ -167,9 +169,14 @@ trajectory. Q6 positive selects only `true_driver`, recovers `lag=2` and
 `uncertainty=0.1337838756106424`, and 6 trajectory points. Its last rolling
 trajectory score is `0.6323873577775484`, confirming that report
 `effect.score` must remain `full_train_window`; rolling supplies only
-`stability` / `uncertainty` / `lifecycle`. Required clean-venv command
+`stability` / `uncertainty` / `lifecycle`. Q6.1 rolling negative returns
+`baseline_only`, `selected_count=0`; top `noise_3` has full-window
+`effect.score=0.26227702663262514` while its final rolling point is
+`0.464238688557278`, and `noise_4` reaches `0.6464503187114986` at the final
+rolling point without being selected. Required clean-venv command
 `rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install --upgrade pip && .venv/bin/pip install -e '.[dev]' && .venv/bin/python -m pytest -q`
-returned **187 passed in 70.05s**. `pipeline_version` stayed
+returned **187 passed in 70.05s** for Q6; after Q6.1, the same clean-venv command
+returned **189 passed in 69.31s**. `pipeline_version` stayed
 `s10.sha256.3665b88553ad`; no algorithm, threshold, deployment script, SQL,
 frontend, or existing frozen report changed.
 
@@ -296,11 +303,11 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
    the next production source deploy, repair the script so the variable update
    cannot deploy prior source, then add an acceptance check for that ordering.
    Evidence: `docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md`.
-2. Q6 discovered but did not remediate a narrow small-sample edge: with
+2. Q8 is registered but not remediated: with
    `lag_window=3` and `train_observations=12`, the adapter enters the rolling
    branch but produces no trajectory point, so report construction returns a
-   validation error. This is outside Q6's fixture/test-only scope and should be
-   triaged separately before relying on very short uploads.
+   validation error. This is outside Q6/Q6.1's fixture/test-only scope and should
+   be triaged separately before relying on very short uploads.
 
 ## Non-Negotiable Boundaries
 
@@ -351,9 +358,11 @@ reliability-is-not-veracity wording boundary) are closed with evidence. Q3
 (`capabilities` staleness) is diagnosed as a variable-triggered prior-source
 redeploy race, with script remediation pending; Q4 (`ledger.durable`) is closed.
 Q5 is the invite-gate above, specified small on
-purpose. Q6 is closed with two rolling-window boundary ground-truth fixtures and
-explicit `effect.score` scope assertions. Q7 is the live-intake frozen-snapshot
-path, deliberately after M5.
+purpose. Q6 is closed with rolling-window boundary ground-truth fixtures on both
+the positive and negative sides, plus explicit `effect.score` scope assertions.
+Q7 is the live-intake frozen-snapshot path, deliberately after M5. Q8 is
+registered for the `train_observations=12` first-rolling-sample failure and is
+not started.
 
 ## Resume Checklist
 

@@ -22,8 +22,9 @@
 | **Q5** | 邀请码轻量访问 gate | 半天（规模必须守住） | 新能力 | 未开始 |
 | **Q6** | rolling-window 边界 fixture 缺失 | 1 ~ 2 天 | 验证盲区 | ✅ 已完成 |
 | **Q7** | live intake 的冻结快照路径 | 独立阶段，M5 之后 | 新方向 | 未开始 |
+| **Q8** | rolling 分支首个 n 失效 | 半天 | 边界缺陷 | 已登记；未开始 |
 
-排序依据是**预计时间升序**，不是重要性。若按「不修的后果」排，顺序是 Q3 > Q6 > Q1 > Q4 > Q2。
+排序依据是**预计时间升序**，不是重要性。若按「不修的后果」排，顺序是 Q3 > Q6 > Q8 > Q1 > Q4 > Q2。
 
 ---
 
@@ -206,9 +207,9 @@ Q3 部署采样，因为 Q3 依据 revision、响应头和 ledger 块存在性�
 
 ## Q6 — rolling-window 边界 fixture 缺失
 
-**状态：** ✅ 已完成。新增 `s_gt_6_pre_rolling_negative.csv` 与
-`s_gt_6_rolling_positive.csv`，并在 ground-truth 契约测试中固定滚动窗口边界、
-正/负控制结果和 `effect.score` 口径。
+**状态：** ✅ 已完成。新增 `s_gt_6_pre_rolling_negative.csv`、
+`s_gt_6_rolling_positive.csv` 与 `s_gt_6_rolling_negative.csv`，并在 ground-truth
+契约测试中固定滚动窗口边界、正/负控制结果和 `effect.score` 口径。
 
 **预计时间：** 1 ~ 2 天。
 
@@ -255,11 +256,22 @@ Evidence Gate 的情况下选择真实关系。
 |---|---:|---:|---|---|---|
 | `s_gt_6_pre_rolling_negative` | 11 | `null` | `baseline_only` | `selected_count = 0` | top `noise_1`: `effect.score = 0.6722015107369267`, `trajectory = null` |
 | `s_gt_6_rolling_positive` | 51 | 17 | `ok` | `["true_driver"]` | `true_driver`: `effect.score = 0.6230268430213287`, `lag = 2`, `sign = -1`, `stability = 0.522353792707568`, `uncertainty = 0.1337838756106424` |
+| `s_gt_6_rolling_negative` | 51 | 17 | `baseline_only` | `selected_count = 0` | top `noise_3`: `effect.score = 0.26227702663262514`, `stability = 0.13597207779145778`, `uncertainty = 0.39735140631958094` |
 
 `s_gt_6_rolling_positive` 的最后一个 rolling trajectory point 是
 `score = 0.6323873577775484` at `step = 51`。报告中的 `effect.score` 必须读取
 **full training window** 的 transformed correlation（`0.6230268430213287`），不是这个
 rolling point；rolling 只供 `stability` / `uncertainty` / `lifecycle` 使用。
+
+**Q6.1 补充：rolling 侧负控制。** Q6 初版在 rolling 分支只证明了「该检出的能检出」，
+没有证明「不该检出的会被拒绝」。这会留下“什么都选”的过度声称风险，且方向正好对应
+历史 `effect.score` 事故。Q6.1 因此新增同为 `n = 51` 的纯噪声 rolling 负控制。
+该 fixture 返回 `outcome = baseline_only`、`selected_count = 0`、四个噪声源均
+`selected = false`。其中 top relation `noise_3` 的 full-window `effect.score` 是
+`0.26227702663262514`，同一 relation 的最后 rolling point 是
+`0.464238688557278`；另一个噪声源 `noise_4` 的最后 rolling point 达到
+`0.6464503187114986`，但仍不得成为 headline effect。这个 fixture 明确守住 rolling
+分支里的拒绝能力与 score scope。
 
 **历史控制 before/after。** Q6 没有修改算法、阈值或既有冻结 fixture。Q6 后重新测得：
 S-GT-1 仍为 `outcome = ok`、`selected_count = 1`、`selected_sources = ["true_driver"]`、
@@ -299,11 +311,33 @@ snapshot 的 hash 可独立重算；exploratory live run 与 frozen evidence 在
 
 ---
 
+## Q8 — rolling 分支首个 n 失效
+
+**状态：** 已登记，未开始。本条只记录 Q6 期间发现的边界缺陷；Q6.1 未修改算法。
+
+**问题。** 当 `lag_window = 3` 且 `train_observations = 12` 时，样本刚越过 Q6 记录的
+rolling 分支边界（11），adapter 会进入 rolling 路径。但当前 step 规则
+`range(window_size + lag_window + 1, len(train_rows) + 1, 6)` 产生不了任何 trajectory
+point，`classify_relation_lifecycle` 随后收到空 trajectory，并导致 report construction
+返回 validation error。
+
+**为什么要单列。** 12 是 rolling 分支的第一个合法侧样本量；刚跨过边界第一步就失败，
+不是普通小样本效果差，而是分支条件和 step/lifecycle 最小点数之间存在不一致。HANDOFF
+备注容易被读漏，所以升级为 Q 表正式条目。
+
+**DoD（待实施时细化）。**
+1. 明确 `train_observations = lag_window + 9` 的期望行为：要么不进入 rolling，要么进入后
+   以 `trajectory = null` / `birth` / `points = 0` 形式合法返回报告。
+2. 增加边界测试覆盖 `train_observations = 11, 12, 13`。
+3. 不放宽 Evidence Gate 阈值，不改变 `effect.score = full_train_window` 口径。
+
+---
+
 ## 审计说明
 
 Q1–Q7 由 Claude 在 2026-08-28 的一次外部审计中提出，审计基线为 `f5abd58`。
-在该审计基线上，Q1 与 Q2 同批完成并附验收证据，Q3–Q7 当时仅登记、尚未开工；当前状态以上方总览
-和各条正文为准。
+Q8 由 Q6 边界 fixture 工作在 2026-08-29 发现并登记。在该审计基线上，Q1 与 Q2
+同批完成并附验收证据，Q3–Q7 当时仅登记、尚未开工；当前状态以上方总览和各条正文为准。
 
 审计中一并核实、**确认无误**的项（不构成 Q 条目，此处记录以免重复排查）：
 

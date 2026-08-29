@@ -130,6 +130,7 @@ Q6 adds two fixed controls derived from that rule:
 |---|---:|---|---|
 | `s_gt_6_pre_rolling_negative.csv` | 11 | no rolling (`effective_window: null`) | `baseline_only`, `selected_count: 0` |
 | `s_gt_6_rolling_positive.csv` | 51 | rolling (`effective_window: 17`) | selects `true_driver`, lag 2, sign −1 |
+| `s_gt_6_rolling_negative.csv` | 51 | rolling (`effective_window: 17`) | `baseline_only`, `selected_count: 0` |
 
 The positive control uses the first prefix of the accepted S-GT-1 seed that
 both enters the rolling path and gives the unchanged Evidence Gate enough
@@ -138,3 +139,9 @@ trajectory evidence to select the injected relation. The reported
 `0.6230268430213287` for Q6 positive. The final rolling point is
 `0.6323873577775484`; it may feed stability/lifecycle only and must not replace
 the headline effect score.
+
+Q6.1 adds the missing rolling-side negative control. Its top reported relation
+is `noise_3` with full-window `effect.score = 0.26227702663262514`, while that
+same relation's final rolling point is `0.464238688557278`. All four noise
+sources still return `selected: false`, preserving the refusal side of the
+instrument inside the rolling branch.

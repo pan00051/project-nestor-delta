@@ -549,7 +549,8 @@
       "window_rule": "min(36, max(lag_window + 6, train_observations // 3))",
       "lag_window": 3,
       "pre_rolling_train_observations": 11,
-      "rolling_positive_train_observations": 51
+      "rolling_positive_train_observations": 51,
+      "rolling_negative_train_observations": 51
     },
     "fixtures": {
       "s_gt_6_pre_rolling_negative": {
@@ -691,6 +692,77 @@
             "argmax_lag": 0,
             "peak_corr": 0.0503,
             "level_lag1_acf": 0.8972
+          }
+        }
+      },
+      "s_gt_6_rolling_negative": {
+        "file": "s_gt_6_rolling_negative.csv",
+        "nature": "Q6 rolling-window boundary control -- synthetic, not a real-world causal case",
+        "sha256": "02023b3137f42c1e97fe4c8da31732c379190485060fa8281168a4c91ae4f9ff",
+        "rows": 51,
+        "request": {
+          "date_column": "date",
+          "target": "synthetic_target",
+          "candidate_signals": [
+            "noise_1",
+            "noise_2",
+            "noise_3",
+            "noise_4"
+          ],
+          "transform_declarations": {
+            "synthetic_target": "diff",
+            "noise_1": "diff",
+            "noise_2": "diff",
+            "noise_3": "diff",
+            "noise_4": "diff"
+          },
+          "train_end": "2012-03",
+          "lag_window": 3
+        },
+        "diagnostics": {
+          "noise_1": {
+            "corr_by_lag": {
+              "0": -0.1312,
+              "1": -0.0663,
+              "2": 0.0518,
+              "3": 0.0695
+            },
+            "argmax_lag": 0,
+            "peak_corr": -0.1312,
+            "level_lag1_acf": 0.9901
+          },
+          "noise_2": {
+            "corr_by_lag": {
+              "0": 0.0298,
+              "1": -0.0612,
+              "2": -0.1168,
+              "3": -0.2029
+            },
+            "argmax_lag": 3,
+            "peak_corr": -0.2029,
+            "level_lag1_acf": 0.832
+          },
+          "noise_3": {
+            "corr_by_lag": {
+              "0": -0.1227,
+              "1": -0.2623,
+              "2": -0.1431,
+              "3": -0.0184
+            },
+            "argmax_lag": 1,
+            "peak_corr": -0.2623,
+            "level_lag1_acf": 0.9498
+          },
+          "noise_4": {
+            "corr_by_lag": {
+              "0": -0.2929,
+              "1": -0.1822,
+              "2": 0.0618,
+              "3": -0.1079
+            },
+            "argmax_lag": 0,
+            "peak_corr": -0.2929,
+            "level_lag1_acf": 0.9871
           }
         }
       }

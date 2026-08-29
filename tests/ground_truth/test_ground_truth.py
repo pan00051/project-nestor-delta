@@ -143,6 +143,11 @@ def q6_rolling_positive() -> dict:
     return _run("s_gt_6_rolling_positive")
 
 
+@pytest.fixture(scope="module")
+def q6_rolling_negative() -> dict:
+    return _run("s_gt_6_rolling_negative")
+
+
 # ------------------------------------------------------- S-GT-0  integrity
 @pytest.mark.parametrize(
     "name",
@@ -151,6 +156,7 @@ def q6_rolling_positive() -> dict:
         "s_gt_2_negative",
         "s_gt_6_pre_rolling_negative",
         "s_gt_6_rolling_positive",
+        "s_gt_6_rolling_negative",
     ],
 )
 def test_sgt0_fixture_integrity(name: str) -> None:
@@ -291,7 +297,20 @@ def test_q6_rolling_positive_selects_true_relation(q6_rolling_positive: dict) ->
     assert len(rel["trajectory"]) == 6
 
 
-def test_q6_effect_score_scope_is_full_train_window(q6_pre_rolling_negative: dict, q6_rolling_positive: dict) -> None:
+def test_q6_rolling_negative_stays_baseline_only(q6_rolling_negative: dict) -> None:
+    assert q6_rolling_negative["outcome"] == "baseline_only"
+    assert q6_rolling_negative["selection"]["fit_status"] == "baseline_only_no_evidence"
+    assert q6_rolling_negative["selection"]["selected_count"] == 0
+    assert q6_rolling_negative["selection"]["selected_sources"] == []
+    assert q6_rolling_negative["configuration"]["inputs"]["train_observations"] == 51
+    assert q6_rolling_negative["configuration"]["rolling_lifecycle"]["effective_window"] == 17
+    for rel in q6_rolling_negative["relations"]:
+        assert rel["selected"] is False
+        assert rel["reason_code"] in REJECTION_CODES
+        assert len(rel["trajectory"]) == 6
+
+
+def test_q6_effect_score_scope_is_full_train_window(q6_pre_rolling_negative: dict, q6_rolling_positive: dict, q6_rolling_negative: dict) -> None:
     """Q6 guards the old bug: effect.score must not come from S9 rolling."""
     pre_top = q6_pre_rolling_negative["relations"][0]
     assert pre_top["source"] == "noise_1"
@@ -304,6 +323,12 @@ def test_q6_effect_score_scope_is_full_train_window(q6_pre_rolling_negative: dic
     assert rolling_rel["trajectory"][-1]["score"] == pytest.approx(0.6323873577775484)
     assert rolling_rel["effect"]["score"] != pytest.approx(rolling_rel["trajectory"][-1]["score"])
     assert q6_rolling_positive["configuration"]["effect"]["score_scope"] == "full_train_window"
+
+    rolling_neg_top = q6_rolling_negative["relations"][0]
+    assert rolling_neg_top["source"] == "noise_3"
+    assert rolling_neg_top["effect"]["score"] == pytest.approx(0.26227702663262514)
+    assert rolling_neg_top["trajectory"][-1]["score"] == pytest.approx(0.464238688557278)
+    assert rolling_neg_top["effect"]["score"] != pytest.approx(rolling_neg_top["trajectory"][-1]["score"])
 
 
 # ------------------------------------------- S-GT-2b  false-positive rate

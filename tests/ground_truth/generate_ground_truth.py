@@ -53,6 +53,7 @@ TARGET_R = -0.55               # injected correlation in the differenced domain
 N_DECOYS = 3
 Q6_PRE_ROLLING_N = 11        # lag_window + 8: last train size before S9 rolling
 Q6_ROLLING_POSITIVE_N = 51   # first train size where this seed selects in rolling
+Q6_ROLLING_NEGATIVE_N = 51   # same rolling side as the Q6 positive control
 Q6_NEGATIVE_SEED = 20260826  # accepted screened S-GT-2 seed recorded in manifest
 
 SEED_POS = 20260823          # search base; the accepted seed is screened, see below
@@ -317,6 +318,11 @@ def _emit_q6_boundary() -> dict:
             _prefix(build_positive(seed=SEED_POS), Q6_ROLLING_POSITIVE_N),
             "synthetic_target",
         ),
+        (
+            "s_gt_6_rolling_negative",
+            _prefix(build_negative(seed=Q6_NEGATIVE_SEED), Q6_ROLLING_NEGATIVE_N),
+            "synthetic_target",
+        ),
     ):
         path = OUT / f"{name}.csv"
         df.to_csv(path, index=False)
@@ -336,6 +342,7 @@ def _emit_q6_boundary() -> dict:
             "lag_window": MAX_LAG,
             "pre_rolling_train_observations": Q6_PRE_ROLLING_N,
             "rolling_positive_train_observations": Q6_ROLLING_POSITIVE_N,
+            "rolling_negative_train_observations": Q6_ROLLING_NEGATIVE_N,
         },
         "fixtures": fixtures,
     }
