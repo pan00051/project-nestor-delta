@@ -318,14 +318,15 @@ TTL, line estimate, and `last_write_ok`; `LEDGER_LOCK` is not cross-process, and
 JSONL appends have no process-wide consistency guarantee. Keep one worker until both `RunStore`
 and ledger observation/write coordination use shared, process-safe storage.
 
-> **Accepted residual — response freshness.** Capabilities is the discovery surface §5.6 tells
-> consumers to trust, so it and `/health` declare `Cache-Control: no-store`. A 2026-08-29
-> deployment-window experiment recorded 127 canonical/cache-busted requests. After the first
-> new response, all 66 successful responses stayed on the new revision with matching ledger
-> shape and no old response returned; one canonical request returned 502 during cutover. The
-> historical stale response was not reproduced, so its mechanism is not claimed as diagnosed.
-> Deployment verification retains a cache-busting query as defense in depth. Raw evidence and
-> the bounded conclusion are in `docs/evidence/Q3_DEPLOYMENT_WINDOW_2026-08-29.md`.
+> **Diagnosed — deployment response freshness.** Capabilities and `/health` declare
+> `Cache-Control: no-store`, but the historical defect was not an application cache. A controlled
+> 2026-08-29 experiment proved that setting `NESTOR_BUILD_SHA` starts a redeploy of the prior
+> uploaded source and that this redeploy can serve public traffic. Because the current deployment
+> script sets the new revision before uploading the new source, prior code can temporarily report
+> the new revision while returning its old capabilities shape. Cache-busting cannot prevent that.
+> Diagnosis evidence is in `docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md`. The deployment
+> script is intentionally unchanged in this diagnostic round and must be repaired before the next
+> production source deploy.
 
 ### 2.9 Auth entry point
 

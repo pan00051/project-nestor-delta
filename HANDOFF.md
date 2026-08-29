@@ -185,19 +185,29 @@ field is not an application-instance identity. This was a sampler smoke test,
 not the time-limited deployment experiment. No deployment occurred; D5 remains
 reserved for the next API cutover.
 
-**Q3 deployment-window acceptance, 2026-08-29.** API deployment
+**Q3 deployment-window evidence, 2026-08-29.** API deployment
 `acf3549e-f497-4cee-8da4-21ce7b8c7d86` moved production from
 `01a9e6ca2637` to `c6afbb581ff7`. The sampler captured 127 requests: 126 HTTP
 200 and one canonical 502 during cutover. After the first new response, all 66
 successful canonical/cache-busted responses stayed on the new revision, exposed
 `Cache-Control: no-store`, and included ledger plus `ledger_observed_at`; no old
-revision returned. The historical stale-response mechanism remains unproven and
-is not presented as diagnosed. Q3 is temporarily accepted with this residual,
-while deployment verification retains cache-busting. Railway also showed that
-setting `NESTOR_BUILD_SHA` creates an automatic old-image redeploy before the
-CLI upload; it was removed before serving in this run and needs a separate
-deployment-script review. Evidence:
+revision returned. Railway also showed that setting `NESTOR_BUILD_SHA` creates
+an automatic prior-source redeploy before the CLI upload; it was removed before
+serving in this first run. Evidence:
 `docs/evidence/Q3_DEPLOYMENT_WINDOW_2026-08-29.md` and the adjacent raw JSONL.
+
+**Q3 diagnosis, 2026-08-29.** A controlled follow-up set
+`NESTOR_BUILD_SHA=deadbeef3333` without uploading source. Variable-triggered
+redeploy `cfa0b9bf-ca81-4047-8a51-547b2292f500` then served 48 successful
+public capabilities requests over about 74 seconds. Restore redeploy
+`93139bad-ddf5-4d38-851d-7e67feec4015` returned production to
+`c6afbb581ff7`, followed by 50 stable successful responses. This confirms the
+deployment race capable of serving prior code under the new revision stamp;
+the original historical request cannot be tied to a deployment ID after the
+fact, so that final attribution remains a high-confidence inference. Q3 is
+diagnosed; deploy-script remediation is still required before the next source
+deploy and was deliberately not included in this experiment. Evidence:
+`docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md` and adjacent raw JSONL.
 
 Post-deploy health and capabilities both reported revision `c6afbb581ff7`,
 `Cache-Control: no-store`, and a configured/durable/writable ledger at
@@ -295,8 +305,9 @@ enterprise tenancy, or a complete SaaS account system.
 **Q series — audited defects, tracked separately.** See
 `docs/REMEDIATION_Q_V1.md`. Q1 (test dependency declaration) and Q2 (the
 reliability-is-not-veracity wording boundary) are closed with evidence. Q3
-(`capabilities` staleness) is temporarily accepted with an explicit unknown
-historical cause, and Q4 (`ledger.durable`) is closed. Q5 is the invite-gate above, specified small on
+(`capabilities` staleness) is diagnosed as a variable-triggered prior-source
+redeploy race, with script remediation pending; Q4 (`ledger.durable`) is closed.
+Q5 is the invite-gate above, specified small on
 purpose. Q6 (no ground-truth fixture on either side of the rolling-window
 boundary) is the recurrence condition for the `effect.score` class of failure
 and is worth more than it looks. Q7 is the live-intake frozen-snapshot path,

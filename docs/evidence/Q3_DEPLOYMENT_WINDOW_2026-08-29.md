@@ -54,13 +54,12 @@ supports neither a canonical-URL cache hit nor a period in which successful old
 and new application responses alternated. It did expose one brief unavailable
 response at cutover.
 
-The historical mechanism therefore remains unproven. The current operational
-defect is accepted with that residual explicitly recorded: provenance endpoints
-now declare `no-store`, deployment verification remains cache-busted, and this
-observed cutover produced no stale successful response. The automatic old-image
-redeploy caused by setting `NESTOR_BUILD_SHA` is a deployment-script follow-up;
-it was removed before serving in this run and is not claimed as the historical
-cause.
+At the time of this cutover, the historical mechanism remained unproven. A
+controlled follow-up later the same day confirmed that the automatic
+prior-source redeploy caused by setting `NESTOR_BUILD_SHA` can receive public
+traffic. See `Q3_VARIABLE_REDEPLOY_2026-08-29.md`. The redeploy in this first
+window was removed before serving; the follow-up is the causal-mechanism
+evidence and this file remains the original cutover record.
 
 ## Post-deploy verification
 
