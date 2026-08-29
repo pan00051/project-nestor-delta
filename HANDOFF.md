@@ -53,25 +53,46 @@ from this file.
   a deployment identity — equal values mean same commit, not same deployment,
   and API and web deploy independently. A true deployment identity is
   unavailable: CLI-upload deploys expose no platform commit variable.
-  `"unknown"` in production is a defect, not a default. See
-  `docs/API_BOUNDARY_V1.md` §1.1.
+  `"unknown"` in production is a defect, not a default. **It is also not, by
+  itself, a deployment-success gate:** the current deploy script sets
+  `NESTOR_BUILD_SHA` before uploading source, and Railway can run the prior
+  source with that new value. Old code can therefore echo the value it was
+  given while falsely appearing to be the new commit. See
+  `docs/API_BOUNDARY_V1.md` §1.1 and the Q3 evidence below.
 - **Deploy only through `scripts/deploy-railway.sh <service> [health-url]`.** It
-  refuses a dirty tree, stamps `NESTOR_BUILD_SHA` with the current commit, and
-  deploys immediately, so the value cannot outlive the code it names. Never set
-  that variable by hand in the Railway dashboard. Sequence and gate below.
+  refuses a dirty tree and keeps the stamp/upload sequence in one reviewable
+  place. It currently has a diagnosed variable-triggered redeploy race; its
+  inline `source_revision` check is necessary but insufficient. Never set that
+  variable by hand in the Railway dashboard. Use the temporary manual gate
+  below until the script is repaired.
 
 ### Deploy sequence
 
-One service at a time, API first, only through the script.
+One service at a time, API first, only through the script. Until Q3 script
+remediation lands, use all of the checks below; a matching revision alone must
+never release the second service.
 
 1. `scripts/deploy-railway.sh api <api-url>/health`
-2. **The gate for the second deploy is that the first one *verified*, not that
-   it *succeeded*.** `source_revision` must equal the commit you deployed. If it
-   comes back `unknown`, the stamped variable never reached the process — stop
-   there and fix that. Deploying the second service at that point only doubles a
-   surface that cannot say what it is.
-3. `scripts/deploy-railway.sh web <web-url>` — web exposes no `/health` of its
-   own; read the sidebar `Source revision` caption instead.
+2. Record the deployment ID emitted by `railway up`, then inspect
+   `railway deployment list --service api --json --limit 3`. The exact
+   source-upload deployment (`reason: "deploy"`) must be `SUCCESS` and the
+   newest active deployment. The variable-only prior-source deployment
+   (`reason: "redeploy"`) must be `REMOVED`. A successful redeploy is not the
+   source upload and does not pass this gate.
+3. Fetch cache-busted `/health` and `/api/v1/capabilities`. Require the expected
+   `source_revision`, the locally computed `pipeline_version`, and a
+   release-specific observable from the source change. For the Q3/Q4 build this
+   was `Cache-Control: no-store` plus `ledger.observed_at`; a future API change
+   needs its own read-only smoke assertion. `pipeline_version` may legitimately
+   stay unchanged for API-only work, so it is corroboration rather than a
+   universal source identity.
+4. **Only the deployment-ID check plus the endpoint checks release the second
+   service.** `source_revision=unknown`, a still-active variable redeploy, a
+   mismatched pipeline, or a missing release-specific behavior means stop.
+5. `scripts/deploy-railway.sh web <web-url>` — web exposes no `/health` of its
+   own. Apply the same deployment-list check to `--service web`, then verify the
+   sidebar revision and the release-specific visible behavior. Do not redeploy
+   web when no web source changed.
 
 **Why API first.** The web sidebar reads `source_revision` from the API's
 `/health`. Deploying web first shows `api unknown` until the API catches up:
@@ -83,10 +104,13 @@ flags inside the script — and that produces a new commit. If it happens,
 re-deploy the API from the corrected commit before deploying web, rather than
 letting the two tiers drift apart by accident.
 
-**Every verification fetch carries a cache-buster.** `/api/v1/capabilities` has
-been observed returning stale responses from its canonical URL and the mechanism
-is still undiagnosed; an uncached check could confirm a deploy that never
-happened.
+**Every verification fetch still carries a cache-buster, but that is only cache
+defense.** Q3 diagnosed a separate deployment race: setting
+`NESTOR_BUILD_SHA` can run prior source under the new revision value. A
+cache-buster reaches that old process just as effectively as any other request;
+it cannot prove the source upload is active. The deployment ID/status and
+release-specific behavior checks above are mandatory until the script fix is
+implemented. See `docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md`.
 - API: `/api/v1/runs`, `/api/v1/runs/{run_id}`, `/api/v1/capabilities`,
   `/api/v1/audit`, `/api/v1/snapshot`, plus `/analyze`, `/audit`, `/snapshot`
   as retained unversioned aliases, plus `/health` and `/schema/report`.
@@ -243,19 +267,15 @@ PYTHONPATH=src:tests/ground_truth .venv/bin/python -m pytest tests -q
 
 Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
 
-1. A historical fetch to the canonical `/api/v1/capabilities` URL returned a superseded
-   `pipeline_version` with the `ledger` block absent, while the same endpoint
-   with a cache-busting parameter returned current values moments apart. The
-   mechanism is not fully diagnosed — do not assume a cache. On 2026-08-28,
-   Codex could not reproduce the stale body in ten canonical samples and saw no
-   new/old process jump. F1 now gives `/health` and `/api/v1/capabilities`
-   `Cache-Control: no-store`, but every verification fetch must keep carrying a
-   cache-busting parameter until the deployed service is rechecked. The next API
-   deploy is a time-limited diagnostic window: start
-   `scripts/sample-q3-deploy-window.py` before the deploy action and keep it
-   running through cutover. Do not deploy first and reconstruct the evidence
-   afterward. Matching `x-hikari-trace` values are routing evidence, not proof
-   of one application instance.
+1. Q3 is diagnosed but not remediated in `scripts/deploy-railway.sh`. Setting
+   `NESTOR_BUILD_SHA` triggers a prior-source redeploy that can serve public
+   traffic while carrying the new revision value; the controlled experiment
+   observed 48 such successful responses. This makes `source_revision` alone,
+   even with a cache-buster, insufficient to verify a source upload. Follow the
+   temporary deployment-ID plus release-specific behavior gate above. Before
+   the next production source deploy, repair the script so the variable update
+   cannot deploy prior source, then add an acceptance check for that ordering.
+   Evidence: `docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md`.
 2. All ground-truth fixtures are n=216, so the rolling-window branch has no
    boundary fixture.
 
