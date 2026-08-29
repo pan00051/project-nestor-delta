@@ -119,8 +119,10 @@ Delta 验证的是关系的可靠性与证据充分性，**不验证任何输入
 
 ## Q3 — `capabilities` 陈旧响应诊断
 
-**状态：** 执行中。2026-08-28 Codex 已完成 D1/D2 取证，未复现旧响应，也未观察到新旧进程跳变；
-F1 已实现为 `/health` 与 `/api/v1/capabilities` 的 `Cache-Control: no-store`，待部署后复验。
+**状态：** 暂时通过。2026-08-29 D5 部署窗口采样记录 127 次请求；新版本首次出现后的 66 次成功响应
+全部保持当前 revision、`no-store` 和 ledger 块，没有旧版本回返。切换期出现一次 502。历史陈旧响应的
+机制仍未被证明，因此不是“已确诊”；按所有者决定以该残余明确登记后暂时验收。原始证据与时间线见
+`docs/evidence/Q3_DEPLOYMENT_WINDOW_2026-08-29.md`。
 
 **问题。** 已观察到：直接访问 `/api/v1/capabilities` 返回了一个已被取代的 `pipeline_version`，
 且 `ledger` 块缺失；同一端点带 cache-busting 参数访问，几秒之内返回的是当前值。机制未确诊——
@@ -140,7 +142,7 @@ F1 已实现为 `/health` 与 `/api/v1/capabilities` 的 `Cache-Control: no-stor
 3. HANDOFF 与 `docs/API_BOUNDARY_V1.md` §2.8 的 "Open — response freshness" 一并关闭，
    或改写为已确诊的、有边界的限制。
 
-**在 Q3 关闭之前：** 每一次验证性访问都必须带 cache-busting 参数。这条规则保留。
+部署脚本的 revision 验证继续带 cache-busting 参数；普通发现请求使用已声明 `no-store` 的 canonical URL。
 
 ---
 

@@ -1,7 +1,7 @@
 # Q3 执行规格 — `capabilities` 陈旧响应
 
-**状态：** 执行中。D1/D2 已由 Codex 在 2026-08-28 取证；F1 已实现；D5 部署窗口采样工具已就绪，
-但部署尚未执行。
+**状态：** 暂时通过。D1/D2 已由 Codex 在 2026-08-28 取证；F1 已上线；D5 于 2026-08-29 完成。
+本次切换未复现成功响应陈旧或新旧跳变，历史机制仍未被证明，按所有者决定以明确残余限制暂时验收。
 **上位文档：** `docs/REMEDIATION_Q_V1.md` Q3 · `docs/API_BOUNDARY_V1.md` §2.8（Open — response freshness）
 
 ---
@@ -13,6 +13,11 @@
 
 **顺序是硬约束：先取证，后修。** 先加 `Cache-Control` 会让现象消失但原因永远不明；
 若真因是 H2，那次修改一行都没修到，只是把缺陷变成了「以为修好了」。
+
+**D5 结果：** 127 条原始记录中 126 条为 HTTP 200、切换期一条 canonical 请求为 502。新版本首次
+出现后，canonical 与 cache-busted 共 66 条成功响应全部保持 `c6afbb581ff7`、`no-store`、ledger 与
+`ledger_observed_at`，没有旧版本回返。完整证据见
+`docs/evidence/Q3_DEPLOYMENT_WINDOW_2026-08-29.md` 与相邻 JSONL。
 
 ---
 
@@ -133,14 +138,13 @@ cache-busted capabilities，保存完整响应头和响应体，并发送 `X-Rai
    或将其改写为一条已确诊、有边界的限制；同步 HANDOFF「已知缺陷」清单与
    `docs/REMEDIATION_Q_V1.md` Q3 状态。
 
-**在 Q3 关闭前**：所有验证性访问必须携带 cache-busting 参数。此规则保留。
+部署脚本的 revision 验证继续携带 cache-busting 参数，作为纵深防护；普通发现请求可使用声明
+`Cache-Control: no-store` 的 canonical URL。
 
 ---
 
-## 6. 交给 GPT 的待办
+## 6. 后续
 
-1. 审查 §2 假设集是否穷尽——有无第四种机制被漏掉。
-2. 定夺 F1 的实现形式（逐路由 vs 中间件），并说明取舍。
-3. 评审 F3 是否纳入 Q3。
-4. 在下一次 API 部署时执行 D5，并把原始 JSONL 与部署时间线纳入证据。
-5. 核对 F2/H2 分支对 `--workers 1` 与 run retention 的影响判断是否成立。
+1. 不把本次未复现写成根因确诊；历史机制保持 unknown。
+2. 单独评估 `railway variables --set` 自动触发旧镜像 redeploy 的部署脚本风险。
+3. F3 的进程身份设计不纳入此次暂时验收，除非未来再次出现无法解释的陈旧响应。

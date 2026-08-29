@@ -318,15 +318,14 @@ TTL, line estimate, and `last_write_ok`; `LEDGER_LOCK` is not cross-process, and
 JSONL appends have no process-wide consistency guarantee. Keep one worker until both `RunStore`
 and ledger observation/write coordination use shared, process-safe storage.
 
-> **Open — response freshness.** Capabilities is the discovery surface §5.6 tells consumers to
-> trust in place of hardcoded values, and it carries `pipeline_version`, the provenance field.
-> A stale response is indistinguishable from a correct one and silently defeats both purposes.
-> Observed historically: a fetch to the canonical URL returned a superseded `pipeline_version`
-> with the `ledger` block absent, while a fetch to the same endpoint with a cache-busting query
-> parameter returned the current values, moments apart. The mechanism is not yet fully
-> diagnosed — naming a cache would already presume the cause. As F1 mitigation, this endpoint
-> and `/health` now declare `Cache-Control: no-store`; until the deployed service is rechecked,
-> every verification fetch must still carry a cache-busting parameter.
+> **Accepted residual — response freshness.** Capabilities is the discovery surface §5.6 tells
+> consumers to trust, so it and `/health` declare `Cache-Control: no-store`. A 2026-08-29
+> deployment-window experiment recorded 127 canonical/cache-busted requests. After the first
+> new response, all 66 successful responses stayed on the new revision with matching ledger
+> shape and no old response returned; one canonical request returned 502 during cutover. The
+> historical stale response was not reproduced, so its mechanism is not claimed as diagnosed.
+> Deployment verification retains a cache-busting query as defense in depth. Raw evidence and
+> the bounded conclusion are in `docs/evidence/Q3_DEPLOYMENT_WINDOW_2026-08-29.md`.
 
 ### 2.9 Auth entry point
 

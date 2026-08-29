@@ -124,10 +124,10 @@ happened.
 
 ### Last recorded acceptance
 
-Current deployed source revision `01a9e6ca2637`: **179 passed** locally. API and
-web were deployed to Railway with `NESTOR_BUILD_SHA=01a9e6ca2637`; API `/health`
-reported `source_revision=01a9e6ca2637`, re-verified with a cache-buster during
-the Q-series audit.
+Current deployed API source revision `c6afbb581ff7`: **182 passed** locally.
+API `/health` and `/api/v1/capabilities` report that revision with
+`Cache-Control: no-store`. The web remains on `01a9e6ca2637` because no web
+source changed in the intervening commits.
 
 **Q3 response-freshness evidence, 2026-08-28 09:11-09:16 UTC.** Codex queried
 the production API from the local workspace against both canonical and
@@ -184,6 +184,26 @@ recorded both canonical and cache-busted responses with revision
 field is not an application-instance identity. This was a sampler smoke test,
 not the time-limited deployment experiment. No deployment occurred; D5 remains
 reserved for the next API cutover.
+
+**Q3 deployment-window acceptance, 2026-08-29.** API deployment
+`acf3549e-f497-4cee-8da4-21ce7b8c7d86` moved production from
+`01a9e6ca2637` to `c6afbb581ff7`. The sampler captured 127 requests: 126 HTTP
+200 and one canonical 502 during cutover. After the first new response, all 66
+successful canonical/cache-busted responses stayed on the new revision, exposed
+`Cache-Control: no-store`, and included ledger plus `ledger_observed_at`; no old
+revision returned. The historical stale-response mechanism remains unproven and
+is not presented as diagnosed. Q3 is temporarily accepted with this residual,
+while deployment verification retains cache-busting. Railway also showed that
+setting `NESTOR_BUILD_SHA` creates an automatic old-image redeploy before the
+CLI upload; it was removed before serving in this run and needs a separate
+deployment-script review. Evidence:
+`docs/evidence/Q3_DEPLOYMENT_WINDOW_2026-08-29.md` and the adjacent raw JSONL.
+
+Post-deploy health and capabilities both reported revision `c6afbb581ff7`,
+`Cache-Control: no-store`, and a configured/durable/writable ledger at
+`/data/relationship_ledger.jsonl`; bundled-case audit returned HTTP 200 with
+`ok_to_analyze`. The local required suite was `182 passed`. No web source had
+changed since the prior deployed revision, so the web service was not redeployed.
 
 **Q1 (dependency declaration) changes what that number costs to reproduce.** The
 179 figure was previously only reachable on a machine that had also installed
@@ -275,9 +295,8 @@ enterprise tenancy, or a complete SaaS account system.
 **Q series — audited defects, tracked separately.** See
 `docs/REMEDIATION_Q_V1.md`. Q1 (test dependency declaration) and Q2 (the
 reliability-is-not-veracity wording boundary) are closed with evidence. Q3
-(`capabilities` staleness) and Q4 (`ledger.durable` reports configuration, not
-writability) **must close before the M5 freeze** - both are credibility
-defects, not fidelity gaps. Q5 is the invite-gate above, specified small on
+(`capabilities` staleness) is temporarily accepted with an explicit unknown
+historical cause, and Q4 (`ledger.durable`) is closed. Q5 is the invite-gate above, specified small on
 purpose. Q6 (no ground-truth fixture on either side of the rolling-window
 boundary) is the recurrence condition for the `effect.score` class of failure
 and is worth more than it looks. Q7 is the live-intake frozen-snapshot path,
