@@ -111,3 +111,30 @@ out of a field containing `decoy_1/2/3`, and say why each decoy was rejected, un
 product in about ten seconds. An obscure macro pair does not read that way. It is honest —
 the data is labelled synthetic, and "here is our detector against known ground truth" is a
 stronger claim than a single cherry-picked real correlation.
+
+## Q6 — rolling-window boundary controls
+
+The adapter switches from the no-rolling S9 path to the rolling lifecycle path
+when `train_observations > lag_window + 8` (`src/nestor_delta_service/adapter.py`,
+`_s9_relation_objects`, `_lifecycle_block`, and `_trajectory_block`). With the
+ground-truth default `lag_window = 3`, the last non-rolling train size is 11.
+Once rolling is active, its effective window is:
+
+```
+min(36, max(lag_window + 6, train_observations // 3))
+```
+
+Q6 adds two fixed controls derived from that rule:
+
+| Fixture | Train n | Side | Expected |
+|---|---:|---|---|
+| `s_gt_6_pre_rolling_negative.csv` | 11 | no rolling (`effective_window: null`) | `baseline_only`, `selected_count: 0` |
+| `s_gt_6_rolling_positive.csv` | 51 | rolling (`effective_window: 17`) | selects `true_driver`, lag 2, sign −1 |
+
+The positive control uses the first prefix of the accepted S-GT-1 seed that
+both enters the rolling path and gives the unchanged Evidence Gate enough
+trajectory evidence to select the injected relation. The reported
+`effect.score` remains the full training-window transformed correlation:
+`0.6230268430213287` for Q6 positive. The final rolling point is
+`0.6323873577775484`; it may feed stability/lifecycle only and must not replace
+the headline effect score.

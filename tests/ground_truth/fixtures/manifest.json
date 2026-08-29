@@ -541,5 +541,159 @@
         "lag_window": 3
       }
     }
+  },
+  "q6": {
+    "branch_condition": {
+      "rolling_skipped_when": "train_observations <= lag_window + 8",
+      "rolling_used_when": "train_observations > lag_window + 8",
+      "window_rule": "min(36, max(lag_window + 6, train_observations // 3))",
+      "lag_window": 3,
+      "pre_rolling_train_observations": 11,
+      "rolling_positive_train_observations": 51
+    },
+    "fixtures": {
+      "s_gt_6_pre_rolling_negative": {
+        "file": "s_gt_6_pre_rolling_negative.csv",
+        "nature": "Q6 rolling-window boundary control -- synthetic, not a real-world causal case",
+        "sha256": "57d39ff5f1a095deaab51b5f55f7a30215454fda843f61ef7462f2dc26ec28c0",
+        "rows": 11,
+        "request": {
+          "date_column": "date",
+          "target": "synthetic_target",
+          "candidate_signals": [
+            "noise_1",
+            "noise_2",
+            "noise_3",
+            "noise_4"
+          ],
+          "transform_declarations": {
+            "synthetic_target": "diff",
+            "noise_1": "diff",
+            "noise_2": "diff",
+            "noise_3": "diff",
+            "noise_4": "diff"
+          },
+          "train_end": "2008-11",
+          "lag_window": 3
+        },
+        "diagnostics": {
+          "noise_1": {
+            "corr_by_lag": {
+              "0": -0.0317,
+              "1": 0.6722,
+              "2": 0.409,
+              "3": -0.5988
+            },
+            "argmax_lag": 1,
+            "peak_corr": 0.6722,
+            "level_lag1_acf": 0.6578
+          },
+          "noise_2": {
+            "corr_by_lag": {
+              "0": 0.1381,
+              "1": -0.4846,
+              "2": -0.149,
+              "3": -0.1251
+            },
+            "argmax_lag": 1,
+            "peak_corr": -0.4846,
+            "level_lag1_acf": 0.7521
+          },
+          "noise_3": {
+            "corr_by_lag": {
+              "0": 0.1252,
+              "1": -0.281,
+              "2": -0.6644,
+              "3": 0.1539
+            },
+            "argmax_lag": 2,
+            "peak_corr": -0.6644,
+            "level_lag1_acf": 0.8454
+          },
+          "noise_4": {
+            "corr_by_lag": {
+              "0": -0.5338,
+              "1": 0.4332,
+              "2": 0.5574,
+              "3": 0.1802
+            },
+            "argmax_lag": 2,
+            "peak_corr": 0.5574,
+            "level_lag1_acf": 0.1329
+          }
+        }
+      },
+      "s_gt_6_rolling_positive": {
+        "file": "s_gt_6_rolling_positive.csv",
+        "nature": "Q6 rolling-window boundary control -- synthetic, not a real-world causal case",
+        "sha256": "53457d33ffeb52d3007213d3fb254696373a2616045ca462caf213ae1e64efff",
+        "rows": 51,
+        "request": {
+          "date_column": "date",
+          "target": "synthetic_target",
+          "candidate_signals": [
+            "true_driver",
+            "decoy_1",
+            "decoy_2",
+            "decoy_3"
+          ],
+          "transform_declarations": {
+            "synthetic_target": "diff",
+            "true_driver": "diff",
+            "decoy_1": "diff",
+            "decoy_2": "diff",
+            "decoy_3": "diff"
+          },
+          "train_end": "2012-03",
+          "lag_window": 3
+        },
+        "diagnostics": {
+          "true_driver": {
+            "corr_by_lag": {
+              "0": 0.0151,
+              "1": 0.0393,
+              "2": -0.623,
+              "3": 0.0614
+            },
+            "argmax_lag": 2,
+            "peak_corr": -0.623,
+            "level_lag1_acf": 0.9225
+          },
+          "decoy_1": {
+            "corr_by_lag": {
+              "0": 0.0289,
+              "1": 0.1337,
+              "2": 0.0538,
+              "3": 0.3197
+            },
+            "argmax_lag": 3,
+            "peak_corr": 0.3197,
+            "level_lag1_acf": 0.9091
+          },
+          "decoy_2": {
+            "corr_by_lag": {
+              "0": -0.1191,
+              "1": -0.017,
+              "2": -0.0638,
+              "3": 0.0308
+            },
+            "argmax_lag": 0,
+            "peak_corr": -0.1191,
+            "level_lag1_acf": 0.8539
+          },
+          "decoy_3": {
+            "corr_by_lag": {
+              "0": 0.0503,
+              "1": -0.0378,
+              "2": 0.0437,
+              "3": 0.0321
+            },
+            "argmax_lag": 0,
+            "peak_corr": 0.0503,
+            "level_lag1_acf": 0.8972
+          }
+        }
+      }
+    }
   }
 }

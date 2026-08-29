@@ -20,7 +20,7 @@
 | **Q3** | `capabilities` 陈旧响应诊断 | 半天 ~ 1 天（下界不明） | 可信度缺陷 | ✅ 已确诊；部署脚本修复待实施 |
 | **Q4** | `ledger.durable` 信号名实不符 | 半天 | 可信度缺陷 | ✅ 已完成 |
 | **Q5** | 邀请码轻量访问 gate | 半天（规模必须守住） | 新能力 | 未开始 |
-| **Q6** | rolling-window 边界 fixture 缺失 | 1 ~ 2 天 | 验证盲区 | 未开始 |
+| **Q6** | rolling-window 边界 fixture 缺失 | 1 ~ 2 天 | 验证盲区 | ✅ 已完成 |
 | **Q7** | live intake 的冻结快照路径 | 独立阶段，M5 之后 | 新方向 | 未开始 |
 
 排序依据是**预计时间升序**，不是重要性。若按「不修的后果」排，顺序是 Q3 > Q6 > Q1 > Q4 > Q2。
@@ -206,6 +206,10 @@ Q3 部署采样，因为 Q3 依据 revision、响应头和 ledger 块存在性�
 
 ## Q6 — rolling-window 边界 fixture 缺失
 
+**状态：** ✅ 已完成。新增 `s_gt_6_pre_rolling_negative.csv` 与
+`s_gt_6_rolling_positive.csv`，并在 ground-truth 契约测试中固定滚动窗口边界、
+正/负控制结果和 `effect.score` 口径。
+
 **预计时间：** 1 ~ 2 天。
 
 **问题。** 全部 ground-truth fixture 都是 n=216，因此**滚动窗口分支从未被任何已知答案的用例覆盖**。
@@ -222,6 +226,46 @@ Q3 部署采样，因为 Q3 依据 revision、响应头和 ledger 块存在性�
 2. 正控制仍须选出真实关系并还原 lag 与符号；负控制仍须返回 `baseline_only` 且 `selected_count: 0`。
 3. 记录边界两侧的 `effect.score`，并说明该值应当从哪个窗口读取——**把口径写下来，
    而不是只让测试通过**。
+
+**第 0 步：滚动窗口分支条件。** 当前源码条件在
+`src/nestor_delta_service/adapter.py`：
+
+- `_s9_relation_objects`：第 745 行，`len(train_rows) <= analysis_input.lag_window + 8`
+  时跳过 rolling 并返回全训练窗口 ranking；否则进入 rolling（第 747-750 行）。
+- `_lifecycle_block`：第 786 行，同一条件下返回 `{"state": "birth", "points": None}`；
+  否则进入 rolling lifecycle（第 788-789 行）。
+- `_trajectory_block`：第 812 行，同一条件下返回 `None`；否则进入 rolling trajectory
+  （第 814-815 行）。
+- `_rolling_window_size`：进入 rolling 后窗口为
+  `min(36, max(lag_window + 6, len(train_rows) // 3))`（第 903-907 行）。
+
+这个条件此前已由 report configuration 暴露为窗口公式，但没有作为
+ground-truth fixture 选择依据写入 `tests/ground_truth/README.md`。Q6 已补记。
+
+**n 值推导。** Q6 沿用 ground-truth 默认 `lag_window = 3`，所以分支边界是
+`train_observations <= 11` 跳过 rolling，`train_observations > 11` 进入 rolling。
+负控制取 `n = 11`，即边界下方最后一个非 rolling 训练长度。正控制取 `n = 51`：
+这是 accepted S-GT-1 种子的最短前缀，既进入 rolling，又按当前
+`step_interval = 6` 与 `min_points = 6` 产生 6 个 trajectory points，并在不放宽
+Evidence Gate 的情况下选择真实关系。
+
+**完成证据（Q6 after）。**
+
+| Fixture | Train n | Rolling window | Outcome | Selected | Key effect evidence |
+|---|---:|---:|---|---|---|
+| `s_gt_6_pre_rolling_negative` | 11 | `null` | `baseline_only` | `selected_count = 0` | top `noise_1`: `effect.score = 0.6722015107369267`, `trajectory = null` |
+| `s_gt_6_rolling_positive` | 51 | 17 | `ok` | `["true_driver"]` | `true_driver`: `effect.score = 0.6230268430213287`, `lag = 2`, `sign = -1`, `stability = 0.522353792707568`, `uncertainty = 0.1337838756106424` |
+
+`s_gt_6_rolling_positive` 的最后一个 rolling trajectory point 是
+`score = 0.6323873577775484` at `step = 51`。报告中的 `effect.score` 必须读取
+**full training window** 的 transformed correlation（`0.6230268430213287`），不是这个
+rolling point；rolling 只供 `stability` / `uncertainty` / `lifecycle` 使用。
+
+**历史控制 before/after。** Q6 没有修改算法、阈值或既有冻结 fixture。Q6 后重新测得：
+S-GT-1 仍为 `outcome = ok`、`selected_count = 1`、`selected_sources = ["true_driver"]`、
+`effect.score = 0.5844220533473201`、`lag = 2`、`sign = -1`；S-GT-2 仍为
+`outcome = baseline_only`、`selected_count = 0`。`pipeline_version` 仍为
+`s10.sha256.3665b88553ad`。
 
 ---
 

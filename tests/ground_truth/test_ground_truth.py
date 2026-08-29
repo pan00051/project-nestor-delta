@@ -111,8 +111,16 @@ def _relation(report: dict, source: str) -> dict:
 
 
 def _run(name: str) -> dict:
-    f = MANIFEST["fixtures"][name]
+    f = _fixture_entry(name)
     return report_body(run_report(FIXTURES / f["file"], f["request"]))
+
+
+def _fixture_entry(name: str) -> dict:
+    if name in MANIFEST["fixtures"]:
+        return MANIFEST["fixtures"][name]
+    if name in MANIFEST.get("q6", {}).get("fixtures", {}):
+        return MANIFEST["q6"]["fixtures"][name]
+    raise KeyError(name)
 
 
 @pytest.fixture(scope="module")
@@ -125,8 +133,26 @@ def negative() -> dict:
     return _run("s_gt_2_negative")
 
 
+@pytest.fixture(scope="module")
+def q6_pre_rolling_negative() -> dict:
+    return _run("s_gt_6_pre_rolling_negative")
+
+
+@pytest.fixture(scope="module")
+def q6_rolling_positive() -> dict:
+    return _run("s_gt_6_rolling_positive")
+
+
 # ------------------------------------------------------- S-GT-0  integrity
-@pytest.mark.parametrize("name", ["s_gt_1_positive", "s_gt_2_negative"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "s_gt_1_positive",
+        "s_gt_2_negative",
+        "s_gt_6_pre_rolling_negative",
+        "s_gt_6_rolling_positive",
+    ],
+)
 def test_sgt0_fixture_integrity(name: str) -> None:
     """The ground truth must not move without someone noticing.
 
@@ -134,7 +160,7 @@ def test_sgt0_fixture_integrity(name: str) -> None:
     without re-recording the manifest is not, because every threshold decision
     downstream is calibrated against these exact files.
     """
-    f = MANIFEST["fixtures"][name]
+    f = _fixture_entry(name)
     digest = hashlib.sha256((FIXTURES / f["file"]).read_bytes()).hexdigest()
     assert digest == f["sha256"], f"{f['file']} changed; regenerate the manifest deliberately"
 
@@ -233,6 +259,51 @@ def test_sgt2_null_is_not_zero(negative: dict) -> None:
         for field in ("stability", "uncertainty"):
             value = rel.get(field)
             assert value is None or isinstance(value, (int, float)), field
+
+
+# --------------------------------------- Q6  rolling-window boundary controls
+def test_q6_pre_rolling_negative_stays_baseline_only(q6_pre_rolling_negative: dict) -> None:
+    assert q6_pre_rolling_negative["outcome"] == "baseline_only"
+    assert q6_pre_rolling_negative["selection"]["fit_status"] == "baseline_only_no_evidence"
+    assert q6_pre_rolling_negative["selection"]["selected_count"] == 0
+    assert q6_pre_rolling_negative["selection"]["selected_sources"] == []
+    assert q6_pre_rolling_negative["configuration"]["inputs"]["train_observations"] == 11
+    assert q6_pre_rolling_negative["configuration"]["rolling_lifecycle"]["effective_window"] is None
+    for rel in q6_pre_rolling_negative["relations"]:
+        assert rel["trajectory"] is None
+        assert rel["selected"] is False
+
+
+def test_q6_rolling_positive_selects_true_relation(q6_rolling_positive: dict) -> None:
+    assert q6_rolling_positive["outcome"] == "ok"
+    assert q6_rolling_positive["selection"]["selected_count"] == 1
+    assert q6_rolling_positive["selection"]["selected_sources"] == ["true_driver"]
+    assert q6_rolling_positive["configuration"]["inputs"]["train_observations"] == 51
+    assert q6_rolling_positive["configuration"]["rolling_lifecycle"]["effective_window"] == 17
+
+    rel = _relation(q6_rolling_positive, "true_driver")
+    assert rel["selected"] is True
+    assert rel["reason_code"] == "selected"
+    assert rel["lag"] == SPEC["injected_lag"]
+    assert rel["effect"]["sign"] == -1
+    assert rel["stability"] == pytest.approx(0.522353792707568)
+    assert rel["uncertainty"] == pytest.approx(0.1337838756106424)
+    assert len(rel["trajectory"]) == 6
+
+
+def test_q6_effect_score_scope_is_full_train_window(q6_pre_rolling_negative: dict, q6_rolling_positive: dict) -> None:
+    """Q6 guards the old bug: effect.score must not come from S9 rolling."""
+    pre_top = q6_pre_rolling_negative["relations"][0]
+    assert pre_top["source"] == "noise_1"
+    assert pre_top["effect"]["score"] == pytest.approx(0.6722015107369267)
+    assert pre_top["trajectory"] is None
+
+    rolling_rel = _relation(q6_rolling_positive, "true_driver")
+    assert rolling_rel["effect"]["score"] == pytest.approx(0.6230268430213287)
+    assert rolling_rel["effect"]["weight"] == pytest.approx(-0.6230268430213287)
+    assert rolling_rel["trajectory"][-1]["score"] == pytest.approx(0.6323873577775484)
+    assert rolling_rel["effect"]["score"] != pytest.approx(rolling_rel["trajectory"][-1]["score"])
+    assert q6_rolling_positive["configuration"]["effect"]["score_scope"] == "full_train_window"
 
 
 # ------------------------------------------- S-GT-2b  false-positive rate

@@ -30,6 +30,7 @@ Usage
 -----
     python generate_ground_truth.py            # writes fixtures/ + manifest
     python generate_ground_truth.py --sweep    # S-GT-4 sensitivity sweep inputs
+    python generate_ground_truth.py --q6       # Q6 rolling-window boundary inputs
 """
 from __future__ import annotations
 
@@ -50,6 +51,9 @@ MAX_LAG = 3                    # lag window handed to the pipeline
 LAG = 2                        # injected lag — interior to MAX_LAG on purpose
 TARGET_R = -0.55               # injected correlation in the differenced domain
 N_DECOYS = 3
+Q6_PRE_ROLLING_N = 11        # lag_window + 8: last train size before S9 rolling
+Q6_ROLLING_POSITIVE_N = 51   # first train size where this seed selects in rolling
+Q6_NEGATIVE_SEED = 20260826  # accepted screened S-GT-2 seed recorded in manifest
 
 SEED_POS = 20260823          # search base; the accepted seed is screened, see below
 SEED_NEG = 20260824
@@ -94,9 +98,13 @@ def integrate(d: np.ndarray, base: float = 100.0) -> np.ndarray:
     return np.round(base + np.cumsum(d), 4)
 
 
-def build_positive(seed: int = SEED_POS, r: float = TARGET_R, lag: int = LAG) -> pd.DataFrame:
+def build_positive(
+    seed: int = SEED_POS,
+    r: float = TARGET_R,
+    lag: int = LAG,
+    n: int = N_MONTHS,
+) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    n = N_MONTHS
     beta = beta_for_r(r)
 
     x = rng.standard_normal(n)                       # true driver, differenced
@@ -115,9 +123,8 @@ def build_positive(seed: int = SEED_POS, r: float = TARGET_R, lag: int = LAG) ->
     return pd.DataFrame(cols)
 
 
-def build_negative(seed: int = SEED_NEG) -> pd.DataFrame:
+def build_negative(seed: int = SEED_NEG, n: int = N_MONTHS) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    n = N_MONTHS
     cols = {"date": dates(n), "synthetic_target": integrate(rng.standard_normal(n))}
     for i in range(1, N_DECOYS + 2):                 # 4 candidates, all pure noise
         cols[f"noise_{i}"] = integrate(rng.standard_normal(n))
@@ -279,6 +286,61 @@ def request_payload(df: pd.DataFrame, target: str) -> dict:
     }
 
 
+def _request_payload_with_train_end(df: pd.DataFrame, target: str) -> dict:
+    request = request_payload(df, target)
+    request["train_end"] = str(df["date"].iloc[-1])
+    return request
+
+
+def _prefix(df: pd.DataFrame, n: int) -> pd.DataFrame:
+    return df.iloc[:n].reset_index(drop=True).copy()
+
+
+def _emit_q6_boundary() -> dict:
+    """Q6 fixed controls around the adapter's rolling-window branch.
+
+    With lag_window=3, the adapter skips S9 rolling while train_observations
+    <= lag_window + 8 (11 rows). The positive control uses the first prefix of
+    the accepted S-GT-1 seed that both enters the rolling branch and has enough
+    trajectory points for the unchanged evidence gate to select the injected
+    relation.
+    """
+    fixtures = {}
+    for name, df, target in (
+        (
+            "s_gt_6_pre_rolling_negative",
+            _prefix(build_negative(seed=Q6_NEGATIVE_SEED), Q6_PRE_ROLLING_N),
+            "synthetic_target",
+        ),
+        (
+            "s_gt_6_rolling_positive",
+            _prefix(build_positive(seed=SEED_POS), Q6_ROLLING_POSITIVE_N),
+            "synthetic_target",
+        ),
+    ):
+        path = OUT / f"{name}.csv"
+        df.to_csv(path, index=False)
+        fixtures[name] = {
+            "file": path.name,
+            "nature": "Q6 rolling-window boundary control -- synthetic, not a real-world causal case",
+            "sha256": sha256(path),
+            "rows": len(df),
+            "request": _request_payload_with_train_end(df, target),
+            "diagnostics": diagnose(df, target),
+        }
+    return {
+        "branch_condition": {
+            "rolling_skipped_when": "train_observations <= lag_window + 8",
+            "rolling_used_when": "train_observations > lag_window + 8",
+            "window_rule": "min(36, max(lag_window + 6, train_observations // 3))",
+            "lag_window": MAX_LAG,
+            "pre_rolling_train_observations": Q6_PRE_ROLLING_N,
+            "rolling_positive_train_observations": Q6_ROLLING_POSITIVE_N,
+        },
+        "fixtures": fixtures,
+    }
+
+
 def _emit_sweep() -> dict:
     """S-GT-4 inputs. Regenerable at will — these are measurement inputs, not
     frozen controls, so no drift guard applies to them."""
@@ -297,6 +359,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sweep", action="store_true", help="also emit S-GT-4 sweep fixtures")
     ap.add_argument("--drift", action="store_true", help="emit S-GT-5 drift fixtures")
+    ap.add_argument("--q6", action="store_true", help="emit Q6 rolling-window boundary fixtures")
     ap.add_argument("--force", action="store_true",
                     help="regenerate the frozen controls too (see the guard below)")
     args = ap.parse_args()
@@ -324,6 +387,9 @@ def main() -> None:
         if args.drift:
             manifest["drift"] = _emit_drift()
             wrote.append(f"{len(manifest['drift'])} drift")
+        if args.q6:
+            manifest["q6"] = _emit_q6_boundary()
+            wrote.append(f"{len(manifest['q6']['fixtures'])} q6")
         if wrote:
             manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
             print("wrote " + " + ".join(wrote) + " fixtures")
@@ -369,6 +435,8 @@ def main() -> None:
         manifest["sweep"] = _emit_sweep()
     if args.drift:
         manifest["drift"] = _emit_drift()
+    if args.q6:
+        manifest["q6"] = _emit_q6_boundary()
 
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(json.dumps(manifest, indent=2)[:4000])
