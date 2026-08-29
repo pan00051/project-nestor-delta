@@ -107,7 +107,11 @@ happened.
 - `scripts/start-railway-service.sh` branches on `RAILWAY_SERVICE_NAME`.
   **The API runs with `--workers 1` deliberately.** `RunStore` is a
   process-local singleton; a second worker makes `GET /api/v1/runs/{id}` return
-  404 non-deterministically. Do not add workers until the store is shared.
+  404 non-deterministically. Ledger observation, TTL, line count, append result,
+  and locking are also process-local, so multiple workers can make health
+  oscillate and cannot coordinate JSONL appends. Do not add workers until both
+  RunStore and ledger observation/write coordination use shared, process-safe
+  storage.
 - Serverless sleep is **disabled on both services on purpose** for the demo
   period. Sleeping the API destroys `RunStore`, which would silently reduce
   `run_retention` from `max_runs: 100` to "until the next idle window".
@@ -161,6 +165,13 @@ now cached for 60 seconds, the line count is initialized once per path or path
 recovery, and real appends update it incrementally. Repeated `/health` and
 `capabilities` requests inside the TTL perform no ledger I/O. Railway volume
 persistence must still be verified out of band after deploy.
+
+`ledger.observed_at` reports when the cached observation was last refreshed by
+a probe or real append; cache hits preserve it, so callers can see the bounded
+staleness directly. Two known operational limits remain deliberately unchanged
+for the deployment freeze: external file changes can make incremental `lines`
+drift until restart/recovery, and a crash or forced kill can leave a `.probe-*`
+file. Neither affects Report content or the Q3 deployment-window criteria.
 
 **Q4 hot-path follow-up acceptance, 2026-08-28.** The API boundary suite is
 `14 passed`; the complete required command `.venv/bin/python -m pytest -q` is

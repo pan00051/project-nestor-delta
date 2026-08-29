@@ -274,7 +274,8 @@ Unauthenticated and cheap. Minimum contents:
     "last_write_ok": true,
     "lines": 42,
     "path": "/data/relationship_ledger.jsonl",
-    "write_probe_error": null
+    "write_probe_error": null,
+    "observed_at": "2026-08-29T00:00:00Z"
   },
   "features": { "pdf_export": false, "report_persistence": false, "sharing": false }
 }
@@ -299,9 +300,23 @@ non-default path is configured and the latest write observation passes. Ordinary
 and `/api/v1/capabilities` requests inside the TTL read this bounded in-process observation
 without touching disk; the first request after expiry performs only the constant-size probe,
 not a full ledger scan while the prior line count is known. A new or newly recovered path is
-counted once to initialize that observation. None of these fields prove cross-restart
+counted once to initialize that observation. `ledger.observed_at` is the UTC time at which the
+cached observation was last refreshed by a probe or real append; cache hits preserve it so
+callers can see that the health value may be up to 60 seconds old. None of these fields prove cross-restart
 persistence; deployments that claim a durable record must still mount persistent storage and
 verify it outside the process.
+
+Known limits: `ledger.lines` is a process-local incremental estimate. An external append,
+truncate, or file replacement can make it drift until process restart or path recovery; this
+does not change report content or ledger writes. A crash or forced kill can also leave a
+same-directory `.probe-*` file. Such a file is not counted as ledger content, but may remain
+until operational cleanup. Automatic cleanup is intentionally deferred because one process
+cannot safely distinguish another live process's probe.
+
+The API must remain at `--workers 1`. Each worker would otherwise own a different observation,
+TTL, line estimate, and `last_write_ok`; `LEDGER_LOCK` is not cross-process, and concurrent
+JSONL appends have no process-wide consistency guarantee. Keep one worker until both `RunStore`
+and ledger observation/write coordination use shared, process-safe storage.
 
 > **Open — response freshness.** Capabilities is the discovery surface §5.6 tells consumers to
 > trust in place of hardcoded values, and it carries `pipeline_version`, the provenance field.

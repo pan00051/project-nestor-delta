@@ -73,6 +73,7 @@ scripts/sample-q3-deploy-window.py \
 
 工具开始写入 `evidence.jsonl` 后，才在另一终端执行规定的 API 部署脚本。采样同时请求 canonical 与
 cache-busted capabilities，保存完整响应头和响应体，并发送 `X-Railway-Debug: 1` 以收集 upstream zone。
+每条记录还显式提取 `ledger_observed_at`，用于区分缓存命中时保留的观测时间与部署后新进程取得的观测。
 部署切换完成后仍继续采样至少 60 秒。输出先放在 repo 外，避免工作树变脏导致部署脚本拒绝执行；完成后
 审查原始内容，再将证据纳入仓库。
 

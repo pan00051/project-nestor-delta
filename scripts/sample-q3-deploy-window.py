@@ -48,6 +48,10 @@ def fetch(url: str, mode: str, timeout: float) -> dict[str, Any]:
     except json.JSONDecodeError:
         body = body_text
     payload = body if isinstance(body, dict) else {}
+    ledger = payload.get("ledger")
+    ledger_observed_at = (
+        ledger.get("observed_at") if isinstance(ledger, dict) else None
+    )
     return {
         "timestamp": utc_now(),
         "mode": mode,
@@ -57,6 +61,7 @@ def fetch(url: str, mode: str, timeout: float) -> dict[str, Any]:
         "source_revision": payload.get("source_revision"),
         "pipeline_version": payload.get("pipeline_version"),
         "ledger_present": "ledger" in payload,
+        "ledger_observed_at": ledger_observed_at,
         "cache_control": headers.get("cache-control"),
         "age": headers.get("age"),
         "etag": headers.get("etag"),
@@ -98,28 +103,31 @@ def main() -> int:
     successful = 0
 
     print(f"Writing Q3 deployment evidence to {evidence_path}", flush=True)
-    with evidence_path.open("w", encoding="utf-8") as handle:
-        while time.monotonic() < deadline:
-            urls = (
-                ("canonical", endpoint),
-                ("cache_busted", f"{endpoint}?cb=q3-{uuid4().hex}"),
-            )
-            for mode, url in urls:
-                record = fetch(url, mode, args.timeout)
-                handle.write(json.dumps(record, sort_keys=True) + "\n")
-                handle.flush()
-                recorded += 1
-                if record.get("http_status") == 200:
-                    successful += 1
-                print(
-                    f"{record['timestamp']} {mode:12} "
-                    f"status={record.get('http_status', 'ERR')} "
-                    f"revision={record.get('source_revision')} "
-                    f"cache_control={record.get('cache_control')}",
-                    flush=True,
+    try:
+        with evidence_path.open("w", encoding="utf-8") as handle:
+            while time.monotonic() < deadline:
+                urls = (
+                    ("canonical", endpoint),
+                    ("cache_busted", f"{endpoint}?cb=q3-{uuid4().hex}"),
                 )
-            next_cycle += args.interval
-            time.sleep(max(0.0, next_cycle - time.monotonic()))
+                for mode, url in urls:
+                    record = fetch(url, mode, args.timeout)
+                    handle.write(json.dumps(record, sort_keys=True) + "\n")
+                    handle.flush()
+                    recorded += 1
+                    if record.get("http_status") == 200:
+                        successful += 1
+                    print(
+                        f"{record['timestamp']} {mode:12} "
+                        f"status={record.get('http_status', 'ERR')} "
+                        f"revision={record.get('source_revision')} "
+                        f"cache_control={record.get('cache_control')}",
+                        flush=True,
+                    )
+                next_cycle += args.interval
+                time.sleep(max(0.0, next_cycle - time.monotonic()))
+    except KeyboardInterrupt:
+        print("Sampling stopped after the current flushed record.", flush=True)
 
     print(f"Recorded {recorded} requests ({successful} HTTP 200).", flush=True)
     return 0 if successful else 1

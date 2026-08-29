@@ -354,7 +354,9 @@ Ledger writes are fail-soft: append failures are logged but never fail the
 analysis request. `/api/v1/capabilities` reports `ledger.enabled`,
 `ledger.configured`, `ledger.durable`, `ledger.writable`,
 `ledger.last_write_ok`, `ledger.lines`, the resolved `ledger.path`, and any
-`ledger.write_probe_error`.
+`ledger.write_probe_error`. `ledger.observed_at` is the UTC time of the cached
+probe or append observation; cache hits preserve it and may therefore expose a
+value up to 60 seconds old.
 
 `ledger.durable` is now an observed current-process signal, not an environment
 variable mirror. It is true only when a non-default path is configured and the
@@ -368,6 +370,13 @@ written to the observed path in the process. This still does not prove
 cross-restart persistence: a deployment that must accumulate a durable record
 has to mount a volume, set `NESTOR_RELATIONSHIP_LEDGER_PATH` to that mount, and
 verify the file out of band.
+
+`ledger.lines` is a process-local incremental estimate. External append,
+truncate, or replacement can make it drift until restart or recovery. A crash
+or forced kill may leave a harmless `.probe-*` file; automatic cross-process
+cleanup is intentionally not attempted. The service must remain at one worker
+until both `RunStore` and ledger observation/write coordination move to shared,
+process-safe storage.
 
 ## Error Format
 

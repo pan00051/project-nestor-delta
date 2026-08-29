@@ -83,12 +83,18 @@ Ledger writes are fail-soft. A filesystem, permission, or capacity failure must
 be logged and must never turn a successful analysis into a failed request.
 Capabilities publish the resolved ledger path, whether a non-default path is
 configured, whether the latest cached write observation passes, the latest real
-append outcome, and a conservative `durable` signal. Probe results are cached
+append outcome, the observation time, and a conservative `durable` signal. Probe results are cached
 for 60 seconds and the line count is maintained incrementally so public health
 and discovery requests have bounded cost. Public deployments that claim to
 accumulate a durable record must mount persistent storage, set
 `NESTOR_RELATIONSHIP_LEDGER_PATH` to that mount, and verify persistence outside
 the process.
+
+The incremental line count can drift if another process or operator changes the
+file, and a forced process exit can leave a `.probe-*` file. These are recorded
+operational limits, not Report semantics. Keep the API at one worker until both
+the process-local `RunStore` and ledger observation/write coordination use
+shared, process-safe storage.
 
 Backtests may use the same shape but must be marked `mode: "backtest"`.
 

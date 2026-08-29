@@ -150,6 +150,7 @@ F1 已实现为 `/health` 与 `/api/v1/capabilities` 的 `Cache-Control: no-stor
 通过；`/health` 与 `/api/v1/capabilities` 都能看到同一份 ledger 状态。外部复审发现初版在每次请求中
 探测并完整数行，与 capabilities 的 "cheap" 契约冲突；现改为 60 秒有界探测缓存、首次数行和真实 append
 增量更新。缓存命中请求不产生磁盘 I/O，过期后的首次请求只执行固定大小探针，不再扫描完整 ledger。
+`ledger.observed_at` 暴露该缓存观测的 UTC 时间；命中缓存时保持不变，真实 append 或探针刷新时更新。
 
 **问题。** `capabilities.ledger.durable` 目前只表示「配置了一个非默认路径」。它**不检查该路径是否
 可写、是否真的持久**。而 ledger 写入是 fail-soft 的（写失败只记日志，不让请求失败）。
@@ -168,6 +169,10 @@ Railway volume、环境变量路径和部署后文件检查证明。
 **热路径边界。** 未鉴权的 `/health` 与 `/api/v1/capabilities` 不得因 ledger 增长而线性变慢。探针
 结果最多缓存 60 秒；行数只在首次观察新路径或路径恢复可写时完整读取一次，之后由当前单写进程按成功追加
 数量递增。测试必须证明重复请求既不再次探针，也不重新读取 ledger。
+
+**已知限制。** `lines` 是单进程增量估计，外部追加、截断或替换文件会使它在重启/恢复前漂移；这不影响
+Q3 部署采样，因为 Q3 依据 revision、响应头和 ledger 块存在性，不依据行数。崩溃或强制终止也可能留下
+`.probe-*` 文件；它不计入 ledger，但可能累积。两项均在本轮部署后再评估，避免冻结前继续扩大改动。
 
 ---
 

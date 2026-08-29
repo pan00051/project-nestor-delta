@@ -36,9 +36,13 @@ the package is not pip-installed as a wheel. This preserves
 `adapter.py` repository-root lookup for `cases/`. If a future deployment installs
 the package into `site-packages`, `cases/` must move to package data first.
 
-Single-worker constraint: FastAPI is explicitly started with `--workers 1`
-because `RunStore` is process-local. Multi-worker deployment is prohibited until
-run storage is backed by shared storage.
+Single-worker constraint: FastAPI is explicitly started with `--workers 1`.
+`RunStore` is process-local, and the ledger observation cache, TTL, line count,
+append result, and lock are also process-local. Multiple workers could make run
+lookups and ledger health oscillate, while concurrent JSONL writes would have no
+process-wide consistency guarantee. Multi-worker deployment is prohibited until
+both run storage and ledger observation/write coordination use shared,
+process-safe storage.
 
 Demo runtime policy: Railway Serverless is disabled for both services. A cold
 start in front of an audience costs more than the small amount of idle hosting

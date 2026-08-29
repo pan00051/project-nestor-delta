@@ -3,7 +3,7 @@ set -eu
 
 case "${RAILWAY_SERVICE_NAME:-}" in
   api)
-    # RunStore is process-local. Do not add workers until storage is shared.
+    # RunStore and ledger coordination are process-local; keep one worker.
     exec uvicorn nestor_delta_service.app:app \
       --host 0.0.0.0 --port "${PORT:-8000}" --workers 1
     ;;

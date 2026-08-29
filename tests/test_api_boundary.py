@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -76,8 +77,10 @@ class ApiBoundaryV1Tests(unittest.TestCase):
             body["run_retention"],
             {"mode": "in_memory_process_lifetime", "max_runs": 100},
         )
+        ledger = body["ledger"]
+        datetime.fromisoformat(ledger["observed_at"].replace("Z", "+00:00"))
         self.assertEqual(
-            body["ledger"],
+            {key: value for key, value in ledger.items() if key != "observed_at"},
             {
                 "enabled": True,
                 "configured": True,
@@ -120,6 +123,9 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertEqual(response.headers["access-control-allow-origin"], "*")
 
     def test_health_and_capabilities_reuse_cached_ledger_observation(self) -> None:
+        initial_observed_at = self.client.get("/health").json()["ledger"][
+            "observed_at"
+        ]
         with patch.object(boundary_module, "_probe_relationship_ledger") as probe:
             with patch.object(boundary_module, "_ledger_line_count") as line_count:
                 for _ in range(3):
@@ -131,6 +137,10 @@ class ApiBoundaryV1Tests(unittest.TestCase):
 
         probe.assert_not_called()
         line_count.assert_not_called()
+        self.assertEqual(
+            self.client.get("/api/v1/capabilities").json()["ledger"]["observed_at"],
+            initial_observed_at,
+        )
 
     def test_ledger_probe_refresh_does_not_rescan_known_line_count(self) -> None:
         with patch.object(
@@ -138,10 +148,12 @@ class ApiBoundaryV1Tests(unittest.TestCase):
             "_probe_relationship_ledger",
             return_value=(True, None),
         ) as probe:
-            with patch.object(boundary_module, "_ledger_line_count") as line_count:
-                status = boundary_module.relationship_ledger_status(refresh=True)
+            with patch.object(boundary_module, "utc_now", return_value="2026-08-29T00:00:00Z"):
+                with patch.object(boundary_module, "_ledger_line_count") as line_count:
+                    status = boundary_module.relationship_ledger_status(refresh=True)
 
         self.assertEqual(status["lines"], 0)
+        self.assertEqual(status["observed_at"], "2026-08-29T00:00:00Z")
         probe.assert_called_once_with(self.ledger_path)
         line_count.assert_not_called()
 
@@ -149,6 +161,7 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         expired_at = (
             boundary_module._LEDGER_OBSERVED_AT
             + boundary_module.LEDGER_PROBE_TTL_SECONDS
+            + 1.0
         )
         with patch.object(boundary_module, "perf_counter", return_value=expired_at):
             with patch.object(
@@ -253,6 +266,9 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertTrue(ledger_status["writable"])
         self.assertTrue(ledger_status["last_write_ok"])
         self.assertEqual(ledger_status["lines"], len(ledger_entries))
+        datetime.fromisoformat(
+            ledger_status["observed_at"].replace("Z", "+00:00")
+        )
 
         get_response = self.client.get(f"/api/v1/runs/{run['run_id']}")
         self.assertEqual(get_response.status_code, 200)
@@ -286,6 +302,7 @@ class ApiBoundaryV1Tests(unittest.TestCase):
         self.assertFalse(ledger["durable"])
         self.assertFalse(ledger["writable"])
         self.assertFalse(ledger["last_write_ok"])
+        datetime.fromisoformat(ledger["observed_at"].replace("Z", "+00:00"))
         self.assertIsNone(ledger["lines"])
         self.assertEqual(ledger["path"], self._ledger_dir.name)
         self.assertEqual(ledger["write_probe_error"], "ledger path is not a file")

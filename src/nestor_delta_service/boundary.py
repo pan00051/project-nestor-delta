@@ -140,6 +140,7 @@ def _refresh_ledger_observation(
         "lines": lines,
         "path": str(path),
         "write_probe_error": probe_error,
+        "observed_at": utc_now(),
     }
 
 
@@ -299,6 +300,7 @@ def append_relationship_ledger(envelope: Mapping[str, Any]) -> None:
                 "lines": lines,
                 "path": str(path),
                 "write_probe_error": None,
+                "observed_at": utc_now(),
             }
             _LEDGER_OBSERVED_AT = perf_counter()
     except Exception as exc:
@@ -310,6 +312,7 @@ def append_relationship_ledger(envelope: Mapping[str, Any]) -> None:
                     "lines": None,
                     "path": str(path),
                     "write_probe_error": _ledger_probe_error(path, exc),
+                    "observed_at": utc_now(),
                 }
                 _LEDGER_OBSERVED_AT = perf_counter()
         LOGGER.exception(
