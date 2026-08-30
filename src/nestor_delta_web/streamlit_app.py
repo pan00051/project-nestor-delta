@@ -416,11 +416,12 @@ def render_report(body: Mapping[str, Any]) -> None:
                     "transform": view["transform"],
                     "weight": rl.fmt_signed(view["weight"]),
                     "score": rl.fmt_number(view["score"]),
-                    "noise floor": rl.fmt_number(view["noise_floor"]),
                     "stability": rl.fmt_number(view["stability"]),
                     "uncertainty": rl.fmt_number(view["uncertainty"]),
+                    "sample support": rl.fmt_number(view["sample_support"]),
                     "lifecycle": view["lifecycle"]["label"],
                     "reason": view["reason_code"],
+                    "noise floor (diagnostic)": rl.fmt_number(view["noise_floor"]),
                 }
                 for view in views
             ],
