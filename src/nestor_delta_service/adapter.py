@@ -1015,11 +1015,13 @@ def _prediction_confidence_block(gate: EvidenceGateResult) -> dict[str, Any]:
     }
 
 
+# Report narrative is hashed Report content. Change it in a standalone commit
+# and record the pipeline_version before/after so version movement is attributable.
 def _narrative(outcome: str, gate: EvidenceGateResult, relation_count: int) -> dict[str, Any]:
     if outcome == "ok":
         selected = len(gate.selected_relations)
         return {
-            "headline": f"{selected} reliable relation{'s' if selected != 1 else ''} selected.",
+            "headline": f"{selected} candidate relation{'s' if selected != 1 else ''} cleared the evidence gate for this run.",
             "lines": [
                 f"{selected} of {relation_count} candidates cleared the evidence gate.",
                 (
@@ -1029,7 +1031,7 @@ def _narrative(outcome: str, gate: EvidenceGateResult, relation_count: int) -> d
             ],
         }
     return {
-        "headline": "No reliable relation selected - baseline active.",
+        "headline": "No candidate relation cleared the evidence gate - baseline retained.",
         "lines": [
             f"0 of {relation_count} candidates cleared the evidence gate.",
             "Delta defers to persistence rather than fit a model it cannot defend.",

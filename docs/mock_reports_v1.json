@@ -199,7 +199,7 @@
       "capped_by": null
     },
     "narrative": {
-      "headline": "No reliable relation selected - baseline active.",
+      "headline": "No candidate relation cleared the evidence gate - baseline retained.",
       "lines": [
         "0 of 4 candidates cleared the evidence gate.",
         "Delta defers to persistence rather than fit a model it cannot defend."
@@ -318,7 +318,7 @@
       "capped_by": null
     },
     "narrative": {
-      "headline": "1 reliable relation selected.",
+      "headline": "1 candidate relation cleared the evidence gate for this run.",
       "lines": [
         "x_true shows a stable transformed lag-3 relation to y that clears every gate.",
         "Confidence is moderate: inputs are in-support, but residual uncertainty is non-trivial."

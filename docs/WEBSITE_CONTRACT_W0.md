@@ -144,7 +144,7 @@ Every block is annotated with the S-sprint that produces it, so the adapter is a
   },
 
   "narrative": {                         // W4 templated honest text; W1 may send headline only
-    "headline": "No reliable relation selected — baseline active.",
+    "headline": "No candidate relation cleared the evidence gate - baseline retained.",
     "lines": [
       "0 of 4 candidates cleared the evidence gate.",
       "Delta defers to persistence rather than fit a model it cannot defend out-of-sample."

@@ -127,7 +127,7 @@ def report_decision(report: Mapping[str, Any]) -> dict[str, Any]:
         )
         tone = "baseline"
     else:
-        default_headline = "Reliable relationships selected"
+        default_headline = "Analysis complete"
         default_summary = (
             "Delta completed the analysis and selected the relations shown below."
         )
@@ -224,7 +224,7 @@ def lifecycle_steps(state: Any) -> list[dict[str, Any]]:
 _REASON_TEXT = {
     "selected": "Cleared effect, stability, support, and FDR.",
     "below_fdr_corrected_effect": "Effect does not survive multiple-comparison (FDR) correction.",
-    "insufficient_stability": "Real, but not stable enough across rolling windows.",
+    "insufficient_stability": "Effect present in the transformed data, but not stable enough across rolling windows.",
     "excess_relationship_uncertainty": "Estimate too uncertain to trust.",
     "insufficient_sample_support": "Too little sample support.",
     "not_selected": "Not selected.",
