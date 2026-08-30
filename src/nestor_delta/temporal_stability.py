@@ -9,7 +9,14 @@ from typing import Literal, Sequence
 from .dynamic_weights import TimedRelationWeight
 from .relation_weights import RelationWeight
 
-LifecycleState = Literal["birth", "strengthening", "stable", "decaying", "dead"]
+LifecycleState = Literal[
+    "insufficient_evidence",
+    "birth",
+    "strengthening",
+    "stable",
+    "decaying",
+    "dead",
+]
 
 
 @dataclass(frozen=True)
@@ -72,7 +79,7 @@ def classify_relation_lifecycle(
     min_points: int = 6,
     recent_points: int = 5,
     score_floor: float = 0.20,
-    stable_floor: float = 0.45,
+    min_stability: float = 0.45,
     dead_points: int = 5,
 ) -> RelationLifecycle:
     """Assign the S9 lifecycle state for one directed relation trajectory."""
@@ -80,8 +87,16 @@ def classify_relation_lifecycle(
         trajectory, min_points=min_points, recent_points=recent_points
     )
     ordered = tuple(sorted(trajectory, key=lambda item: item.step))
-    if len(ordered) < min_points:
-        return RelationLifecycle(relation=relation, state="birth", points=len(ordered))
+    # A lifecycle label is a Report claim, so it cannot outrun the same
+    # stability evidence required by the Evidence Gate. Missing stability means
+    # there are too few rolling points; a value below min_stability means the
+    # temporal evidence is not strong enough to name any lifecycle phase.
+    if relation.stability is None or relation.stability < min_stability:
+        return RelationLifecycle(
+            relation=relation,
+            state="insufficient_evidence",
+            points=len(ordered),
+        )
 
     scores = [item.score for item in ordered]
     recent_scores = scores[-recent_points:]
@@ -94,12 +109,10 @@ def classify_relation_lifecycle(
 
     # S9 endorsement threshold: a relation must clear stability AND strength
     # before it can be labeled stable or strengthening. Pure noise on the
-    # transformed path tops out near 0.36 stability, below stable_floor, so it
-    # stays birth/decaying/dead.
+    # transformed path tops out near 0.36 stability, below min_stability, so it
+    # remains insufficient evidence.
     meets_endorsement_threshold = (
-        relation.stability is not None
-        and relation.stability >= stable_floor
-        and recent_mean >= score_floor
+        relation.stability >= min_stability and recent_mean >= score_floor
     )
     rising_from_absent = (
         early_mean < score_floor
@@ -116,7 +129,9 @@ def classify_relation_lifecycle(
             )
         )
     )
-    if len(scores) >= dead_points and all(score < score_floor for score in scores[-dead_points:]):
+    if len(scores) >= dead_points and all(
+        score < score_floor for score in scores[-dead_points:]
+    ):
         state: LifecycleState = "dead"
     elif falling_from_present:
         state = "decaying"

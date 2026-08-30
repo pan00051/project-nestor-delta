@@ -172,6 +172,9 @@ Two cross-cutting rules govern how these fields may be displayed:
   it is shown together with the relation's `stability` value. A valid state such as `stable`
   can still hide uneven temporal support, and the numeric stability is the evidence that
   distinguishes the two.
+- **`insufficient_evidence` withholds a lifecycle claim.** It is reported when `stability`
+  is null or below the effective `min_stability` gate. It is not a synonym for `birth`,
+  `decaying`, or `dead` and must render in a neutral tone.
 
 ```jsonc
 {
@@ -190,10 +193,10 @@ Two cross-cutting rules govern how these fields may be displayed:
   "stability": 0.35,                      // S9 | null
   "uncertainty": 0.07,                    // S9 | null
   "sample_support": 1.0,                  // S10 (0..1)
-  "lifecycle": { "state": "birth", "points": 12 },   // S9 state machine
+  "lifecycle": { "state": "insufficient_evidence", "points": 12 }, // S9; stability below gate
   "selected": false,                      // S10 evidence gate
   "reason_code": "insufficient_stability",// enum, §4
-  "reason_text": "Real and above the noise floor, but stability 0.35 < 0.45.",
+  "reason_text": "Evidence is not stable enough to select.",
   "trajectory": [                         // S9 rolling; optional in v1, needed for detail timeline
     { "step": 168, "date": "2022-01", "score": 0.41, "sign": -1, "lag": 2 }
   ]
@@ -208,7 +211,7 @@ UI displays anything below `1e-12` as `< 1e-12` rather than as a rounded zero.
 ## 4. Enumerations — the values UI styles and copy key off
 
 **`outcome`**: `ok` · `baseline_only` · `validation_error` · `analysis_failure` · `not_found`
-**lifecycle `state`** (S9): `birth` · `strengthening` · `stable` · `decaying` · `dead`
+**lifecycle `state`** (S9): `insufficient_evidence` · `birth` · `strengthening` · `stable` · `decaying` · `dead`
 **evidence `reason_code`** (S10 EvidenceDecision.reason):
 `selected` · `below_fdr_corrected_effect` · `insufficient_stability` ·
 `excess_relationship_uncertainty` · `insufficient_sample_support` · `not_selected`

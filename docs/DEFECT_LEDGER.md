@@ -83,7 +83,7 @@ H / A 的处置是由 M4-B/M4-C 建立用户可读的输入边界，并把短样
 | H-7 | 422 文案 `trajectory must contain at least one point` 暴露内部实现细节 | H | A | 陌生人无法据此知道应修改样本长度 | 与 H-6 合并，在 M4-B/M4-C 提供所需期数、当前期数与原因 |
 | W-12 | H-5 Analyst table 的列结构已修正，但关闭时没有留下守卫 | W | A | `sample support` 或 diagnostic 排序可静默回退 | 不单独派工；M4-B 修改同一文件时新增断言：`sample support` 在列内，`noise floor (diagnostic)` 位于最右 |
 | W-13 | G2 豁免标记只在被引用路径之后生效 | W | B | 把 `(historical)` 写在引用之前不会豁免，若约定不明会造成误用 | 规则写入 G2 覆盖范围；机械扩展 M5 后解冻 |
-| H.4 lifecycle | 证据不足时仍输出 `birth`，且现有测试把该行为钉住 | H | A | “新生、有希望”强于现有 stability 证据，构成可见的过度声称 | 负责人采纳路径 A；M4-B 新增 `insufficient_evidence` 并完成算法级验证 |
+| H.4 lifecycle | 证据不足时仍输出 `birth`，且现有测试把该行为钉住 | H | A | “新生、有希望”强于现有 stability 证据，构成可见的过度声称 | **已关闭**：Report 新增 `insufficient_evidence`，算法级正、负控制与 selection before/after 通过 |
 | H-8 | `n_min(3)=13` 与冻结 Q6 前滚动负控制 `n=11` 冲突 | H | A | 直接实施会把已接受的 Q6 ground-truth 从 `baseline_only` 改成 422 | M4-B 最小样本量部分已按停止条件暂停；须先裁决输入边界对冻结控制的适用范围 |
 
 **计划中的 G8（本轮不实现）。** audit/analyze 一致性回归测试：对一组构造 CSV 断言
@@ -105,6 +105,14 @@ H / A 的处置是由 M4-B/M4-C 建立用户可读的输入边界，并把短样
 `selected` 均为 `None` 时，又断言 `lifecycle.state == "birth"`。因此过度声称不只是实现现状；
 一个名为“证据不足”的测试正在固定“新生、有希望”的标签。该断言必须在 M4-B 路径 A 中
 随新状态一起改写，不得把现状测试当成产品定义。
+
+**M4-B 关闭记录（2026-08-31）。** 路径 A 已在后端 Report 语义实施：`stability` 为 null
+或低于有效 `min_stability` 时，lifecycle 为 `insufficient_evidence`；该状态不属于 `ALIVE`。
+正控制：点数不足与 stability=0.40 两例均变为新状态。负控制：S-GT-5 五个构造 profile
+逐一命中新的严格预期，假阳性 0/5；完整套件 200/200 通过。M0 双控制 selection before/after：
+S-GT-1 均为 `ok`、selected_count=1、`true_driver`；S-GT-2 均为 `baseline_only`、
+selected_count=0。`pipeline_version` 为 `s10.sha256.fbcf60d3506d` →
+`s10.sha256.ab759b2231a4`；未改动 Evidence Gate 阈值。
 
 ---
 
@@ -397,7 +405,6 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 | H-1 | H | A | 线上两层仍是旧叙事，公开 URL 禁发 | M4-B 后部署验收 | M4-B 两次版本移动完成后；须完整部署验证 |
 | H-6 | H | A | audit 与 analyze 接受集不一致 | M4-B / M4-C | M4-A accepted 后进入 M4-B |
 | H-7 | H | A | 短样本 422 暴露内部 trajectory 细节 | M4-B / M4-C | M4-A accepted 后进入 M4-B |
-| H.4 lifecycle | H | A | 证据不足仍标 `birth`，且被测试固定；路径 A 已裁决 | M4-B | M4-A accepted 后进入 M4-B |
 | W-12 | W | A | Analyst table 缺少列结构守卫 | M4-B | 修改同一前端文件时一并落地 |
 | G8 | W | A | 缺少 audit/analyze 一致性回归与 G6 双控制 | M4-B | 与 H-6 修复同批落地 |
 | H-8 | H | A | `n_min=13` 会拒绝冻结的 Q6 `n=11` 前滚动负控制 | M4-B | 输入边界适用范围获负责人裁决后恢复第 2 部分 |
@@ -425,7 +432,7 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 
 **阻碍核验。** 当前不存在 H 级且无归属的事项。M4-A 已 accepted，M4-B 已启动；但最小样本量
 部分存在一个已归属的技术阻碍 H-8：冻结 Q6 `n=11` 控制不满足 `n_min(3)=13`。依照独立停止条件，
-只暂停 H-6 / H-7 / W-5 / G8 这一部分，不修改 fixture、不加豁免；lifecycle 与呈现层继续。
+只暂停 H-6 / H-7 / W-5 / G8 这一部分，不修改 fixture、不加豁免；lifecycle 已关闭，呈现层继续。
 
 ---
 
@@ -461,3 +468,6 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
   的规则；D2 残余降为 W/B；以只读断言钉住 Evidence Gate 四项配置与 W0 narrative 示例。
   最小样本量预检发现冻结 Q6 `s_gt_6_pre_rolling_negative` 为 `n=11`，低于
   `n_min(3)=13`，登记 H-8 并按部分停止条件暂停该实现。
+- 2026-08-31 M4-B lifecycle 路径 A：新增 `insufficient_evidence` Report 状态并完成契约、mock、
+  前端与 ground-truth 扇出；S-GT-1/S-GT-2 selection 不变，版本由
+  `s10.sha256.fbcf60d3506d` 移至 `s10.sha256.ab759b2231a4`，H.4 关闭。

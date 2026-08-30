@@ -45,10 +45,11 @@ DRIFT = MANIFEST.get("drift") or {}
 
 ALIVE = {"birth", "strengthening", "stable"}
 ENDING = {"decaying", "dead"}
+INSUFFICIENT = {"insufficient_evidence"}
 EXPECTED_LIFECYCLE = {
     "constant": "stable",
-    "linear_decay": "decaying",
-    "regime_off": "decaying",
+    "linear_decay": "insufficient_evidence",
+    "regime_off": "insufficient_evidence",
     "regime_late": "strengthening",
     "intermittent": "stable",
 }
@@ -72,28 +73,26 @@ def test_sgt5_lifecycle_state_is_reported(profile: str) -> None:
     """Every candidate carries a lifecycle state, drifting or not."""
     rel = _driver(profile)
     state = (rel.get("lifecycle") or {}).get("state")
-    assert state in ALIVE | ENDING, f"{profile}: unusable lifecycle state {state!r}"
+    assert state in ALIVE | ENDING | INSUFFICIENT, (
+        f"{profile}: unusable lifecycle state {state!r}"
+    )
 
 
-def test_sgt5_dead_relation_is_not_reported_alive() -> None:
+def test_sgt5_dead_relation_is_not_overstated_without_stability() -> None:
     """`regime_off`: the relationship is exactly zero for the final 30% of the
     sample — 65 months. Last-quarter |r| is 0.21 against 0.63 in the first
     quarter, and the 0.21 is sampling noise on 53 points, not signal.
 
-    A state machine that calls this `stable` (or `strengthening`) is telling the
-    user a relationship is intact five years after it stopped existing. That is
-    the single most damaging failure mode available to this product, because it
-    fails in the direction of over-claiming.
+    Its measured stability is below the Evidence Gate. The Report therefore
+    must withhold a lifecycle phase rather than claim that the relationship is
+    intact or that its ending has enough temporal support.
 
     If this fails, the likely cause is that `lifecycle.state` is computed over
     the whole sample rather than as-of the end of it.
     """
     rel = _driver("regime_off")
     state = rel["lifecycle"]["state"]
-    assert state in ENDING, (
-        f"relation stopped at month 151 of 216 but lifecycle.state == {state!r}; "
-        "expected 'decaying' or 'dead'"
-    )
+    assert state == "insufficient_evidence"
 
 
 def test_sgt5_late_relation_is_not_reported_dead() -> None:

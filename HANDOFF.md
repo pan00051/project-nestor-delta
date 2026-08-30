@@ -45,10 +45,11 @@ from this file.
   role of the noise floor, and the transform/sample inputs.
 - `pipeline_version` is a SHA-256 over `versioning.py`, `adapter.py`, and every
   module under `src/nestor_delta/`, rendered `s10.sha256.<12 hex>`. It is never
-  hand-written. Current value: `s10.sha256.fbcf60d3506d` (was
-  `s10.sha256.3665b88553ad` before the T3 Report narrative correction and
-  `_narrative()` hash-scope comment; no algorithm, threshold, or numeric
-  calculation changed).
+  hand-written. Current value: `s10.sha256.ab759b2231a4`. The immediately prior
+  value was `s10.sha256.fbcf60d3506d`; this M4-B move adds the backend-owned
+  `insufficient_evidence` lifecycle state without changing selection or any
+  Evidence Gate threshold. The earlier T3 narrative move is recorded in
+  `docs/DEFECT_LEDGER.md`.
 - **What that field covers, and what it does not.** It identifies the
   implementation that produced a Report. It moves for any change to the hashed
   files, including a corrected metadata string — that is correct, not noise, and
@@ -377,8 +378,9 @@ independent and continue while the boundary's scope awaits owner resolution.
    to the core Evidence Gate defaults with a read-only assertion, and pin the
    W0 headline example to adapter narrative output. Neither guard may alter a
    gate value or move `pipeline_version`.
-1. **Lifecycle path A — backend-owned insufficient evidence.** Add an
-   `insufficient_evidence` lifecycle state. The required fan-out is
+1. **Lifecycle path A — complete (2026-08-31).** The backend-owned
+   `insufficient_evidence` lifecycle state now covers null or below-gate
+   stability. The completed fan-out is
    `src/nestor_delta/temporal_stability.py`,
    `src/nestor_delta_service/adapter.py`,
    `docs/WEBSITE_CONTRACT_W0.md`,
@@ -386,12 +388,13 @@ independent and continue while the boundary's scope awaits owner resolution.
    `docs/M3_VISUAL_AUDIT_SPEC.md`,
    `docs/mock_reports_v1.json`, frontend `_LIFECYCLE` in
    `src/nestor_delta_web/render_logic.py`, `tests/test_s9_lifecycle.py`, the
-   `ALIVE` set in `tests/ground_truth/test_drift_ground_truth.py`, the five-state
+   `ALIVE` set in `tests/ground_truth/test_drift_ground_truth.py`, the lifecycle
    enumeration in `tests/test_website_frontend.py`, and
-   `tests/ground_truth/fixtures/stability_ceiling.json`. This is an algorithm
-   change: validate S-GT-1 and S-GT-2 moving in the intended direction under
-   the M0 rule and record before/after. It gets its own commit and its own
-   `pipeline_version` move.
+   `tests/ground_truth/fixtures/stability_ceiling.json`. S-GT-1 remained
+   `ok` with one selected `true_driver`; S-GT-2 remained `baseline_only` with
+   zero selections. The independent version move is
+   `s10.sha256.fbcf60d3506d` -> `s10.sha256.ab759b2231a4`; no gate threshold
+   changed.
 2. **Minimum sample boundary — H-6 / H-7 / W-5; paused by H-8.** Implement
    `n_min(L) = max(L+9, 2L+7)` in `_audit_blocks()`, with `L = lag_window`, so
    `audit == ok_to_analyze` implies analyze does not return 422 for this

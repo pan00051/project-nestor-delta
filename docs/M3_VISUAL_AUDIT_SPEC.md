@@ -128,20 +128,24 @@ Public baseline-only screenshot: [m3_baseline_only_public.jpg](m3_baseline_only_
 | nullable field null | relation | `trajectory=null` or `[]` | Timeline evidence absent | Explicit caption: no timeline chart is shown | No fabricated chart |
 | nullable field null | evaluation | `evaluation=null` | Evaluation unavailable | `st.info` no interval inferred | No fake interval |
 | nullable field null | confidence | `confidence=null` | Confidence not computed | `—` plus insufficient note | No 0% |
-| nullable field null | lifecycle points | `points=null` | Not enough trajectory points | State still shown if present | No numeric substitution |
+| nullable field null | lifecycle points | `points=null` | Not enough trajectory points | Show neutral `insufficient_evidence` with stability `—` | No numeric substitution |
 
 ## Lifecycle Ground Truth
 
-| Profile | Constructed truth | Correct M3 state |
+| Profile | Constructed truth | Current Report state (M4-B) |
 | --- | --- | --- |
 | `constant` | 0.6309 -> 0.6318, time-invariant | `stable` |
-| `linear_decay` | 0.5918 -> 0.2767, monotone fading | `decaying` |
-| `regime_off` | 0.6309 -> 0.2125, stops late | `decaying` |
+| `linear_decay` | 0.5918 -> 0.2767, monotone fading; stability below gate | `insufficient_evidence` |
+| `regime_off` | 0.6309 -> 0.2125, stops late; stability below gate | `insufficient_evidence` |
 | `regime_late` | 0.2294 -> 0.6318, starts late | `strengthening` |
 | `intermittent` | 0.4864 -> 0.4181, alternating but present late | `stable` |
 
 Decaying/dead are descriptive lifecycle states, not errors. The Streamlit tone
 stays muted/warn and must not use red alert styling.
+
+`insufficient_evidence` is the required neutral Report state when stability is
+null or below the effective `min_stability` gate. It does not assert that the
+relationship is new, persisting, fading, or dead.
 
 Lifecycle labels must never appear alone. They must be paired with the relation
 `stability` value wherever the UI gives them visual weight. This prevents

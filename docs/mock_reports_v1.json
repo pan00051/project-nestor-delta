@@ -175,7 +175,7 @@
         "stability": 0.35,
         "uncertainty": 0.07,
         "sample_support": 1.0,
-        "lifecycle": { "state": "birth", "points": null },
+        "lifecycle": { "state": "insufficient_evidence", "points": null },
         "selected": false,
         "reason_code": "below_fdr_corrected_effect",
         "reason_text": "Does not survive the FDR-corrected effect threshold.",

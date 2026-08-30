@@ -762,7 +762,10 @@ def _s9_relation_objects(
     by_source = {}
     for relation in ranking:
         trajectory = target_source_trajectory(rolling, analysis_input.target, relation.source)
-        lifecycle = classify_relation_lifecycle(trajectory)
+        lifecycle = classify_relation_lifecycle(
+            trajectory,
+            min_stability=EVIDENCE_GATE_CONFIG["min_stability"],
+        )
         by_source[relation.source] = RelationWeight(
             source=relation.source,
             target=relation.target,
@@ -784,7 +787,7 @@ def _lifecycle_block(
     source: str,
 ) -> dict[str, Any]:
     if len(train_rows) <= analysis_input.lag_window + 8:
-        return {"state": "birth", "points": None}
+        return {"state": "insufficient_evidence", "points": None}
     window_size = _rolling_window_size(analysis_input, train_rows)
     steps = range(window_size + analysis_input.lag_window + 1, len(train_rows) + 1, 6)
     try:
@@ -797,11 +800,12 @@ def _lifecycle_block(
             analysis_input.transform_declarations,
         )
         lifecycle = classify_relation_lifecycle(
-            target_source_trajectory(rolling, analysis_input.target, source)
+            target_source_trajectory(rolling, analysis_input.target, source),
+            min_stability=EVIDENCE_GATE_CONFIG["min_stability"],
         )
         return {"state": lifecycle.state, "points": lifecycle.points}
     except ValueError:
-        return {"state": "birth", "points": None}
+        return {"state": "insufficient_evidence", "points": None}
 
 
 def _trajectory_block(

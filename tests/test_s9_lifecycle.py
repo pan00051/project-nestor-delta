@@ -50,7 +50,33 @@ class S9LifecycleTests(unittest.TestCase):
         self.assertIsNone(relation.stability)
         self.assertIsNone(relation.uncertainty)
         self.assertIsNone(relation.selected)
-        self.assertEqual(lifecycle.state, "birth")
+        self.assertEqual(lifecycle.state, "insufficient_evidence")
+
+    def test_below_gate_stability_is_insufficient_evidence(self) -> None:
+        trajectory = tuple(
+            TimedRelationWeight(
+                step,
+                step - 1,
+                step,
+                "x",
+                "y",
+                1,
+                0.4,
+                0.4,
+                30,
+                "diff",
+            )
+            for step in range(10, 16)
+        )
+
+        lifecycle = classify_relation_lifecycle(
+            trajectory,
+            min_points=6,
+            min_stability=0.45,
+        )
+
+        self.assertEqual(lifecycle.relation.stability, 0.4)
+        self.assertEqual(lifecycle.state, "insufficient_evidence")
 
     def test_fixture_c_detects_relation_death_within_k_steps(self) -> None:
         lags = fixture_c_detection_lags(seeds=range(30))
@@ -75,7 +101,7 @@ class S9LifecycleTests(unittest.TestCase):
         endorsed = [state for state in states if state in {"stable", "strengthening"}]
         self.assertEqual(endorsed, [], f"noise endorsed as live relations: {endorsed}")
 
-    def test_old_history_does_not_keep_dead_relation_stable(self) -> None:
+    def test_old_history_without_current_stability_is_insufficient(self) -> None:
         rows = relation_death_rows(7, n=260, death_step=180)
         weights = compute_rolling_transformed_relation_weights(
             rows,
@@ -93,7 +119,7 @@ class S9LifecycleTests(unittest.TestCase):
 
         lifecycle = classify_relation_lifecycle(trajectory)
 
-        self.assertIn(lifecycle.state, {"decaying", "dead"})
+        self.assertEqual(lifecycle.state, "insufficient_evidence")
         self.assertIsNotNone(lifecycle.relation.stability)
         self.assertLess(lifecycle.relation.stability, 0.25)
         self.assertGreater(lifecycle.relation.sample_count, 25)

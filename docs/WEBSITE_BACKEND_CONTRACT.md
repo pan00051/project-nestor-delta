@@ -298,7 +298,7 @@ One object per candidate relation from source to target:
   "stability": 0.35,
   "uncertainty": 0.07,
   "sample_support": 1.0,
-  "lifecycle": { "state": "birth", "points": null },
+  "lifecycle": { "state": "insufficient_evidence", "points": null },
   "selected": false,
   "reason_code": "insufficient_stability",
   "reason_text": "Evidence is not stable enough to select.",
@@ -321,6 +321,9 @@ badge.
 Lifecycle labels must be displayed with the corresponding `stability` value
 when they carry visual weight. A valid state such as `stable` can still hide
 uneven temporal support unless the numeric stability is shown beside it.
+`insufficient_evidence` is emitted when stability is null or below the
+effective `min_stability` gate; it withholds a lifecycle claim and is not a
+positive or negative lifecycle phase.
 
 `stability`, `uncertainty`, `selected`, confidence fields, and `trajectory` are
 nullable. Null means insufficient evidence or not run in W1.
@@ -329,7 +332,8 @@ nullable. Null means insufficient evidence or not run in W1.
 
 - `outcome`: `snapshot_ready`, `ok_to_analyze`, `ok`, `baseline_only`,
   `validation_error`, `analysis_failure`, `not_found`
-- lifecycle `state`: `birth`, `strengthening`, `stable`, `decaying`, `dead`
+- lifecycle `state`: `insufficient_evidence`, `birth`, `strengthening`,
+  `stable`, `decaying`, `dead`
 - evidence `reason_code`: `selected`, `below_fdr_corrected_effect`,
   `insufficient_stability`, `excess_relationship_uncertainty`,
   `insufficient_sample_support`, `not_selected`

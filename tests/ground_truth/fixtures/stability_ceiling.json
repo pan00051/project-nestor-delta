@@ -9,7 +9,7 @@
       "selected": true,
       "stability": 0.6512167274486128,
       "reason_code": "selected",
-      "lifecycle": "strengthening",
+      "lifecycle": "stable",
       "effect_score": 0.5844220533473201
     },
     {
@@ -19,7 +19,7 @@
       "selected": true,
       "stability": 0.5401022476527289,
       "reason_code": "selected",
-      "lifecycle": "strengthening",
+      "lifecycle": "stable",
       "effect_score": 0.3674500089908781
     },
     {
@@ -29,7 +29,7 @@
       "selected": false,
       "stability": 0.3404603745953383,
       "reason_code": "insufficient_stability",
-      "lifecycle": "birth",
+      "lifecycle": "insufficient_evidence",
       "effect_score": 0.36294015881732633
     },
     {
@@ -49,7 +49,7 @@
       "selected": false,
       "stability": 0.3436229352487191,
       "reason_code": "insufficient_stability",
-      "lifecycle": "decaying",
+      "lifecycle": "insufficient_evidence",
       "effect_score": 0.4860079935590565
     }
   ]

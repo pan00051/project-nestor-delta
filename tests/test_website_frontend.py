@@ -137,7 +137,14 @@ class TransformGate(unittest.TestCase):
 
 class Lifecycle(unittest.TestCase):
     def test_raw_states_preserved(self):
-        for state in ("birth", "strengthening", "stable", "decaying", "dead"):
+        for state in (
+            "insufficient_evidence",
+            "birth",
+            "strengthening",
+            "stable",
+            "decaying",
+            "dead",
+        ):
             self.assertEqual(rl.lifecycle_badge(state)["state"], state)
         # decaying is a fact, not an alarm -> warn tone, not "critical"
         self.assertEqual(rl.lifecycle_badge("decaying")["tone"], "warn")
@@ -146,7 +153,14 @@ class Lifecycle(unittest.TestCase):
         steps = rl.lifecycle_steps("decaying")
         self.assertEqual(
             [step["state"] for step in steps],
-            ["birth", "strengthening", "stable", "decaying", "dead"],
+            [
+                "insufficient_evidence",
+                "birth",
+                "strengthening",
+                "stable",
+                "decaying",
+                "dead",
+            ],
         )
         self.assertEqual(
             [step["state"] for step in steps if step["active"]],

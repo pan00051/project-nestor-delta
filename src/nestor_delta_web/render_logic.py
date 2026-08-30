@@ -197,6 +197,7 @@ def should_show_trajectory(relation: Mapping[str, Any]) -> bool:
 # ---------------------------------------------------------------- lifecycle
 
 _LIFECYCLE = {
+    "insufficient_evidence": ("Insufficient evidence", "neutral"),
     "birth": ("Birth", "neutral"),
     "strengthening": ("Strengthening", "good"),
     "stable": ("Stable", "good"),
