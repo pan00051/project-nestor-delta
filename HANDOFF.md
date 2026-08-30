@@ -365,16 +365,17 @@ bar; and the distinction between 10 recorded view IDs and the four M3
 acceptance states. M4-B is now active. G0, the C series, and V1 are B-class
 work and remain frozen until M5 is complete.
 
-M4-B's minimum-sample section is paused under its own stop condition. The
+M4-B's only unfinished section is the minimum-sample boundary, paused under
+its own stop condition. The
 frozen `s_gt_6_pre_rolling_negative` control has `n=11` and `lag_window=3`,
 while the approved formula yields `n_min(3)=13`; applying the boundary as
 written would turn an accepted Q6 `baseline_only` control into a 422. Do not
-change that fixture or add an exemption. Lifecycle and presentation work are
-independent and continue while the boundary's scope awaits owner resolution.
+change that fixture or add an exemption. Lifecycle and presentation are
+complete; H-8 needs an owner decision before the boundary and G8 can resume.
 
 ### M4-B scope
 
-0. **Contract guardrails.** Keep the four `EVIDENCE_GATE_CONFIG` values equal
+0. **Contract guardrails — complete.** The four `EVIDENCE_GATE_CONFIG` values remain equal
    to the core Evidence Gate defaults with a read-only assertion, and pin the
    W0 headline example to adapter narrative output. Neither guard may alter a
    gate value or move `pipeline_version`.
@@ -402,10 +403,14 @@ independent and continue while the boundary's scope awaits owner resolution.
    documentation, and return a readable 422 stating required periods, current
    periods, and why. This also gets its own commit and its own
    `pipeline_version` move.
-3. **P0 answer order.** Implement the confirmed hierarchy and place one
-   evidence-gate explanation of at most 15 words immediately below the headline.
-4. **W-12 Analyst table guard.** Assert that `sample support` is present and
-   `noise floor (diagnostic)` is the rightmost column.
+3. **P0 answer order — complete.** The page renders run status, gate result,
+   selected/rejected counts, direction/lag/strength, then gate reasons. The
+   13-word Evidence Gate explanation sits immediately below the headline;
+   `baseline_only` is explicitly described as intended behavior, and the P1
+   context bar carries case, as-of, snapshot hash, and `pipeline_version`.
+4. **W-12 Analyst table guard — complete.** `sample support` is present and
+   `noise floor (diagnostic)` is the rightmost column; both clean and in-memory
+   drift controls are recorded in `docs/DEFECT_LEDGER.md`.
 5. **G8 audit/analyze consistency.** Cover `n = 11 / 12 / 13 / 14` and assert
    `audit == ok_to_analyze` implies `analyze != 422`; record both positive and
    negative controls under G6.

@@ -21,6 +21,12 @@ from nestor_delta_web import presets, render_logic as rl  # noqa: E402
 
 MOCKS = json.loads((REPO / "docs" / "mock_reports_v1.json").read_text())
 
+
+def _assert_analyst_columns(columns):
+    assert "sample support" in columns
+    assert columns[-1] == "noise floor (diagnostic)"
+
+
 # canonical mock key -> (http_status, expected view)
 CASES = {
     "snapshot_ready__eurostat": (200, "snapshot_ready"),
@@ -233,6 +239,7 @@ class UserReportSummary(unittest.TestCase):
         self.assertEqual(decision["selected_count"], 0)
         self.assertTrue(decision["confidence"]["is_null"])
         self.assertNotIn("error", decision["headline"].lower())
+        self.assertIn("intended behavior", decision["success_statement"].lower())
 
     def test_selected_report_keeps_backend_narrative_and_confidence(self):
         report = MOCKS["ok__with_selection"]
@@ -252,6 +259,66 @@ class UserReportSummary(unittest.TestCase):
         self.assertTrue(filename.startswith("nestor-delta-"))
         self.assertTrue(filename.endswith(".json"))
         self.assertNotIn(" ", filename)
+
+
+class PresentationHierarchy(unittest.TestCase):
+    def test_p0_answers_follow_the_accepted_order(self):
+        answers = rl.report_p0_answers(MOCKS["baseline_only__spain_retail"])
+
+        self.assertEqual(tuple(answers), rl.P0_ANSWER_ORDER)
+        self.assertEqual(answers["run_status"], "Analysis completed successfully")
+        self.assertEqual(answers["selection"]["candidate_count"], 4)
+        self.assertEqual(answers["selection"]["selected_count"], 0)
+        self.assertEqual(answers["selection"]["rejected_count"], 4)
+
+    def test_gate_explanation_is_concise_and_does_not_claim_reliability(self):
+        explanation = rl.EVIDENCE_GATE_EXPLANATION
+
+        self.assertLessEqual(len(explanation.split()), 15)
+        self.assertNotIn("reliable", explanation.lower())
+        self.assertIn("FDR", explanation)
+        self.assertIn("sample support", explanation)
+
+    def test_relation_evidence_exposes_direction_lag_and_strength_before_reason(self):
+        answers = rl.report_p0_answers(MOCKS["ok__with_selection"])
+        relation = answers["relation_evidence"][0]
+        reason = answers["gate_reasons"][0]
+
+        self.assertEqual(relation["direction"], "positive")
+        self.assertEqual(relation["lag"], 3)
+        self.assertEqual(relation["score"], 0.58)
+        self.assertEqual(reason["reason_code"], "selected")
+
+    def test_context_bar_promotes_pipeline_with_case_as_of_and_snapshot(self):
+        report = dict(MOCKS["ok__with_selection"])
+        report["pipeline_version"] = "s10.sha256.testvalue123"
+
+        items = rl.context_bar_items(report)
+
+        self.assertEqual(
+            [item["label"] for item in items],
+            ["Case", "As of", "Snapshot", "Pipeline"],
+        )
+        self.assertEqual(items[-1]["value"], report["pipeline_version"])
+
+
+class AnalystTableGuard(unittest.TestCase):
+    def test_clean_table_has_sample_support_and_diagnostic_last(self):
+        rows = rl.analyst_table_rows(MOCKS["ok__with_selection"])
+
+        self.assertTrue(rows)
+        self.assertEqual(tuple(rows[0]), rl.ANALYST_TABLE_COLUMNS)
+        _assert_analyst_columns(tuple(rows[0]))
+
+    def test_guard_rejects_in_memory_column_drift(self):
+        drifted = tuple(
+            column
+            for column in rl.ANALYST_TABLE_COLUMNS
+            if column != "sample support"
+        )
+
+        with self.assertRaises(AssertionError):
+            _assert_analyst_columns(drifted)
 
 
 class SnapshotDownload(unittest.TestCase):

@@ -34,6 +34,22 @@ _OUTCOME_VIEW = {
 ERROR_VIEWS = {"validation_error", "not_found", "analysis_failure",
                "unreachable", "timeout", "malformed"}
 
+EVIDENCE_GATE_EXPLANATION = (
+    "FDR, stability, uncertainty, and sample support decide which candidate "
+    "relations enter this run."
+)
+BASELINE_SUCCESS_STATEMENT = (
+    "This is intended behavior: Delta keeps the baseline instead of adding "
+    "unsupported relationships."
+)
+P0_ANSWER_ORDER = (
+    "run_status",
+    "gate_result",
+    "selection",
+    "relation_evidence",
+    "gate_reasons",
+)
+
 
 def classify_response(
     status: Optional[int],
@@ -133,12 +149,31 @@ def report_decision(report: Mapping[str, Any]) -> dict[str, Any]:
         )
         tone = "selected"
     lines = narrative.get("lines") if isinstance(narrative, Mapping) else []
+    selected_count = selection.get("selected_count")
+    candidate_signals = (report.get("case") or {}).get("candidate_signals")
+    candidate_count = (
+        len(candidate_signals)
+        if isinstance(candidate_signals, list)
+        else len(report.get("relations") or [])
+    )
+    rejected_count = (
+        candidate_count - selected_count
+        if isinstance(selected_count, int) and candidate_count >= selected_count
+        else None
+    )
     return {
         "tone": tone,
+        "run_status": "Analysis completed successfully",
         "headline": narrative.get("headline") or default_headline,
         "summary": lines[0] if isinstance(lines, list) and lines else default_summary,
         "lines": lines if isinstance(lines, list) else [],
-        "selected_count": selection.get("selected_count"),
+        "gate_explanation": EVIDENCE_GATE_EXPLANATION,
+        "success_statement": (
+            BASELINE_SUCCESS_STATEMENT if outcome == "baseline_only" else None
+        ),
+        "candidate_count": candidate_count,
+        "selected_count": selected_count,
+        "rejected_count": rejected_count,
         "fit_status": selection.get("fit_status"),
         "final_mode": selection.get("final_mode"),
         "confidence": confidence,
@@ -158,7 +193,19 @@ def report_context(report: Mapping[str, Any]) -> dict[str, Any]:
         "generated_as_of": report.get("generated_as_of"),
         "snapshot_hash": snapshot.get("hash"),
         "snapshot_source": snapshot.get("source"),
+        "pipeline_version": report.get("pipeline_version"),
     }
+
+
+def context_bar_items(report: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """P1 provenance anchors, in their required display order."""
+    context = report_context(report)
+    return [
+        {"label": "Case", "value": context["case_name"]},
+        {"label": "As of", "value": context["generated_as_of"]},
+        {"label": "Snapshot", "value": context["snapshot_hash"]},
+        {"label": "Pipeline", "value": context["pipeline_version"]},
+    ]
 
 
 def report_filename(report: Mapping[str, Any]) -> str:
@@ -225,7 +272,7 @@ def lifecycle_steps(state: Any) -> list[dict[str, Any]]:
 _REASON_TEXT = {
     "selected": "Cleared effect, stability, support, and FDR.",
     "below_fdr_corrected_effect": "Effect does not survive multiple-comparison (FDR) correction.",
-    "insufficient_stability": "Effect present in the transformed data, but not stable enough across rolling windows.",
+    "insufficient_stability": "Stability is below the selection requirement across rolling windows.",
     "excess_relationship_uncertainty": "Estimate too uncertain to trust.",
     "insufficient_sample_support": "Too little sample support.",
     "not_selected": "Not selected.",
@@ -234,6 +281,17 @@ _REASON_TEXT = {
 
 def reason_text(code: Any) -> str:
     return _REASON_TEXT.get(code, str(code))
+
+
+def direction_label(sign: Any) -> str:
+    if sign is None:
+        return "—"
+    number = float(sign)
+    if number > 0:
+        return "positive"
+    if number < 0:
+        return "negative"
+    return "neutral"
 
 
 def relation_view(relation: Mapping[str, Any]) -> dict[str, Any]:
@@ -248,6 +306,7 @@ def relation_view(relation: Mapping[str, Any]) -> dict[str, Any]:
         "score": effect.get("score"),
         "weight": effect.get("weight"),
         "sign": effect.get("sign"),
+        "direction": direction_label(effect.get("sign")),
         "noise_floor": effect.get("noise_floor"),
         "effect_size": effect.get("effect_size_vs_noise_floor"),
         "p_value": sig.get("p_value"),
@@ -268,6 +327,34 @@ def relation_views(report: Mapping[str, Any]) -> list[dict[str, Any]]:
     return [relation_view(r) for r in report.get("relations", [])]
 
 
+def report_p0_answers(report: Mapping[str, Any]) -> dict[str, Any]:
+    """The accepted result-page answer hierarchy, in P0 display order."""
+    decision = report_decision(report)
+    views = relation_views(report)
+    return {
+        "run_status": decision["run_status"],
+        "gate_result": {
+            "headline": decision["headline"],
+            "explanation": decision["gate_explanation"],
+            "success_statement": decision["success_statement"],
+        },
+        "selection": {
+            "candidate_count": decision["candidate_count"],
+            "selected_count": decision["selected_count"],
+            "rejected_count": decision["rejected_count"],
+        },
+        "relation_evidence": views,
+        "gate_reasons": [
+            {
+                "relation": f"{view['source']} → {view['target']}",
+                "reason_code": view["reason_code"],
+                "reason_text": view["reason_text"],
+            }
+            for view in views
+        ],
+    }
+
+
 def relation_expander_label(view: Mapping[str, Any]) -> str:
     """Collapsed relation label. Lifecycle is paired with stability per F.2."""
     selection = "insufficient" if view["selected"] is None else (
@@ -276,8 +363,51 @@ def relation_expander_label(view: Mapping[str, Any]) -> str:
     lifecycle = (view.get("lifecycle") or {}).get("label")
     return (
         f"{view['source']} → {view['target']} · "
+        f"{view['direction']} · lag {view['lag']} · score {fmt_number(view['score'])} · "
         f"{lifecycle} / stability {fmt_number(view.get('stability'))} · {selection}"
     )
+
+
+ANALYST_TABLE_COLUMNS = (
+    "selected",
+    "relation",
+    "lag",
+    "transform",
+    "weight",
+    "score",
+    "stability",
+    "uncertainty",
+    "sample support",
+    "lifecycle",
+    "reason",
+    "noise floor (diagnostic)",
+)
+
+
+def analyst_table_rows(report: Mapping[str, Any]) -> list[dict[str, Any]]:
+    rows = []
+    for view in relation_views(report):
+        rows.append(
+            {
+                "selected": (
+                    "—"
+                    if view["selected"] is None
+                    else ("yes" if view["selected"] else "no")
+                ),
+                "relation": f"{view['source']} → {view['target']}",
+                "lag": view["lag"],
+                "transform": view["transform"],
+                "weight": fmt_signed(view["weight"]),
+                "score": fmt_number(view["score"]),
+                "stability": fmt_number(view["stability"]),
+                "uncertainty": fmt_number(view["uncertainty"]),
+                "sample support": fmt_number(view["sample_support"]),
+                "lifecycle": view["lifecycle"]["label"],
+                "reason": view["reason_code"],
+                "noise floor (diagnostic)": fmt_number(view["noise_floor"]),
+            }
+        )
+    return rows
 
 
 def _fmt_plain(value: Any) -> str:

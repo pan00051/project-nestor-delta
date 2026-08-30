@@ -76,6 +76,8 @@ h3{font-size:1rem!important}
 .delta-decision .eyebrow{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--delta-faint);font-weight:700}
 .delta-decision .headline{font-size:1.35rem;line-height:1.25;font-weight:720;margin:.25rem 0;color:var(--delta-ink)}
 .delta-decision .summary{font-size:.9rem;line-height:1.55;color:var(--delta-muted);max-width:800px}
+.delta-decision .gate-explanation{font-size:.83rem;line-height:1.5;color:var(--delta-muted);max-width:800px;margin-top:.35rem}
+.delta-decision .success-statement{font-size:.84rem;line-height:1.5;color:var(--delta-good);font-weight:650;max-width:800px;margin-top:.45rem}
 .delta-context{font-size:.78rem;color:var(--delta-muted);padding:.55rem 0;border-bottom:1px solid var(--delta-line);overflow-wrap:anywhere}
 .delta-status{display:inline-flex;align-items:center;border:1px solid var(--delta-line);border-radius:999px;padding:.16rem .55rem;font-size:.72rem;font-weight:650;color:var(--delta-muted)}
 .delta-status.good{color:var(--delta-good);border-color:var(--delta-status-good-line);background:var(--delta-status-good-bg)}
@@ -85,7 +87,7 @@ h3{font-size:1rem!important}
 .delta-relation{border-top:1px solid var(--delta-line);padding:.9rem 0 .25rem;margin-top:.45rem}
 .delta-relation-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
 .delta-relation-name{font-weight:700;font-size:1rem;overflow-wrap:anywhere}.delta-relation-meta{font-size:.78rem;color:var(--delta-muted);margin-top:.16rem}
-.delta-life{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:.8rem 0}
+.delta-life{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:.8rem 0}
 .delta-life span{border-top:3px solid var(--delta-line);padding-top:.3rem;font-size:.66rem;color:var(--delta-faint);text-align:center;overflow-wrap:anywhere}
 .delta-life span.active{border-top-color:var(--delta-accent);color:var(--delta-ink);font-weight:700}
 .tone-good{color:var(--delta-good);font-weight:650}.tone-warn{color:var(--delta-warn);font-weight:650}
@@ -104,7 +106,7 @@ h3{font-size:1rem!important}
   .delta-brandline span{display:block;white-space:normal}
   .delta-brandline .sep{display:none}
   h1{font-size:1.75rem!important}.delta-steps{grid-template-columns:1fr}.delta-step{border-right:0;border-bottom:1px solid var(--delta-line)}
-  .delta-step:last-child{border-bottom:0}.delta-relation-head{display:block}.delta-life span{font-size:.58rem}
+  .delta-step:last-child{border-bottom:0}.delta-relation-head{display:block}.delta-life{grid-template-columns:repeat(3,minmax(0,1fr))}.delta-life span{font-size:.58rem}
 }
 </style>
 """
@@ -309,12 +311,11 @@ def render_lifecycle(state: Any) -> None:
 
 def render_relation_detail(view: Mapping[str, Any], raw: Mapping[str, Any]) -> None:
     st.markdown(
-        f"<div class='delta-relation-meta'>lag {_e(view['lag'])} · {_e(view['transform'])} · "
+        f"<div class='delta-relation-meta'>{_e(view['direction'])} direction · "
+        f"lag {_e(view['lag'])} · {_e(view['transform'])} · "
         f"weight {_e(rl.fmt_signed(view['weight']))}</div>",
         unsafe_allow_html=True,
     )
-    render_lifecycle(view["lifecycle"]["state"])
-    st.markdown(_tone(view["reason_text"], view["lifecycle"]["tone"]), unsafe_allow_html=True)
     evidence = st.columns(4)
     render_metric(evidence[0], "Score", rl.fmt_number(view["score"]))
     render_metric(evidence[1], "Stability", rl.fmt_number(view["stability"]), "insufficient" if view["stability"] is None else None)
@@ -324,6 +325,8 @@ def render_relation_detail(view: Mapping[str, Any], raw: Mapping[str, Any]) -> N
         f"p={rl.fmt_p_value(view['p_value'])} · FDR threshold={rl.fmt_p_value(view['fdr_threshold'])} · "
         f"clears FDR={'—' if view['clears_fdr'] is None else ('yes' if view['clears_fdr'] else 'no')}"
     )
+    st.markdown(_tone(view["reason_text"], view["lifecycle"]["tone"]), unsafe_allow_html=True)
+    render_lifecycle(view["lifecycle"]["state"])
     st.caption(
         "Diagnostic comparison scale: "
         f"noise floor {rl.fmt_number(view['noise_floor'])}; "
@@ -357,28 +360,73 @@ def render_configuration(body: Mapping[str, Any]) -> None:
 
 def render_report(body: Mapping[str, Any]) -> None:
     decision = rl.report_decision(body)
+    p0 = rl.report_p0_answers(body)
     context = rl.report_context(body)
+    context_html = " · ".join(
+        f"<b>{_e(item['label'])}</b> {_e(item['value'])}"
+        for item in rl.context_bar_items(body)
+    )
     tone = decision["tone"]
-    eyebrow = "Baseline retained" if tone == "baseline" else "Evidence gate passed"
+    gate = p0["gate_result"]
+    success_statement = (
+        f"<div class='success-statement'>{_e(gate['success_statement'])}</div>"
+        if gate["success_statement"]
+        else ""
+    )
     st.markdown(
         f"<div class='delta-section'><div class='delta-section-kicker'>03 · Report</div></div>"
-        f"<div class='delta-context'>{_e(context['target'])} · {_e(context['frequency'])} · "
-        f"{_e(context['observations'])} observations · as known at {_e(context['generated_as_of'])}</div>"
-        f"<div class='delta-decision {tone}'><div class='eyebrow'>{_e(eyebrow)}</div>"
-        f"<div class='headline'>{_e(decision['headline'])}</div>"
-        f"<div class='summary'>{_e(decision['summary'])}</div></div>",
+        f"<div class='delta-context'>{context_html}</div>"
+        f"<div class='delta-decision {tone}'><div class='eyebrow'>{_e(p0['run_status'])}</div>"
+        f"<div class='headline'>{_e(gate['headline'])}</div>"
+        f"<div class='gate-explanation'>{_e(gate['explanation'])}</div>"
+        f"{success_statement}</div>",
         unsafe_allow_html=True,
     )
-    for line in decision["lines"][1:]:
-        st.markdown(f"- {line}")
+
+    selection = p0["selection"]
+    selection_metrics = st.columns(3)
+    selection_metrics[0].metric("Candidates", selection["candidate_count"])
+    selection_metrics[1].metric(
+        "Selected",
+        selection["selected_count"] if selection["selected_count"] is not None else "—",
+    )
+    selection_metrics[2].metric(
+        "Rejected",
+        selection["rejected_count"] if selection["rejected_count"] is not None else "—",
+    )
+
+    st.markdown("### Relationship evidence")
+    views = p0["relation_evidence"]
+    raw_relations = body.get("relations") or []
+    if not views:
+        st.info("The report contains no candidate relationship rows.")
+    for index, view in enumerate(views):
+        raw = raw_relations[index] if index < len(raw_relations) else {}
+        with st.expander(rl.relation_expander_label(view), expanded=view["selected"] is True):
+            render_relation_detail(view, raw)
+
+    narrative_lines = decision["lines"] or [decision["summary"]]
+    if narrative_lines:
+        with st.expander("Report narrative"):
+            for line in narrative_lines:
+                st.markdown(f"- {line}")
 
     confidence = decision["confidence"]
-    metrics = st.columns(4)
-    metrics[0].metric("Selected", decision["selected_count"] if decision["selected_count"] is not None else "—")
-    metrics[1].metric("Final mode", decision["final_mode"] or "—")
-    render_metric(metrics[2], "Confidence", confidence["text"] if not confidence["is_null"] else "—", "insufficient" if confidence["is_null"] else None)
+    supporting = st.columns(3)
+    supporting[0].metric("Final mode", decision["final_mode"] or "—")
+    render_metric(
+        supporting[1],
+        "Confidence",
+        confidence["text"] if not confidence["is_null"] else "—",
+        "insufficient" if confidence["is_null"] else None,
+    )
     baseline = body.get("baseline") or {}
-    render_metric(metrics[3], "Baseline MAE", rl.fmt_number(baseline.get("mae")), baseline.get("name") or "persistence")
+    render_metric(
+        supporting[2],
+        "Baseline MAE",
+        rl.fmt_number(baseline.get("mae")),
+        baseline.get("name") or "persistence",
+    )
 
     evaluation = rl.evaluation_interval(body)
     if evaluation:
@@ -394,40 +442,14 @@ def render_report(body: Mapping[str, Any]) -> None:
     for warning in body.get("warnings") or []:
         st.warning(str(warning))
 
-    render_configuration(body)
-
-    st.markdown("### Relationship evidence")
-    views = rl.relation_views(body)
-    raw_relations = body.get("relations") or []
-    if not views:
-        st.info("The report contains no candidate relationship rows.")
-    for index, view in enumerate(views):
-        raw = raw_relations[index] if index < len(raw_relations) else {}
-        with st.expander(rl.relation_expander_label(view), expanded=view["selected"] is True):
-            render_relation_detail(view, raw)
-
     with st.expander("Analyst table"):
         st.dataframe(
-            [
-                {
-                    "selected": "—" if view["selected"] is None else ("yes" if view["selected"] else "no"),
-                    "relation": f"{view['source']} → {view['target']}",
-                    "lag": view["lag"],
-                    "transform": view["transform"],
-                    "weight": rl.fmt_signed(view["weight"]),
-                    "score": rl.fmt_number(view["score"]),
-                    "stability": rl.fmt_number(view["stability"]),
-                    "uncertainty": rl.fmt_number(view["uncertainty"]),
-                    "sample support": rl.fmt_number(view["sample_support"]),
-                    "lifecycle": view["lifecycle"]["label"],
-                    "reason": view["reason_code"],
-                    "noise floor (diagnostic)": rl.fmt_number(view["noise_floor"]),
-                }
-                for view in views
-            ],
+            rl.analyst_table_rows(body),
             width="stretch",
             hide_index=True,
         )
+
+    render_configuration(body)
 
     st.download_button(
         "Download Report JSON",

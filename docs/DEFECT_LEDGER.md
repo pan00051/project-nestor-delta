@@ -81,7 +81,7 @@ H / A 的处置是由 M4-B/M4-C 建立用户可读的输入边界，并把短样
 | H-1 | 公开 URL 仍运行旧叙事版本，API `c6afbb5` / web `01a9e6c` 尚未部署 T3 措辞 | H | A | 当前公开页面继续过度声称 relation reliability | 两层部署并按完整 Deploy sequence 验证前不得外发 URL |
 | H-6 | audit 与 analyze 接受集不一致：12 期为 `200 ok_to_analyze` 后又返回 `422 invalid_input`，13 期正常 | H | A | audit 的“可分析”结论失去意义 | 与 W-5 一并在 M4-B/M4-C 以输入边界修复并验收 |
 | H-7 | 422 文案 `trajectory must contain at least one point` 暴露内部实现细节 | H | A | 陌生人无法据此知道应修改样本长度 | 与 H-6 合并，在 M4-B/M4-C 提供所需期数、当前期数与原因 |
-| W-12 | H-5 Analyst table 的列结构已修正，但关闭时没有留下守卫 | W | A | `sample support` 或 diagnostic 排序可静默回退 | 不单独派工；M4-B 修改同一文件时新增断言：`sample support` 在列内，`noise floor (diagnostic)` 位于最右 |
+| W-12 | H-5 Analyst table 的列结构已修正，但关闭时没有留下守卫 | W | A | `sample support` 或 diagnostic 排序可静默回退 | **已关闭**：生产表格 helper 与双控制钉住 `sample support`，且 `noise floor (diagnostic)` 必须最右 |
 | W-13 | G2 豁免标记只在被引用路径之后生效 | W | B | 把 `(historical)` 写在引用之前不会豁免，若约定不明会造成误用 | 规则写入 G2 覆盖范围；机械扩展 M5 后解冻 |
 | H.4 lifecycle | 证据不足时仍输出 `birth`，且现有测试把该行为钉住 | H | A | “新生、有希望”强于现有 stability 证据，构成可见的过度声称 | **已关闭**：Report 新增 `insufficient_evidence`，算法级正、负控制与 selection before/after 通过 |
 | H-8 | `n_min(3)=13` 与冻结 Q6 前滚动负控制 `n=11` 冲突 | H | A | 直接实施会把已接受的 Q6 ground-truth 从 `baseline_only` 改成 422 | M4-B 最小样本量部分已按停止条件暂停；须先裁决输入边界对冻结控制的适用范围 |
@@ -405,7 +405,6 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 | H-1 | H | A | 线上两层仍是旧叙事，公开 URL 禁发 | M4-B 后部署验收 | M4-B 两次版本移动完成后；须完整部署验证 |
 | H-6 | H | A | audit 与 analyze 接受集不一致 | M4-B / M4-C | M4-A accepted 后进入 M4-B |
 | H-7 | H | A | 短样本 422 暴露内部 trajectory 细节 | M4-B / M4-C | M4-A accepted 后进入 M4-B |
-| W-12 | W | A | Analyst table 缺少列结构守卫 | M4-B | 修改同一前端文件时一并落地 |
 | G8 | W | A | 缺少 audit/analyze 一致性回归与 G6 双控制 | M4-B | 与 H-6 修复同批落地 |
 | H-8 | H | A | `n_min=13` 会拒绝冻结的 Q6 `n=11` 前滚动负控制 | M4-B | 输入边界适用范围获负责人裁决后恢复第 2 部分 |
 
@@ -472,3 +471,7 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 - 2026-08-31 M4-B lifecycle 路径 A：新增 `insufficient_evidence` Report 状态并完成契约、mock、
   前端与 ground-truth 扇出；S-GT-1/S-GT-2 selection 不变，版本由
   `s10.sha256.fbcf60d3506d` 移至 `s10.sha256.ab759b2231a4`，H.4 关闭。
+- 2026-08-31 M4-B 呈现层：按已确认顺序落实运行状态、gate 结果、selected/rejected、
+  方向/lag/强度与 gate reasons；headline 下的 gate 解释为 13 词；`baseline_only` 明示为预期行为；
+  `pipeline_version` 与 case/as-of/snapshot hash 同列 P1 context bar。W-12 正控制用内存列漂移触发，
+  负控制在当前表格上通过、假阳性 0/1；桌面与 390px 窄屏均完成视觉检查。
