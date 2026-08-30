@@ -31,6 +31,10 @@ from this file.
   Full frozen verification is required for public claims, milestone acceptance,
   deployment acceptance, and resume/portfolio language, not for every temporary
   debugging pass.
+- Current local task numbering: T0/T1/T2 were M4-A entry conditions; T3 is one
+  M4-B narrative-wording item completed early; T5/T6/T7/T8 are G-1 governance
+  and measurement-foundation work before G0, independent of the M and Q series
+  and not part of the M4-A DoD.
 - Report contract: `delta.report.v1`. M2 added a content-derived
   `pipeline_version`; M3 added `producer` and a `configuration` block that
   publishes the effective gate terms, the rolling-window rule, the diagnostic
@@ -65,6 +69,11 @@ from this file.
   inline `source_revision` check is necessary but insufficient. Never set that
   variable by hand in the Railway dashboard. Use the temporary manual gate
   below until the script is repaired.
+
+> **PUBLIC-SHARING HOLD:** The current public API (`c6afbb5`) and web
+> (`01a9e6c`) predate the T3 narrative correction and still overstate relation
+> reliability. Do not send the public URL externally until both tiers are
+> deployed and verified through the complete sequence below.
 
 ### Deploy sequence
 
@@ -339,15 +348,11 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
 
 ## Next Decision
 
-Direction reset: make Delta's practical value stronger than its narrative
-value. The next implementation decision should choose between:
-
-1. A lightweight invite-gated portfolio access layer.
-2. Personal-analysis/report-history persistence.
-3. Live-data intake for exploratory value discovery, with a frozen-snapshot path
-   before any result becomes public evidence.
-4. M4 demo fidelity work: four-state charts plus the CSV human-acceptance
-   checklist.
+After M4-A is accepted, the next step is G0 validation-foundation work. G0 is
+not accepted in this handoff state. Any pre-existing local experiment runner,
+seed-set, or experiment-test draft is reference material only and must be
+redesigned or explicitly accepted under G0 before it can become repository
+truth.
 
 Do not default to billing, To B / To C positioning, organization workspaces,
 enterprise tenancy, or a complete SaaS account system.
@@ -356,13 +361,14 @@ enterprise tenancy, or a complete SaaS account system.
 `docs/REMEDIATION_Q_V1.md`. Q1 (test dependency declaration) and Q2 (the
 reliability-is-not-veracity wording boundary) are closed with evidence. Q3
 (`capabilities` staleness) is diagnosed as a variable-triggered prior-source
-redeploy race, with script remediation pending; Q4 (`ledger.durable`) is closed.
-Q5 is the invite-gate above, specified small on
-purpose. Q6 is closed with rolling-window boundary ground-truth fixtures on both
-the positive and negative sides, plus explicit `effect.score` scope assertions.
-Q7 is the live-intake frozen-snapshot path, deliberately after M5. Q8 is
-registered for the `train_observations=12` first-rolling-sample failure and is
-not started.
+redeploy race, with script remediation pending; Q3.1 is the deploy-script
+remediation, sequenced after C1/C2/C3 and before M4-C. Q4
+(`ledger.durable`) is closed. Q5 is the invite-gate above, specified small on
+purpose and deliberately after M4/M5. Q6 is closed with rolling-window boundary
+ground-truth fixtures on both the positive and negative sides, plus explicit
+`effect.score` scope assertions. Q7 is the live-intake frozen-snapshot path,
+deliberately after M5. Q8 is registered for the `train_observations=12`
+first-rolling-sample failure and is not started.
 
 ## Resume Checklist
 
@@ -384,6 +390,7 @@ not started.
 
 - Milestone plan and acceptance records: `docs/DEMO_MILESTONES_V1.md`
 - Audited defects and remediation milestones: `docs/REMEDIATION_Q_V1.md`
+- Defect ledger and mechanical guardrails: `docs/DEFECT_LEDGER.md`
 - Insight⇄Delta boundary: `docs/API_BOUNDARY_V1.md`
 - Analysis contract: `docs/WEBSITE_CONTRACT_W0.md`
 - Report contract: `docs/WEBSITE_BACKEND_CONTRACT.md`

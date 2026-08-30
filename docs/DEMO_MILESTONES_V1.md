@@ -22,6 +22,13 @@ This document adds no schema and no API surface. Where it appears to define one,
 win. If only one document is used as the current working reference, it is this one; but M1 is
 not implementable without `API_BOUNDARY_V1.md`.
 
+**Amendment log**
+
+- 2026-08-30 (verification-mechanism correction): M0 no longer claims an automated remote runner
+  because this repository has no workflow configuration. The verification text now records
+  the actual clean-venv install and full-pytest procedure. Historical counts, hashes, and
+  acceptance conclusions are unchanged.
+
 ---
 
 ## 0. The one acceptance boundary that matters
@@ -95,9 +102,17 @@ largest schedule risk in the cycle.
 
 ### How it is verified
 
-Both controls run in CI. Both real cases are executed end to end (fetch → freeze → SHA-256 →
-audit → S1–S10) and their Report JSONs are committed as demo fixtures, so the demo never
-depends on a live run.
+Both controls are run manually from a clean virtual environment:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/pip install -e '.[dev]'
+.venv/bin/python -m pytest -q
+```
+
+Both real cases are executed end to end (fetch → freeze → SHA-256 → audit → S1–S10) and their
+Report JSONs are committed as demo fixtures, so the demo never depends on a live run.
 
 ### Scope guard — the important one
 

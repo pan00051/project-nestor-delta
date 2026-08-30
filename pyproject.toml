@@ -53,7 +53,7 @@ where = ["src"]
 evaluation_protocol = "EVALUATION.md"
 report_schema = "delta.report.v1"
 current_milestone = "S1-S10 and Website W0-W5 complete"
-current_sprint = "Awaiting next-sprint decision"
+current_sprint = "M4-A closure before G0"
 
 [tool.pytest.ini_options]
 # Makes a bare `pytest` collect the complete suite (179). Without them a bare
