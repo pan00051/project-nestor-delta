@@ -25,12 +25,20 @@
 - **H — 卡住不通过：** 可能有问题且可能导致后续故障；写入台账并立即告知，不得自行放行。
 - **A：** `docs/DEMO_MILESTONES_V1.md` §0 Demo DoD 三条的必要条件。
 - **B：** 其他一切，无论多正确。**B 类只登记，不派发工作，直到 M5 完成**；不做逐条例外判断。
+- **H 级不得归入 B 类。** 要么降级为 W，并写明为何在 M5 前不会造成运行时故障；
+  要么提升为 A，并给出明确解冻时刻。
 
 **编号约定。**
 - T0 / T1 / T2 = M4-A 准入条件（工作树、测试收集、`REPRODUCIBILITY.md` 修正）。
 - T3 = M4-B 的一项提前完成（Report narrative 措辞），避免 M4-B 重复做同一件事。
 - T5 / T6 / T7 / T8 / T9 / T10 / T11 = G-1：治理与量具地基，独立于 M 系列与 Q 系列，
   排在后续实现轨道之前，不计入 M4-A 的 DoD。
+
+**M4-A accepted（2026-08-30）。** 负责人正式确认：P0 顺序为运行状态 → 是否通过 gate →
+selected/rejected → 方向/lag/强度 → gate reasons；`ok` 沿用 T3 已落地的 candidate/evidence-gate
+措辞；`baseline_only` 是分析成功且 baseline retained；configuration、snapshot provenance 和版本
+元数据默认 P2，但 `pipeline_version` 提升为 P1 context bar；10 个 view id 是记录范围，M3 四状态
+仍是主验收范围，二者不得互相删减。M4-B 自本确认起成为唯一在制轨道。
 
 **T9 停止记录与 T10 处置 — W-5 保持 H / A。** 2026-08-30 通过正常上传流程实测连续月度 CSV：
 `lag_window=3`、12 期数据先通过 audit（HTTP 200，`ok_to_analyze`），随后 analyze
@@ -52,9 +60,9 @@ H / A 的处置是由 M4-B/M4-C 建立用户可读的输入边界，并把短样
 | ID | 一句话 | 类别 | 级别 | A/B | 防线 | 状态 |
 |---|---|---|---|---|---|---|
 | D1 | 测试全绿可能意味着关键测试根本没被收集 | 量具失效 | H | A | G1 | 已关闭；G1 正、负控制通过 |
-| D2 | 文档把未提交、未经审核的能力当作既成事实 | 文档失真 | H | B | G2 | 部分关闭；G2 正、负控制通过，散文能力声明与未跟踪状态仍靠 review |
+| D2 | 文档把未提交、未经审核的能力当作既成事实 | 文档失真 | W | B | G2 | 部分关闭；残余仅为 review 可能漏掉散文声称，无运行时故障 |
 | D3 | 上屏文案在后端且在版本哈希内，被误判为前端小改 | 归因失效 | H | A | G3 | 已关闭；G3 正、负控制通过 |
-| D4 | 同一句文案存在于四处，改动只准备改一处 | 同步失效 | H | A | G4 | 部分关闭；G4 正、负控制通过，W0 示例与项目副本未机械钉合 |
+| D4 | 同一句文案存在于四处，改动只准备改一处 | 同步失效 | W | A | G4 | 部分关闭；仓库内实现、mock 与 W0 示例已钉合，外部契约副本仍依赖 push 后人工同步 |
 | D5 | 验收指令的形状让未跟踪文件和无关测试静默混入结论 | 验收盲区 | W | B | G5 | 部分关闭；无自动断言，由指令模板承载 |
 | D6 | 防线只验正控制，未验负控制；G2 扩范围后实测假阳性 35/35 | 量具校准失效 | H | A | G6 | 已关闭；G1–G4 均有正、负控制记录 |
 | D7 | 仓库无 CI；防线与 ground-truth 只在人工运行时执行 | 执行盲区 | W | B | G7 | 已登记；M5 后实施 |
@@ -65,7 +73,7 @@ H / A 的处置是由 M4-B/M4-C 建立用户可读的输入边界，并把短样
 |---|---|---|---|---|---|
 | W-1 | M4-A 第 2 条为追认：`ok` 措辞已在 T3 落地，确认发生在实施之后 | W | A | 决策与实施顺序倒置，可能诱发重复实施，但现有措辞正确 | 登记即放行；M4-B 将 T3 标为提前完成，不回滚、不重复 |
 | W-2 | 状态库存 10 vs 4 并存：10 是记录范围，4 是 M3 验收范围，二者不得互相删减 | W | A | 把任一清单误当全集会缩窄现有错误处理或扩大 M3 验收口径 | M4-C 同时保留 10 状态记录与 4 状态验收口径 |
-| W-3 | 项目副本 `claude/mock_reports_v1.json` 仍为 `1 reliable relation · Delta active.`，已与仓库分叉 | W | A | 外部阅读副本继续传播旧叙事 | push 后由负责人同步；届时未同步即升 H |
+| W-3 | 项目副本曾与仓库 narrative 分叉 | W | A | 外部阅读副本曾传播旧叙事 | **已关闭（2026-08-30）**：两份契约副本已同步，过期 mock 项目副本已删除 |
 | W-4 | Q3 部署竞态未修 | W | A | 旧代码可能顶着新 commit 号对外服务 | Q3.1 修复前，每次部署必须执行 `HANDOFF.md` Deploy sequence 的四步人工门槛；漏一次即升 H |
 | W-5 | Q8 短 CSV 路径真实可达，但负责人裁决不修算法；改由输入边界处置 | H | A | audit 放行后 analyze 返回内部 422，阻断陌生人上传路径 | M4-B/M4-C 建立最小样本边界、用户文案与 CSV 验收；Q8 保持登记不做 |
 | W-6 | I.1 过差分与 I.3 lag profile 必须进入 M5 已知限制；Eurostat 对应表述为“尚未被公平测试”，不是“无关” | W | A | 错误表述会把方法限制升级成数据结论 | M5 已知限制清单逐项收录并审阅措辞 |
@@ -76,6 +84,7 @@ H / A 的处置是由 M4-B/M4-C 建立用户可读的输入边界，并把短样
 | W-12 | H-5 Analyst table 的列结构已修正，但关闭时没有留下守卫 | W | A | `sample support` 或 diagnostic 排序可静默回退 | 不单独派工；M4-B 修改同一文件时新增断言：`sample support` 在列内，`noise floor (diagnostic)` 位于最右 |
 | W-13 | G2 豁免标记只在被引用路径之后生效 | W | B | 把 `(historical)` 写在引用之前不会豁免，若约定不明会造成误用 | 规则写入 G2 覆盖范围；机械扩展 M5 后解冻 |
 | H.4 lifecycle | 证据不足时仍输出 `birth`，且现有测试把该行为钉住 | H | A | “新生、有希望”强于现有 stability 证据，构成可见的过度声称 | 负责人采纳路径 A；M4-B 新增 `insufficient_evidence` 并完成算法级验证 |
+| H-8 | `n_min(3)=13` 与冻结 Q6 前滚动负控制 `n=11` 冲突 | H | A | 直接实施会把已接受的 Q6 ground-truth 从 `baseline_only` 改成 422 | M4-B 最小样本量部分已按停止条件暂停；须先裁决输入边界对冻结控制的适用范围 |
 
 **计划中的 G8（本轮不实现）。** audit/analyze 一致性回归测试：对一组构造 CSV 断言
 `audit == ok_to_analyze` 蕴含 `analyze != 422`。随 H-6 修复一并落地，并按 G6 同时补正、负控制。
@@ -270,18 +279,18 @@ M4-A 复核又发现更严重的副本漂移：外部项目文档副本 `claude/
 **G4 防线。**
 1. **钉合断言。** 新增 `tests/test_narrative_parity.py`：断言
    `docs/mock_reports_v1.json` 中每个 headline 等于 `_narrative()` 对相同 outcome 的输出。
-   W0 示例和项目副本仍未被机械钉住，因此本防线只能部分关闭 D4。
+   W0 示例现由同一测试钉住；项目契约副本仍按 K.1 在 push 后人工同步。
 2. **多处事实登记表**（本文件下一节）。任何在两处以上出现的字面量，
    **要么合并为一处，要么加一条断言把它们钉在一起**，并登记在表中。
 3. **项目副本同步是提交清单的一部分**，不是事后想起来的事。
-   对 `mock_reports_v1.json`，建议删除外部项目副本，仓库文件保留唯一权威；
-   对 `WEBSITE_CONTRACT_W0.md` / `API_BOUNDARY_V1.md`，项目副本可保留，但必须在 push 后同步。
+   `mock_reports_v1.json` 的外部项目副本已删除，仓库文件是唯一权威；
+   `WEBSITE_CONTRACT_W0.md` / `API_BOUNDARY_V1.md` 项目副本保留，并已在 T11 push 后同步。
 
 **关闭条件。** 手工把 `mock_reports_v1.json` 的一个 headline 改错，确认 G4-1 变红。
 
-**控制记录。** 正控制：临时改错 `docs/mock_reports_v1.json` 中一个 headline 后，G4 变红。
-负控制：2026-08-30 在未破坏 narrative 的工作树上运行 `tests/test_narrative_parity.py`，
-2 个受钉合 headline 均通过，假阳性 0/2。
+**控制记录。** 正控制：临时改错 `docs/mock_reports_v1.json` 中一个 headline 后，G4 变红；
+M4-B 批次 0 又以 in-memory 漂移证明 W0 示例守卫变红。负控制：2026-08-30 在未破坏 narrative
+的工作树上运行 `tests/test_narrative_parity.py`，实现、mock 与 W0 示例均通过，假阳性 0/3。
 
 ---
 
@@ -291,10 +300,14 @@ M4-A 复核又发现更严重的副本漂移：外部项目文档副本 `claude/
 
 | 事实 | 出现位置 | 钉合机制 | 状态 |
 |---|---|---|---|
-| Report narrative headline 文案 | `adapter.py::_narrative`；`docs/mock_reports_v1.json`；`docs/WEBSITE_CONTRACT_W0.md` §2 示例；两份项目文档副本 | G4-1 钉住仓库内实现与 mock；W0 示例和副本同步仍为人工，列入提交清单 | 部分生效 |
-| evidence gate 阈值 | `src/nestor_delta/evidence_gate.py` 默认值；`adapter.py::EVIDENCE_GATE_CONFIG` | 已有 J.3-4 禁令，**尚无断言**——建议补一条相等性断言 | 待实现 |
+| Report narrative headline 文案 | `adapter.py::_narrative`；`docs/mock_reports_v1.json`；`docs/WEBSITE_CONTRACT_W0.md` §2 示例；不再存在独立项目 fixture 副本 | G4-1 钉住仓库内实现、mock 与 W0；契约副本按 K.1 人工同步 | 生效中 |
+| evidence gate 阈值 | `src/nestor_delta/evidence_gate.py` 默认值；`adapter.py::EVIDENCE_GATE_CONFIG` | `tests/test_evidence_gate_config.py` 逐项比较四个默认值；只读，不改阈值 | 生效中 |
 | W0 契约 | `docs/WEBSITE_CONTRACT_W0.md`；项目文档副本 | 人工逐字节同步（K.1）；同步动作必须列入 push 后清单 | 生效中 |
 | API 契约 | `docs/API_BOUNDARY_V1.md`；项目文档副本 | 人工逐字节同步（K.1）；同步动作必须列入 push 后清单 | 生效中 |
+
+**Evidence Gate 配置控制记录。** 正控制：向内存副本注入错误的 `min_stability`，一致性守卫拒绝；
+负控制：读取当前 core 默认值与 adapter 配置，四项逐一相等，假阳性 0/1。整个控制过程未修改
+`src/nestor_delta/evidence_gate.py` 或 `EVIDENCE_GATE_CONFIG` 的任何取值。
 
 ---
 
@@ -377,10 +390,7 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 
 | 项目 | 级别 | A/B | 未决内容 | 归属里程碑 | 解冻时刻 |
 |---|---|---|---|---|---|
-| M4-A 五条口径 | W | A | P0 顺序、`ok` 措辞、`baseline_only` 文案、configuration 层级、状态库存待负责人确认 | M4-A | 负责人确认后即 accepted |
-| W-1 | W | A | T3 先实施、M4-A 后追认；不得回滚或在 M4-B 重复实施 | M4-A / M4-B | M4-A 确认时登记完成 |
 | W-2 | W | A | 10 状态记录范围与 4 状态 M3 验收范围必须并存 | M4-C | M4-B 完成后进入 M4-C 时 |
-| W-3 | W | A | 外部 mock 副本已分叉；W0 / API Contract 项目副本也须按 K.1 同步 | push 后副本处置 | T11 push 后由负责人删除 mock 副本并同步两份契约；未完成则升 H |
 | W-4 | W | A | Q3 部署竞态仍需人工 Deploy sequence 门槛 | 每次部署验收 | Q3.1 实施前持续生效 |
 | W-5 | H | A | Q8 算法不修；短样本必须在输入边界被诚实拒绝 | M4-B / M4-C | M4-A accepted 后进入 M4-B |
 | W-6 | W | A | I.1 / I.3 限制必须进入对外已知限制，不能升级成数据结论 | M5 | M5 已知限制整理时 |
@@ -390,17 +400,16 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 | H.4 lifecycle | H | A | 证据不足仍标 `birth`，且被测试固定；路径 A 已裁决 | M4-B | M4-A accepted 后进入 M4-B |
 | W-12 | W | A | Analyst table 缺少列结构守卫 | M4-B | 修改同一前端文件时一并落地 |
 | G8 | W | A | 缺少 audit/analyze 一致性回归与 G6 双控制 | M4-B | 与 H-6 修复同批落地 |
+| H-8 | H | A | `n_min=13` 会拒绝冻结的 Q6 `n=11` 前滚动负控制 | M4-B | 输入边界适用范围获负责人裁决后恢复第 2 部分 |
 
 ### B 类：统一冻结
 
 | 项目 | 级别 | A/B | 未决内容 | 归属里程碑 | 解冻时刻 |
 |---|---|---|---|---|---|
-| D2 / G2 残余 | H | B | 散文能力声明与“未跟踪但存在”的路径仍只能靠 review 识别 | 治理 backlog | M5 完成后 |
-| D4 / G4-1 W0 示例 | H | B | W0 narrative 示例尚未被 parity 断言机械钉合 | 治理 backlog | M5 完成后 |
+| D2 / G2 残余 | W | B | 散文能力声明与“未跟踪但存在”的路径仍只能靠 review 识别；无运行时故障 | 治理 backlog | M5 完成后 |
 | D5 / G5 | W | B | 指令形状规则没有自动断言 | 治理 backlog | M5 完成后 |
 | D7 / G7 / W-7 | W | B | 仓库没有 CI 自动执行载体 | G7 | M5 完成后 |
 | W-13 | W | B | G2 的“标记必须在引用之后”仅有文档约定 | G2 backlog | M5 完成后 |
-| evidence-gate 配置钉合 | H | B | 默认阈值与 adapter 配置之间尚无相等性断言 | 治理 backlog | M5 完成后；不得借此修改阈值 |
 | G0 | W | B | 验证地基及隔离草稿的重新设计/验收 | G0 | M5 完成后；作废种子不得复用 |
 | 参数化生成器 | W | B | 机制参数化的数据生成能力尚未立项 | 后置 backlog | M5 完成后 |
 | C1 | W | B | 算法实现轨道冻结 | C1 | M5 完成后 |
@@ -414,9 +423,9 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 | I.1 | W | B | 过差分诊断实现；M5 前只保留 W-6 的诚实限制声明 | 后置算法 backlog | M5 完成后 |
 | I.3 | W | B | lag profile 第三轴实现；M5 前只保留 W-6 的诚实限制声明 | 后置算法 backlog | M5 完成后 |
 
-**无阻碍核验。** 当前不存在 H 级且无归属的事项；上表每个 H 都有里程碑、临时门槛或统一的
-M5 后解冻规则。M4-B 没有未解除的技术前置阻碍。唯一前置动作是负责人确认 M4-A 五条口径；
-这是产品裁决，不是技术阻碍，确认后即可进入 M4-B。
+**阻碍核验。** 当前不存在 H 级且无归属的事项。M4-A 已 accepted，M4-B 已启动；但最小样本量
+部分存在一个已归属的技术阻碍 H-8：冻结 Q6 `n=11` 控制不满足 `n_min(3)=13`。依照独立停止条件，
+只暂停 H-6 / H-7 / W-5 / G8 这一部分，不修改 fixture、不加豁免；lifecycle 与呈现层继续。
 
 ---
 
@@ -425,7 +434,7 @@ M5 后解冻规则。M4-B 没有未解除的技术前置阻碍。唯一前置动
 | 日期 | commit | bare `pytest` 收集数 | 备注 |
 |---|---|---|---|
 | 2026-08-29 | `1ff9863` | 189 | Q6 rolling negative control 之后 |
-| 2026-08-30 | T11 G-1 closure HEAD (`Close G-1 governance foundation`) | 195 | 正式基线；工作树无未跟踪测试，push 后以远端 `main` 指针核对该提交 |
+| 2026-08-30 | `6eb4c3f` | 195 | T11 G-1 closure；正式基线，工作树无未跟踪测试 |
 
 新增测试时同步更新本表；**G1-3 只读本表，不在测试里硬编码第二份数字。**
 
@@ -447,3 +456,7 @@ M5 后解冻规则。M4-B 没有未解除的技术前置阻碍。唯一前置动
 - 2026-08-30 T11 收官：登记 W-12、W-13 与 H.4 lifecycle 测试固定事实；负责人裁决 lifecycle
   路径 A 和 `n_min(L) = max(L+9, 2L+7)`；收敛 D1–D6 状态、正式冻结 195 计数基线并建立
   完整未决库存。G-1 关闭；本轮没有直接推进 Demo DoD 三条，因此按收敛规则属于 B 类治理工作。
+- 2026-08-30 M4-A accepted / M4-B 批次 0：负责人确认五条产品口径；关闭 W-3；新增 H 不得归 B
+  的规则；D2 残余降为 W/B；以只读断言钉住 Evidence Gate 四项配置与 W0 narrative 示例。
+  最小样本量预检发现冻结 Q6 `s_gt_6_pre_rolling_negative` 为 `n=11`，低于
+  `n_min(3)=13`，登记 H-8 并按部分停止条件暂停该实现。

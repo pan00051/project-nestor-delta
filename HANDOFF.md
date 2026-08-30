@@ -22,8 +22,8 @@ from this file.
 - Branch `main`. M3 acceptance facts below describe `ad77fd3`; the current
   source revision includes the documentation and reproducibility-metadata
   correction recorded in `docs/DEMO_MILESTONES_V1.md` Appendix K.
-- Milestones M0-M3 accepted. M4-A awaits five product-owner confirmations;
-  G-1 is closed, and M4-B has not started (see "Next Decision").
+- Milestones M0-M3 and M4-A are accepted. G-1 is closed, and M4-B is the
+  single active track (see "Next Decision").
 - Analysis pipeline S1-S10: complete and independently reviewed.
 - Website W0-W5: complete.
 - Product direction: non-commercial portfolio and personal-analysis system.
@@ -357,14 +357,26 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
 
 ## Next Decision
 
-M4-A is waiting for the product owner to confirm five positions: P0 answer
-order, `ok` wording, `baseline_only` wording, configuration hierarchy, and the
-state inventory. Once confirmed, M4-A is accepted and the single active track
-moves to M4-B. G-1 is closed. G0, the C series, and V1 are B-class work and
-remain frozen until M5 is complete.
+M4-A was accepted on 2026-08-30 after the product owner confirmed all five
+positions: P0 answer order; `ok` and `baseline_only` wording; P2-by-default
+configuration/provenance with `pipeline_version` promoted to the P1 context
+bar; and the distinction between 10 recorded view IDs and the four M3
+acceptance states. M4-B is now active. G0, the C series, and V1 are B-class
+work and remain frozen until M5 is complete.
+
+M4-B's minimum-sample section is paused under its own stop condition. The
+frozen `s_gt_6_pre_rolling_negative` control has `n=11` and `lag_window=3`,
+while the approved formula yields `n_min(3)=13`; applying the boundary as
+written would turn an accepted Q6 `baseline_only` control into a 422. Do not
+change that fixture or add an exemption. Lifecycle and presentation work are
+independent and continue while the boundary's scope awaits owner resolution.
 
 ### M4-B scope
 
+0. **Contract guardrails.** Keep the four `EVIDENCE_GATE_CONFIG` values equal
+   to the core Evidence Gate defaults with a read-only assertion, and pin the
+   W0 headline example to adapter narrative output. Neither guard may alter a
+   gate value or move `pipeline_version`.
 1. **Lifecycle path A — backend-owned insufficient evidence.** Add an
    `insufficient_evidence` lifecycle state. The required fan-out is
    `src/nestor_delta/temporal_stability.py`,
@@ -380,7 +392,7 @@ remain frozen until M5 is complete.
    change: validate S-GT-1 and S-GT-2 moving in the intended direction under
    the M0 rule and record before/after. It gets its own commit and its own
    `pipeline_version` move.
-2. **Minimum sample boundary — H-6 / H-7 / W-5.** Implement
+2. **Minimum sample boundary — H-6 / H-7 / W-5; paused by H-8.** Implement
    `n_min(L) = max(L+9, 2L+7)` in `_audit_blocks()`, with `L = lag_window`, so
    `audit == ok_to_analyze` implies analyze does not return 422 for this
    short-sample path. Put the formula and derivation in code comments and governing
