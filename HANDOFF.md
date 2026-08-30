@@ -1,5 +1,9 @@
 # HANDOFF · Nestor Delta
 
+> **Single endpoint definition:** `docs/DEMO_MILESTONES_V1.md` §0 Demo DoD is
+> the only project-wide definition of done. Read it before choosing or accepting
+> any work; this handoff references that definition and does not duplicate it.
+
 This file is the short operational handoff. Stable scope belongs in
 `BLUEPRINT.md`; frozen S7-S10 acceptance rules belong in `S7-S10的规则.md`;
 implementation details belong in code, tests, and `docs/`.
@@ -18,8 +22,8 @@ from this file.
 - Branch `main`. M3 acceptance facts below describe `ad77fd3`; the current
   source revision includes the documentation and reproducibility-metadata
   correction recorded in `docs/DEMO_MILESTONES_V1.md` Appendix K.
-- Milestones M0-M3 accepted. M3.5 and M4 are not started; the milestone
-  revision itself is under review (see "Next Decision").
+- Milestones M0-M3 accepted. M4-A awaits five product-owner confirmations;
+  G-1 is closed, and M4-B has not started (see "Next Decision").
 - Analysis pipeline S1-S10: complete and independently reviewed.
 - Website W0-W5: complete.
 - Product direction: non-commercial portfolio and personal-analysis system.
@@ -32,17 +36,18 @@ from this file.
   deployment acceptance, and resume/portfolio language, not for every temporary
   debugging pass.
 - Current local task numbering: T0/T1/T2 were M4-A entry conditions; T3 is one
-  M4-B narrative-wording item completed early; T5/T6/T7/T8 are G-1 governance
-  and measurement-foundation work before G0, independent of the M and Q series
-  and not part of the M4-A DoD.
+  M4-B narrative-wording item completed early; T5 through T11 are G-1
+  governance and measurement-foundation work, independent of the M and Q
+  series and not part of the M4-A DoD. G-1 is now closed.
 - Report contract: `delta.report.v1`. M2 added a content-derived
   `pipeline_version`; M3 added `producer` and a `configuration` block that
   publishes the effective gate terms, the rolling-window rule, the diagnostic
   role of the noise floor, and the transform/sample inputs.
 - `pipeline_version` is a SHA-256 over `versioning.py`, `adapter.py`, and every
   module under `src/nestor_delta/`, rendered `s10.sha256.<12 hex>`. It is never
-  hand-written. Current value: `s10.sha256.3665b88553ad` (was
-  `s10.sha256.77f014d78885` before the reproducibility-metadata correction; no
+  hand-written. Current value: `s10.sha256.fbcf60d3506d` (was
+  `s10.sha256.3665b88553ad` before the T3 Report narrative correction and
+  `_narrative()` hash-scope comment; no algorithm, threshold, or numeric
   calculation changed).
 - **What that field covers, and what it does not.** It identifies the
   implementation that produced a Report. It moves for any change to the hashed
@@ -73,7 +78,9 @@ from this file.
 > **PUBLIC-SHARING HOLD:** The current public API (`c6afbb5`) and web
 > (`01a9e6c`) predate the T3 narrative correction and still overstate relation
 > reliability. Do not send the public URL externally until both tiers are
-> deployed and verified through the complete sequence below.
+> deployed and verified through the complete sequence below. The public URL
+> must also remain private until M4-B's two version moves are complete and the
+> resulting API and web builds have both been deployed and verified.
 
 ### Deploy sequence
 
@@ -312,11 +319,13 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
    the next production source deploy, repair the script so the variable update
    cannot deploy prior source, then add an acceptance check for that ordering.
    Evidence: `docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md`.
-2. Q8 is registered but not remediated: with
-   `lag_window=3` and `train_observations=12`, the adapter enters the rolling
-   branch but produces no trajectory point, so report construction returns a
-   validation error. This is outside Q6/Q6.1's fixture/test-only scope and should
-   be triaged separately before relying on very short uploads.
+2. Q8 is registered but not remediated: with `lag_window=3` and
+   `train_observations=12`, the adapter enters the rolling branch but produces
+   no trajectory point, so report construction returns a validation error.
+   The owner has ruled out an exception to repair that B-class algorithm defect.
+   M4-B instead enforces the mechanism-derived audit boundary
+   `n_min(L) = max(L+9, 2L+7)` and a user-readable 422; M4-C verifies the
+   short-CSV experience. The Q8 algorithm repair stays frozen until after M5.
 
 ## Non-Negotiable Boundaries
 
@@ -348,11 +357,43 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
 
 ## Next Decision
 
-After M4-A is accepted, the next step is G0 validation-foundation work. G0 is
-not accepted in this handoff state. Any pre-existing local experiment runner,
-seed-set, or experiment-test draft is reference material only and must be
-redesigned or explicitly accepted under G0 before it can become repository
-truth.
+M4-A is waiting for the product owner to confirm five positions: P0 answer
+order, `ok` wording, `baseline_only` wording, configuration hierarchy, and the
+state inventory. Once confirmed, M4-A is accepted and the single active track
+moves to M4-B. G-1 is closed. G0, the C series, and V1 are B-class work and
+remain frozen until M5 is complete.
+
+### M4-B scope
+
+1. **Lifecycle path A — backend-owned insufficient evidence.** Add an
+   `insufficient_evidence` lifecycle state. The required fan-out is
+   `src/nestor_delta/temporal_stability.py`,
+   `src/nestor_delta_service/adapter.py`,
+   `docs/WEBSITE_CONTRACT_W0.md`,
+   `docs/WEBSITE_BACKEND_CONTRACT.md`,
+   `docs/M3_VISUAL_AUDIT_SPEC.md`,
+   `docs/mock_reports_v1.json`, frontend `_LIFECYCLE` in
+   `src/nestor_delta_web/render_logic.py`, `tests/test_s9_lifecycle.py`, the
+   `ALIVE` set in `tests/ground_truth/test_drift_ground_truth.py`, the five-state
+   enumeration in `tests/test_website_frontend.py`, and
+   `tests/ground_truth/fixtures/stability_ceiling.json`. This is an algorithm
+   change: validate S-GT-1 and S-GT-2 moving in the intended direction under
+   the M0 rule and record before/after. It gets its own commit and its own
+   `pipeline_version` move.
+2. **Minimum sample boundary — H-6 / H-7 / W-5.** Implement
+   `n_min(L) = max(L+9, 2L+7)` in `_audit_blocks()`, with `L = lag_window`, so
+   `audit == ok_to_analyze` implies analyze does not return 422 for this
+   short-sample path. Put the formula and derivation in code comments and governing
+   documentation, and return a readable 422 stating required periods, current
+   periods, and why. This also gets its own commit and its own
+   `pipeline_version` move.
+3. **P0 answer order.** Implement the confirmed hierarchy and place one
+   evidence-gate explanation of at most 15 words immediately below the headline.
+4. **W-12 Analyst table guard.** Assert that `sample support` is present and
+   `noise floor (diagnostic)` is the rightmost column.
+5. **G8 audit/analyze consistency.** Cover `n = 11 / 12 / 13 / 14` and assert
+   `audit == ok_to_analyze` implies `analyze != 422`; record both positive and
+   negative controls under G6.
 
 Do not default to billing, To B / To C positioning, organization workspaces,
 enterprise tenancy, or a complete SaaS account system.
@@ -361,14 +402,13 @@ enterprise tenancy, or a complete SaaS account system.
 `docs/REMEDIATION_Q_V1.md`. Q1 (test dependency declaration) and Q2 (the
 reliability-is-not-veracity wording boundary) are closed with evidence. Q3
 (`capabilities` staleness) is diagnosed as a variable-triggered prior-source
-redeploy race, with script remediation pending; Q3.1 is the deploy-script
-remediation, sequenced after C1/C2/C3 and before M4-C. Q4
-(`ledger.durable`) is closed. Q5 is the invite-gate above, specified small on
-purpose and deliberately after M4/M5. Q6 is closed with rolling-window boundary
+redeploy race, with the temporary manual deployment gate above. Q4
+(`ledger.durable`) is closed. Q6 is closed with rolling-window boundary
 ground-truth fixtures on both the positive and negative sides, plus explicit
-`effect.score` scope assertions. Q7 is the live-intake frozen-snapshot path,
-deliberately after M5. Q8 is registered for the `train_observations=12`
-first-rolling-sample failure and is not started.
+`effect.score` scope assertions. Q3.1, Q5, Q7, and the Q8 algorithm repair are
+B-class work, remain registered, and do not thaw until M5 is complete. M4-B
+addresses Q8's Demo-facing risk only through the independently justified input
+boundary; it does not repair Q8's rolling algorithm.
 
 ## Resume Checklist
 
