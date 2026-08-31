@@ -76,11 +76,11 @@ H / A 的当时处置是由 M4-B/M4-C 建立用户可读的输入边界，并把
 | W-1 | M4-A 第 2 条为追认：`ok` 措辞已在 T3 落地，确认发生在实施之后 | W | A | 决策与实施顺序倒置，可能诱发重复实施，但现有措辞正确 | 登记即放行；M4-B 将 T3 标为提前完成，不回滚、不重复 |
 | W-2 | 状态库存 10 vs 4 并存：10 是记录范围，4 是 M3 验收范围，二者不得互相删减 | W | A | 把任一清单误当全集会缩窄现有错误处理或扩大 M3 验收口径 | M4-C 同时保留 10 状态记录与 4 状态验收口径 |
 | W-3 | 项目副本曾与仓库 narrative 分叉 | W | A | 外部阅读副本曾传播旧叙事 | **已关闭（2026-08-30）**：两份契约副本已同步，过期 mock 项目副本已删除 |
-| W-4 | Q3 部署竞态未修 | W | A | 旧代码可能顶着新 commit 号对外服务 | Q3.1 修复前，每次部署必须执行 `HANDOFF.md` Deploy sequence 的四步人工门槛；漏一次即升 H |
+| W-4 | Q3 部署竞态未修 | W | A | 旧代码可能顶着新 commit 号对外服务 | **人工门槛生效中**：T14 已完整执行并通过；Q3.1 修复前每次部署仍须重复，漏一次即升 H |
 | W-5 | Q8 短 CSV 路径真实可达；T13 将最小滚动进入条件提为 A 类 | H | A | audit 放行后 analyze 曾返回内部 422，阻断陌生人上传路径 | **已关闭（2026-08-31）**：夹缝退回合法非滚动结果并发布 `stability_not_evaluated` warning；其余 Q8 仍为 B 类 |
 | W-6 | I.1 过差分与 I.3 lag profile 必须进入 M5 已知限制；Eurostat 对应表述为“尚未被公平测试”，不是“无关” | W | A | 错误表述会把方法限制升级成数据结论 | M5 已知限制清单逐项收录并审阅措辞 |
 | W-7 | D7：无 CI，四条防线与 26 条 ground-truth 只在有人手动运行时执行 | W | B | 自动防线没有自动执行载体 | M5 完成后实施 G7；此前 B 类不派发 |
-| H-1 | 公开 URL 仍运行旧叙事版本，API `c6afbb5` / web `01a9e6c` 尚未部署 T3 措辞 | H | A | 当前公开页面继续过度声称 relation reliability | 两层部署并按完整 Deploy sequence 验证前不得外发 URL |
+| H-1 | 公开 URL 曾运行旧叙事版本，API `c6afbb5` / web `01a9e6c` 未包含 T3/M4-B 修正 | H | A | 页面曾过度声称 relation reliability | **已关闭（2026-08-31）**：两层均部署 `096262e08c79` 并通过完整 Deploy sequence 与行为探针；公开 URL 可外发 |
 | H-6 | audit 与 analyze 接受集曾不一致：12 期为 `200 ok_to_analyze` 后又返回 `422 invalid_input` | H | A | audit 的“可分析”结论失去意义 | **已关闭（2026-08-31）**：G8 覆盖两组 lag 的夹缝与边界，audit 放行后 analyze 不再返回 422 |
 | H-7 | 422 文案 `trajectory must contain at least one point` 曾暴露内部实现细节 | H | A | 陌生人无法据此知道应修改样本长度 | **已关闭（2026-08-31）**：对应合法短样本不再产生该 422；Report 改为可读稳定性未评估 warning |
 | W-12 | H-5 Analyst table 的列结构已修正，但关闭时没有留下守卫 | W | A | `sample support` 或 diagnostic 排序可静默回退 | **已关闭**：生产表格 helper 与双控制钉住 `sample support`，且 `noise floor (diagnostic)` 必须最右 |
@@ -131,6 +131,29 @@ Evidence Gate 配置守卫、W0 narrative parity 均闭合；原“最小样本�
 `baseline_only` 正面陈述、P1 `pipeline_version` context bar 与 W-12 守卫均完成。
 W-16 记录 Q6 冻结控制新增 warning 的加法变化，原 selection/branch 断言仍有效，新增 warning
 由 G8 单独钉住。接受基线为 214 tests、`pipeline_version=s10.sha256.7fed154a44bf`。
+
+### T14 部署记录与 H-1 关闭（2026-08-31）
+
+部署前线上基线为 API `source_revision=c6afbb581ff7`、web
+`source_revision=01a9e6ca2637`、`pipeline_version=s10.sha256.3665b88553ad`。
+仅通过 `scripts/deploy-railway.sh` 按 API 后 web 的顺序部署，未在 Railway 面板手工设置
+`NESTOR_BUILD_SHA`。
+
+- API：源码上传 deployment `16b7f6f1-72de-4fa4-9d26-fc2ac7c8246f` 为最新活跃
+  `SUCCESS / reason:deploy`；变量触发 deployment
+  `320c1194-7d30-41dc-855d-88e24e38149c` 为 `REMOVED / reason:redeploy`。
+- Web：源码上传 deployment `fb2c75f4-ae77-4186-bed2-c4fe807bff38` 为最新活跃
+  `SUCCESS / reason:deploy`；变量触发 deployment
+  `bdf2f8a1-06b1-4b27-ba80-ebdf8baa6f2f` 为 `REMOVED / reason:redeploy`。
+- 两层均呈现 `source_revision=096262e08c79`；API capabilities 呈现
+  `pipeline_version=s10.sha256.7fed154a44bf`。12 期 API 探针返回 HTTP 200、
+  `baseline_only` 与 `stability_not_evaluated`，未出现旧的空 trajectory 422。
+- 部署页面真实呈现 `ok`、`baseline_only`、`422 validation_error` 与 nullable stability；
+  P1 context bar 显示 pipeline，低 stability 关系显示 `Insufficient evidence`，12 期 warning
+  可见，headline 不含 `reliable relation`。
+
+因此 H-1 关闭，公开 URL 自此可以对外发送。W-4 未关闭：上述四步人工门槛在 Q3.1
+实施前仍是每次部署的必做项。
 
 ### H.4 / lifecycle 事实补记
 
@@ -438,7 +461,6 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 | W-2 | W | A | 10 状态记录范围与 4 状态 M3 验收范围必须并存 | M4-C | M4-B 完成后进入 M4-C 时 |
 | W-4 | W | A | Q3 部署竞态仍需人工 Deploy sequence 门槛 | 每次部署验收 | Q3.1 实施前持续生效 |
 | W-6 | W | A | I.1 / I.3 限制必须进入对外已知限制，不能升级成数据结论 | M5 | M5 已知限制整理时 |
-| H-1 | H | A | 线上两层仍是旧叙事，公开 URL 禁发 | M4-B 后部署验收 | M4-B 两次版本移动完成后；须完整部署验证 |
 | W-15 | W | A | warning 已区分 stability 未评估，但短 CSV 的完整文案与视觉层级尚未人工验收 | M4-C | M4-C CSV 八项验收时 |
 
 ### B 类：统一冻结

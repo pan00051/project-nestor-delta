@@ -23,7 +23,7 @@ from this file.
   source revision includes the documentation and reproducibility-metadata
   correction recorded in `docs/DEMO_MILESTONES_V1.md` Appendix K.
 - Milestones M0-M3, M4-A, and M4-B are accepted. G-1 is closed. T14 deployment
-  verification is the active release task; M4-C follows only after it passes.
+  verification passed on 2026-08-31; M4-C is the active next decision.
 - Analysis pipeline S1-S10: complete and independently reviewed.
 - Website W0-W5: complete.
 - Product direction: non-commercial portfolio and personal-analysis system.
@@ -77,13 +77,11 @@ from this file.
   variable by hand in the Railway dashboard. Use the temporary manual gate
   below until the script is repaired.
 
-> **PUBLIC-SHARING HOLD:** The current public API (`c6afbb5`) and web
-> (`01a9e6c`) predate the T3 narrative correction and still overstate relation
-> reliability. Do not send the public URL externally until both tiers are
-> deployed and verified through the complete sequence below. The public URL
-> M4-B's two version moves are now complete locally, but the public URL must
-> remain private until the resulting API and web builds have both been deployed
-> and verified.
+> **PUBLIC-SHARING RELEASED (2026-08-31):** API and web both run source revision
+> `096262e08c79`, the API reports `pipeline_version=s10.sha256.7fed154a44bf`,
+> and T14 passed the complete deployment sequence plus release-specific behavior
+> probes. H-1 is closed and the public URL may be shared externally. Future
+> deployments must still repeat the sequence below until Q3.1 is implemented.
 
 ### Deploy sequence
 
@@ -167,10 +165,14 @@ implemented. See `docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md`.
 
 ### Last recorded acceptance
 
-Current deployed API source revision `c6afbb581ff7`: **182 passed** locally.
-API `/health` and `/api/v1/capabilities` report that revision with
-`Cache-Control: no-store`. The web remains on `01a9e6ca2637` because no web
-source changed in the intervening commits.
+T14 deployed source revision `096262e08c79` to both API and web. The deployed
+API reports `pipeline_version=s10.sha256.7fed154a44bf`; the local suite is
+**214 passed**. The API release probe returned `200 baseline_only` plus
+`stability_not_evaluated` for a 12-observation, `lag_window=3` upload. The web
+rendered the new evidence-gate headline, P1 pipeline context, `ok`,
+`baseline_only`, `validation_error`, nullable stability, and the warning. The
+deployment IDs and Q3-race gate evidence are recorded in
+`docs/DEFECT_LEDGER.md` under the T14 deployment record.
 
 **Q6 local acceptance, 2026-08-29.** Added three ground-truth boundary fixtures:
 `s_gt_6_pre_rolling_negative` (`train_observations=11`, no rolling,
@@ -360,12 +362,9 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
 
 ## Next Decision
 
-M4-A was accepted on 2026-08-30 after the product owner confirmed all five
-positions: P0 answer order; `ok` and `baseline_only` wording; P2-by-default
-configuration/provenance with `pipeline_version` promoted to the P1 context
-bar; and the distinction between 10 recorded view IDs and the four M3
-acceptance states. M4-B is now active. G0, the C series, and V1 are B-class
-work and remain frozen until M5 is complete.
+**M4-C: 8-item CSV manual acceptance, executed by the product owner; see T15.**
+M4-A and M4-B are accepted, and T14 deployment verification passed. G0, the C
+series, and V1 are B-class work and remain frozen until M5 is complete.
 
 M4-B was accepted in T14 after a complete kickoff-instruction self-check. T13 resolved H-8 by moving
 `max(L+9, 2L+7)` from a rejected-input boundary to the rolling-lifecycle entry
