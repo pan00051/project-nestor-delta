@@ -332,7 +332,7 @@ def _upload_input(csv_base64: str, payload: Mapping[str, Any]) -> AnalysisInput:
         )
     date_column = str(payload.get("date_column") or "date")
     try:
-        decoded = base64.b64decode(csv_base64, validate=True).decode("utf-8")
+        decoded = base64.b64decode(csv_base64, validate=True).decode("utf-8-sig")
     except Exception as exc:
         raise validation_error(
             "invalid_csv_base64",

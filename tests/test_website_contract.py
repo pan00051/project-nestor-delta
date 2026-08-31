@@ -12,7 +12,7 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from nestor_delta_service.adapter import analyze_payload, audit_payload  # noqa: E402
+from nestor_delta_service.adapter import analyze_payload, audit_payload, snapshot_payload  # noqa: E402
 from nestor_delta_service.errors import SCHEMA_VERSION  # noqa: E402
 
 
@@ -254,6 +254,33 @@ class WebsiteContractTests(unittest.TestCase):
         for signal in audit_report["data_audit"]["signals"]:
             self.assertEqual(signal["unit"], "unknown")
             self.assertEqual(signal["seasonal_adjustment"], "unknown")
+
+    def test_upload_accepts_utf8_bom_on_csv_intake(self) -> None:
+        rows = ["date,target,source"]
+        for index in range(14):
+            month = index + 1
+            year = 2020 + (month - 1) // 12
+            month_of_year = (month - 1) % 12 + 1
+            rows.append(f"{year:04d}-{month_of_year:02d},{index + 1}.0,{index + 2}.0")
+        csv_text = "\n".join(rows)
+
+        payload = {
+            "csv_base64": base64.b64encode(
+                csv_text.encode("utf-8-sig")
+            ).decode("ascii"),
+            "target": "target",
+            "candidate_signals": ["source"],
+            "transform_declarations": {"target": "diff", "source": "diff"},
+            "train_end": "2020-12",
+            "lag_window": 1,
+        }
+
+        status, report = audit_payload(payload)
+        snapshot_status, snapshot_report = snapshot_payload(payload)
+
+        self.assertEqual(status, 200)
+        self.assertEqual(snapshot_status, 200)
+        self.assertEqual(snapshot_report["columns"][0], "date")
 
     def test_fastapi_module_imports_without_fastapi_dependency(self) -> None:
         import nestor_delta_service.app as app_module
