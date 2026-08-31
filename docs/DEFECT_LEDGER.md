@@ -87,6 +87,7 @@ H / A 的当时处置是由 M4-B/M4-C 建立用户可读的输入边界，并把
 | W-13 | G2 豁免标记只在被引用路径之后生效 | W | B | 把 `(historical)` 写在引用之前不会豁免，若约定不明会造成误用 | 规则写入 G2 覆盖范围；机械扩展 M5 后解冻 |
 | W-14 | lifecycle 算法改动的 S-GT before/after 只报 selection 状态，未报数值 | W | A | 状态相同仍可能掩盖数值漂移，算法验收归因不完整 | **已关闭（2026-08-31）**：T13 补报 S-GT-1 `effect.score` 与双方 `selected_count` 数值，并扩充 G6 规则 |
 | W-15 | `baseline_only` 可能混淆“没有关系通过门槛”与“样本太短、未评估 stability” | W | A | 用户可能把未执行的稳定性检查误读为完整证据拒绝 | **部分关闭**：Report warning 显式说明 stability 未评估；M4-C CSV 验收检查完整区分与视觉层级 |
+| W-16 | 冻结 Q6 `n=11` 负控制的 Report 新增 `stability_not_evaluated` warning | W | A | selection 未变，但冻结控制的可见输出发生加法变化 | **已登记并接受（2026-08-31）**：Q6 原断言仍钉住 `baseline_only`、零选择、无 effective window/trajectory；G8 `L=3,n=11` 另行钉住新增 warning |
 | H.4 lifecycle | 证据不足时仍输出 `birth`，且现有测试把该行为钉住 | H | A | “新生、有希望”强于现有 stability 证据，构成可见的过度声称 | **已关闭**：Report 新增 `insufficient_evidence`，算法级正、负控制与 selection before/after 通过 |
 | H-8 | `n_min(3)=13` 与冻结 Q6 前滚动负控制 `n=11` 冲突 | H | A | 把公式用作输入拒绝会破坏已接受的合法非滚动区间 | **已关闭（2026-08-31）**：公式改作滚动进入条件；`n=11/12` 均合法非滚动，fixture 未修改 |
 
@@ -121,6 +122,15 @@ S-GT-2 `selected_count` 为 `0 -> 0`（其 top relation `effect.score` 同为
 `0.11987106578827578 -> 0.11987106578827578`）。selection 无变化。
 `pipeline_version` 单次移动：`s10.sha256.ab759b2231a4 -> s10.sha256.7fed154a44bf`，
 实现提交 `70e858f`。
+
+### M4-B accepted（2026-08-31）
+
+T14 逐项对照 M4-B 启动指令后接受本阶段：批次 0 的计数 SHA、W-3、H/B 规则与三项重分类、
+Evidence Gate 配置守卫、W0 narrative parity 均闭合；原“最小样本输入拒绝”版本移动由 T13
+滚动进入条件方案正式取代；lifecycle 路径 A 独立完成；P0 顺序、13 词 gate 解释、
+`baseline_only` 正面陈述、P1 `pipeline_version` context bar 与 W-12 守卫均完成。
+W-16 记录 Q6 冻结控制新增 warning 的加法变化，原 selection/branch 断言仍有效，新增 warning
+由 G8 单独钉住。接受基线为 214 tests、`pipeline_version=s10.sha256.7fed154a44bf`。
 
 ### H.4 / lifecycle 事实补记
 
@@ -452,8 +462,8 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 | I.1 | W | B | 过差分诊断实现；M5 前只保留 W-6 的诚实限制声明 | 后置算法 backlog | M5 完成后 |
 | I.3 | W | B | lag profile 第三轴实现；M5 前只保留 W-6 的诚实限制声明 | 后置算法 backlog | M5 完成后 |
 
-**阻碍核验。** 当前不存在 H 级且无归属的事项。M4-A 已 accepted；T13 已关闭 H-8、W-5、
-H-6、H-7 与 G8，M4-B 实现范围在本地完成。剩余 A 类事项均有明确归属；Q8 除本次单一进入
+**阻碍核验。** 当前不存在 H 级且无归属的事项。M4-A 与 M4-B 已 accepted；T13 已关闭 H-8、W-5、
+H-6、H-7 与 G8。剩余 A 类事项均有明确归属；Q8 除本次单一进入
 条件外的范围继续按 B 类冻结。fixture 未修改，也没有新增输入拒绝或豁免。
 
 ---
@@ -504,3 +514,4 @@ H-6、H-7 与 G8，M4-B 实现范围在本地完成。剩余 A 类事项均有�
   lifecycle 进入条件；关闭 H-8、W-5、H-6、H-7 与 G8，新增稳定性未评估 warning、W-14
   数值验收规则和 W-15 表述风险。S-GT-1/2 selection 与指定数值均不变；提交 `70e858f`
   将 `pipeline_version` 单次移动到 `s10.sha256.7fed154a44bf`，完整套件 214/214 通过。
+- 2026-08-31 T14 M4-B 结项自查：启动指令第 0–4 部分逐项闭合，登记 W-16；M4-B accepted。

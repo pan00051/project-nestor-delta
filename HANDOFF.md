@@ -22,8 +22,8 @@ from this file.
 - Branch `main`. M3 acceptance facts below describe `ad77fd3`; the current
   source revision includes the documentation and reproducibility-metadata
   correction recorded in `docs/DEMO_MILESTONES_V1.md` Appendix K.
-- Milestones M0-M3 and M4-A are accepted. G-1 is closed, and M4-B is the
-  single active track (see "Next Decision").
+- Milestones M0-M3, M4-A, and M4-B are accepted. G-1 is closed. T14 deployment
+  verification is the active release task; M4-C follows only after it passes.
 - Analysis pipeline S1-S10: complete and independently reviewed.
 - Website W0-W5: complete.
 - Product direction: non-commercial portfolio and personal-analysis system.
@@ -367,11 +367,12 @@ bar; and the distinction between 10 recorded view IDs and the four M3
 acceptance states. M4-B is now active. G0, the C series, and V1 are B-class
 work and remain frozen until M5 is complete.
 
-M4-B's implementation scope is complete locally. T13 resolved H-8 by moving
+M4-B was accepted in T14 after a complete kickoff-instruction self-check. T13 resolved H-8 by moving
 `max(L+9, 2L+7)` from a rejected-input boundary to the rolling-lifecycle entry
 condition. The frozen `s_gt_6_pre_rolling_negative` control remains a valid
 `n=11`, `baseline_only` result; `n=12` now follows the same non-rolling path
-instead of returning 422. No fixture exemption or data rewrite was used.
+instead of returning 422. Its new `stability_not_evaluated` warning is recorded
+as W-16 and guarded by G8. No fixture exemption or data rewrite was used.
 
 ### M4-B scope
 
