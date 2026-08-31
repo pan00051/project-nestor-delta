@@ -155,6 +155,41 @@ W-16 记录 Q6 冻结控制新增 warning 的加法变化，原 selection/branch
 因此 H-1 关闭，公开 URL 自此可以对外发送。W-4 未关闭：上述四步人工门槛在 Q3.1
 实施前仍是每次部署的必做项。
 
+### T16 M4-C CSV 人工验收修复（2026-08-31）
+
+负责人在部署实例执行 CSV 人工验收后，本轮登记并修复 A 类缺陷；不 push、不部署，且不启动
+G0 / C 系列 / V1。
+
+| ID | 内容 | 级别 | A/B | 状态与防线 |
+|---|---|---|---|---|
+| H-9 | UTF-8 BOM 上传失败，报错误导用户（“缺少 date 列”而列存在）。Excel 导出默认路径，直接违反 Demo DoD 第 3 条 | H | A | 已关闭；CSV 字节解码改为 `utf-8-sig`，BOM 正控制和无 BOM 负控制通过 |
+| W-19 | `csv_base64` 系列内部术语进入用户文案；GBK 与非 CSV 文件共用同一条报错，无法区分 | W | A | 已关闭；非 UTF-8 与图片伪装 CSV 拆成独立错误码与动作建议 |
+| W-20 | `Field: <内部字段名>` 出现在每一个 422；规则：内部标识符不得进入用户可见文案 | W | A | 已关闭；web 错误显示把 `csv_base64` 映射为 `uploaded CSV`，并由前端测试固定 |
+| W-21 | 重复月份报错未点名具体月份，与相邻检查（缺月）的详细程度不一致 | W | A | 已关闭；重复月份文案列出具体月份，超过 5 个时截断并说明总数 |
+| W-22 | 缺月报错只说工具不做什么，未给用户动作 | W | A | 已关闭；缺月文案改为要求补上该月行并重新上传 |
+| W-23 | 审计屏未提及被忽略的多余列；加测已确认拼错的候选列名会被明确拒绝，无静默吞噬风险 | W | B | 登记为可选；M5 前不派发，不阻塞 M4-C |
+
+本轮两条标杆文案记录为后续错误改写模板：
+
+- `CSV row 3 date must use YYYY-MM format.`
+- `Temporal stability was not evaluated: this run has 8 observations; at least 13 are required when lag_window=3.`
+
+共同标准：说出位置或数字，说出要求，并让用户知道下一步做什么。第 6 项在部署实例返回
+`at least 13 are required when lag_window=3`，与 T13 推导的
+`n_min(3) = max(3+9, 2x3+7) = 13` 完全一致；公式在生产环境得到验证。
+
+第三部分强持续 raw-level 拒绝路径本轮降级为 W / B 后直接验证通过：UI 在声明为 `none`
+的瞬间阻断，行内提示 `Persistent series on raw levels will be rejected.`，底部提示
+`Analysis blocked. Declare diff or log_diff for: marketing_spend`，且 `Run analysis` 禁用。
+这是本轮九次测试中交互设计最好的一处，可作为其他错误路径参考。服务端后备路径仍存在：
+audit 与 analyze 对 `hicp: none` 均返回 HTTP 422、`error.code=high_persistence_requires_transform`；
+用户可见 API 文案为 `Signal 'hicp' has lag-1 ACF 0.992 but was declared 'none'.`。
+
+版本移动按原因分次：BOM 修复提交 `8adf259`，`pipeline_version` 从
+`s10.sha256.7fed154a44bf` 移至 `s10.sha256.787a1ed72a9b`；CSV 文案修复提交
+`bb8f7a1`，`pipeline_version` 从 `s10.sha256.787a1ed72a9b` 移至
+`s10.sha256.4a80f8e13657`。哈希外 web 字段显示映射随第二批提交，不单独移动版本。
+
 ### H.4 / lifecycle 事实补记
 
 审核方在独立 clone 核实：`tests/test_s9_lifecycle.py:41` 的
@@ -502,6 +537,8 @@ H-6、H-7 与 G8。剩余 A 类事项均有明确归属；Q8 除本次单一进�
 | 2026-08-31 | `70e858f` | 214 | T13 滚动进入条件与 warning；新增 G8 7 条及结构化 warning 渲染 1 条 |
 | 2026-08-31 | `3076df0` | 214 | T14 M4-B accepted；W-16 登记，无新增测试 |
 | 2026-08-31 | `f41a583` | 214 | T14 两层部署验收；H-1 关闭，无新增测试 |
+| 2026-08-31 | `8adf259` | 215 | T16 BOM 修复；新增 UTF-8 BOM 上传正控制 |
+| 2026-08-31 | `bb8f7a1` | 218 | T16 CSV 文案修复；新增 GBK、图片伪装 CSV 与 web 字段映射 3 条测试 |
 
 新增测试时同步更新本表；**G1-3 只读本表，不在测试里硬编码第二份数字。**
 
@@ -542,3 +579,5 @@ H-6、H-7 与 G8。剩余 A 类事项均有明确归属；Q8 除本次单一进�
 - 2026-08-31 T14 部署验收：API 与 web 均部署 `096262e08c79`，两组源码上传 deployment
   为 `SUCCESS`、变量触发 redeploy 为 `REMOVED`；API 12 期行为探针与 web 四状态呈现通过，
   H-1 关闭，公开 URL 解除禁发。完整套件 214/214 通过，pipeline version 未移动。
+- 2026-08-31 T16 M4-C CSV 修复：关闭 H-9 与 W-19 至 W-22，登记 W-23 为可选 W/B；
+  新增 BOM、GBK、图片伪装 CSV 与 web 字段映射测试，完整套件 218/218 通过。
