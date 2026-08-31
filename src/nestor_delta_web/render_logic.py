@@ -523,7 +523,18 @@ def date_axis_summary(data_audit: Mapping[str, Any]) -> dict[str, Any]:
 def error_display(body: Mapping[str, Any]) -> dict[str, Any]:
     err = (body or {}).get("error") or {}
     return {"code": err.get("code"), "message": err.get("message"),
-            "field": err.get("field"), "detail": err.get("detail")}
+            "field": user_field_label(err.get("field")), "detail": err.get("detail")}
+
+
+def user_field_label(field: Any) -> Any:
+    labels = {
+        "csv_base64": "uploaded CSV",
+        "candidate_signals": "candidate signals",
+        "transform_declarations": "transform declarations",
+        "train_end": "training cutoff",
+        "case_name": "data source",
+    }
+    return labels.get(field, field)
 
 
 def snapshot_summary(body: Mapping[str, Any]) -> dict[str, Any]:

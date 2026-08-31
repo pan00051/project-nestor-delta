@@ -109,6 +109,21 @@ class NullNeverZero(unittest.TestCase):
 
 
 class NoFabrication(unittest.TestCase):
+    def test_error_display_maps_internal_field_names_to_user_labels(self):
+        display = rl.error_display(
+            {
+                "error": {
+                    "code": "invalid_csv_encoding",
+                    "message": "This file is not UTF-8 encoded.",
+                    "field": "csv_base64",
+                    "detail": {"exception": "UnicodeDecodeError"},
+                }
+            }
+        )
+
+        self.assertEqual(display["field"], "uploaded CSV")
+        self.assertNotIn("csv_base64", display["field"])
+
     def test_structured_warning_renders_its_message(self):
         warning = {
             "code": "stability_not_evaluated",

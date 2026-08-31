@@ -146,6 +146,10 @@ class WebsiteContractTests(unittest.TestCase):
         self.assertEqual(status, 422)
         self.assertEqual(report["outcome"], "validation_error")
         self.assertEqual(report["error"]["code"], "non_contiguous_dates")
+        self.assertEqual(
+            report["error"]["message"],
+            "Month 2020-02 is missing; add the missing row and upload again.",
+        )
         self.assertEqual(report["error"]["detail"]["missing_months"], ["2020-02"])
         self.assertEqual(report["data_audit"]["date_axis"]["missing_months"], ["2020-02"])
 
@@ -172,7 +176,53 @@ class WebsiteContractTests(unittest.TestCase):
 
         self.assertEqual(status, 422)
         self.assertEqual(report["error"]["code"], "duplicate_month")
+        self.assertEqual(
+            report["error"]["message"],
+            "CSV has duplicate months: 2020-01. Keep one row per month and upload again.",
+        )
         self.assertEqual(report["data_audit"]["date_axis"]["duplicate_months"], ["2020-01"])
+
+    def test_upload_gbk_csv_names_encoding_fix(self) -> None:
+        csv_text = "date,target,source,note\n2020-01,1.0,1.0,备注\n"
+        payload = {
+            "csv_base64": base64.b64encode(csv_text.encode("gbk")).decode("ascii"),
+            "target": "target",
+            "candidate_signals": ["source"],
+            "transform_declarations": {"target": "diff", "source": "diff"},
+            "train_end": "2020-01",
+            "lag_window": 1,
+        }
+
+        status, report = audit_payload(payload)
+
+        self.assertEqual(status, 422)
+        self.assertEqual(report["error"]["code"], "invalid_csv_encoding")
+        self.assertEqual(
+            report["error"]["message"],
+            "This file is not UTF-8 encoded. Re-save it as CSV UTF-8 "
+            "(Excel: Save As -> CSV UTF-8) and upload again.",
+        )
+
+    def test_upload_png_named_csv_names_file_type_fix(self) -> None:
+        png_bytes = b"\x89PNG\r\n\x1a\n" + b"not really a csv"
+        payload = {
+            "csv_base64": base64.b64encode(png_bytes).decode("ascii"),
+            "target": "target",
+            "candidate_signals": ["source"],
+            "transform_declarations": {"target": "diff", "source": "diff"},
+            "train_end": "2020-01",
+            "lag_window": 1,
+        }
+
+        status, report = audit_payload(payload)
+
+        self.assertEqual(status, 422)
+        self.assertEqual(report["error"]["code"], "invalid_csv_file_type")
+        self.assertEqual(
+            report["error"]["message"],
+            "This file does not look like a CSV (it appears to be an image). "
+            "Upload a monthly CSV instead.",
+        )
 
     def test_high_persistence_none_is_rejected_in_audit_and_analyze(self) -> None:
         payload = {

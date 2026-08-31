@@ -332,11 +332,29 @@ def _upload_input(csv_base64: str, payload: Mapping[str, Any]) -> AnalysisInput:
         )
     date_column = str(payload.get("date_column") or "date")
     try:
-        decoded = base64.b64decode(csv_base64, validate=True).decode("utf-8-sig")
+        csv_bytes = base64.b64decode(csv_base64, validate=True)
     except Exception as exc:
         raise validation_error(
             "invalid_csv_base64",
-            "csv_base64 must be valid base64-encoded UTF-8 CSV.",
+            "The uploaded CSV could not be read. Upload a valid monthly CSV file.",
+            field="csv_base64",
+            detail={"exception": type(exc).__name__},
+        ) from exc
+    if _looks_like_image(csv_bytes):
+        raise validation_error(
+            "invalid_csv_file_type",
+            "This file does not look like a CSV (it appears to be an image). "
+            "Upload a monthly CSV instead.",
+            field="csv_base64",
+            detail={"detected_type": "image"},
+        )
+    try:
+        decoded = csv_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise validation_error(
+            "invalid_csv_encoding",
+            "This file is not UTF-8 encoded. Re-save it as CSV UTF-8 "
+            "(Excel: Save As -> CSV UTF-8) and upload again.",
             field="csv_base64",
             detail={"exception": type(exc).__name__},
         ) from exc
@@ -451,6 +469,18 @@ def _read_csv_snapshot(
     return tuple(dates), tuple(rows)
 
 
+def _looks_like_image(content: bytes) -> bool:
+    image_signatures = (
+        b"\x89PNG\r\n\x1a\n",
+        b"\xff\xd8\xff",
+        b"GIF87a",
+        b"GIF89a",
+        b"BM",
+        b"RIFF",
+    )
+    return any(content.startswith(signature) for signature in image_signatures)
+
+
 def _validate_transforms(analysis_input: AnalysisInput) -> Mapping[str, str]:
     try:
         return validate_transform_declarations(
@@ -559,9 +589,12 @@ def _audit_blocks(analysis_input: AnalysisInput) -> dict[str, Any]:
             report_fields={"data_audit": data_audit, "transform_diagnostics": []},
         )
     if date_axis["duplicate_months"]:
+        duplicates = date_axis["duplicate_months"]
+        shown = ", ".join(duplicates[:5])
+        suffix = f" ({len(duplicates)} duplicate months total)" if len(duplicates) > 5 else ""
         raise validation_error(
             "duplicate_month",
-            "CSV dates must be unique.",
+            f"CSV has duplicate months: {shown}{suffix}. Keep one row per month and upload again.",
             field="csv_base64",
             detail={"duplicate_months": date_axis["duplicate_months"]},
             report_fields={"data_audit": data_audit, "transform_diagnostics": []},
@@ -569,7 +602,7 @@ def _audit_blocks(analysis_input: AnalysisInput) -> dict[str, Any]:
     if not date_axis["continuous"]:
         missing = date_axis["missing_months"]
         message = (
-            f"Month {missing[0]} is missing; the runner does not interpolate."
+            f"Month {missing[0]} is missing; add the missing row and upload again."
             if missing
             else "CSV dates must be contiguous and sorted monthly."
         )
