@@ -164,10 +164,18 @@ G0 / C 系列 / V1。
 |---|---|---|---|---|
 | H-9 | UTF-8 BOM 上传失败，报错误导用户（“缺少 date 列”而列存在）。Excel 导出默认路径，直接违反 Demo DoD 第 3 条 | H | A | 已关闭；CSV 字节解码改为 `utf-8-sig`，BOM 正控制和无 BOM 负控制通过 |
 | W-19 | `csv_base64` 系列内部术语进入用户文案；GBK 与非 CSV 文件共用同一条报错，无法区分 | W | A | 已关闭；非 UTF-8 与图片伪装 CSV 拆成独立错误码与动作建议 |
-| W-20 | `Field: <内部字段名>` 出现在每一个 422；规则：内部标识符不得进入用户可见文案 | W | A | 已关闭；web 错误显示把 `csv_base64` 映射为 `uploaded CSV`，并由前端测试固定 |
+| W-20 | `Field: <内部字段名>` 出现在每一个 422；这是 H-7 后同类缺陷第二次出现 | W | A | 已关闭；web 错误显示把 `csv_base64` 映射为 `uploaded CSV`，并由前端测试固定。规则：内部标识符（字段名、变量名、实现细节）不得进入用户可见文案 |
 | W-21 | 重复月份报错未点名具体月份，与相邻检查（缺月）的详细程度不一致 | W | A | 已关闭；重复月份文案列出具体月份，超过 5 个时截断并说明总数 |
 | W-22 | 缺月报错只说工具不做什么，未给用户动作 | W | A | 已关闭；缺月文案改为要求补上该月行并重新上传 |
 | W-23 | 审计屏未提及被忽略的多余列；加测已确认拼错的候选列名会被明确拒绝，无静默吞噬风险 | W | B | 登记为可选；M5 前不派发，不阻塞 M4-C |
+| W-24 | 服务端 `high_persistence_requires_transform` 错误响应有信号名、实测 ACF 与阈值，但没有修复动作 | W | B | UI 已用声明瞬间阻断、`diff` / `log_diff` 动作提示和禁用 Run 补偿；直接调用 API 的消费者仍看不到动作建议，登记为残余，不阻塞 M4-C |
+
+本轮四条新用户可见文案原文：
+
+- GBK / 非 UTF-8：`This file is not UTF-8 encoded. Re-save it as CSV UTF-8 (Excel: Save As -> CSV UTF-8) and upload again.`
+- 非 CSV 图片文件：`This file does not look like a CSV (it appears to be an image). Upload a monthly CSV instead.`
+- 重复月份（验收样例）：`CSV has duplicate months: 2020-01. Keep one row per month and upload again.`
+- 缺月（验收样例）：`Month 2020-02 is missing; add the missing row and upload again.`
 
 本轮两条标杆文案记录为后续错误改写模板：
 
@@ -183,7 +191,9 @@ G0 / C 系列 / V1。
 `Analysis blocked. Declare diff or log_diff for: marketing_spend`，且 `Run analysis` 禁用。
 这是本轮九次测试中交互设计最好的一处，可作为其他错误路径参考。服务端后备路径仍存在：
 audit 与 analyze 对 `hicp: none` 均返回 HTTP 422、`error.code=high_persistence_requires_transform`；
-用户可见 API 文案为 `Signal 'hicp' has lag-1 ACF 0.992 but was declared 'none'.`。
+用户可见 API 文案为 `Signal 'hicp' has lag-1 ACF 0.992 but was declared 'none'.`。结构化
+`detail.threshold` 为 `0.95`，但 message 不含改为 `diff` 或 `log_diff` 的动作；UI 层的阻断提示
+补偿了网页用户，直接调用 API 的消费者仍看不到动作建议，因此以 W-24 / W / B 登记残余。
 
 版本移动按原因分次：BOM 修复提交 `8adf259`，`pipeline_version` 从
 `s10.sha256.7fed154a44bf` 移至 `s10.sha256.787a1ed72a9b`；CSV 文案修复提交
