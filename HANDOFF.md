@@ -45,10 +45,11 @@ from this file.
   role of the noise floor, and the transform/sample inputs.
 - `pipeline_version` is a SHA-256 over `versioning.py`, `adapter.py`, and every
   module under `src/nestor_delta/`, rendered `s10.sha256.<12 hex>`. It is never
-  hand-written. Current value: `s10.sha256.ab759b2231a4`. The immediately prior
-  value was `s10.sha256.fbcf60d3506d`; this M4-B move adds the backend-owned
-  `insufficient_evidence` lifecycle state without changing selection or any
-  Evidence Gate threshold. The earlier T3 narrative move is recorded in
+  hand-written. Current value: `s10.sha256.7fed154a44bf`. The immediately prior
+  value was `s10.sha256.ab759b2231a4`; this M4-B move closes the empty rolling
+  trajectory gap and adds an honest stability-not-evaluated warning without
+  changing selection, the rolling-window formula, or any Evidence Gate
+  threshold. The earlier lifecycle and T3 narrative moves are recorded in
   `docs/DEFECT_LEDGER.md`.
 - **What that field covers, and what it does not.** It identifies the
   implementation that produced a Report. It moves for any change to the hashed
@@ -80,8 +81,9 @@ from this file.
 > (`01a9e6c`) predate the T3 narrative correction and still overstate relation
 > reliability. Do not send the public URL externally until both tiers are
 > deployed and verified through the complete sequence below. The public URL
-> must also remain private until M4-B's two version moves are complete and the
-> resulting API and web builds have both been deployed and verified.
+> M4-B's two version moves are now complete locally, but the public URL must
+> remain private until the resulting API and web builds have both been deployed
+> and verified.
 
 ### Deploy sequence
 
@@ -320,13 +322,13 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
    the next production source deploy, repair the script so the variable update
    cannot deploy prior source, then add an acceptance check for that ordering.
    Evidence: `docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md`.
-2. Q8 is registered but not remediated: with `lag_window=3` and
-   `train_observations=12`, the adapter enters the rolling branch but produces
-   no trajectory point, so report construction returns a validation error.
-   The owner has ruled out an exception to repair that B-class algorithm defect.
-   M4-B instead enforces the mechanism-derived audit boundary
-   `n_min(L) = max(L+9, 2L+7)` and a user-readable 422; M4-C verifies the
-   short-CSV experience. The Q8 algorithm repair stays frozen until after M5.
+2. Q8's Demo-blocking minimum repair is complete. With `n` train observations
+   and `L = lag_window`, rolling now starts only at
+   `n >= max(L+9, 2L+7)`. Shorter valid inputs remain successful non-rolling
+   analyses and carry `warnings[].code = stability_not_evaluated`; they are not
+   rejected by a new input boundary. This closes the `L=3, n=12` empty-trajectory
+   422 while preserving the accepted `n=11` behavior. Q8 work beyond this one
+   entry condition remains B-class and frozen until after M5.
 
 ## Non-Negotiable Boundaries
 
@@ -365,13 +367,11 @@ bar; and the distinction between 10 recorded view IDs and the four M3
 acceptance states. M4-B is now active. G0, the C series, and V1 are B-class
 work and remain frozen until M5 is complete.
 
-M4-B's only unfinished section is the minimum-sample boundary, paused under
-its own stop condition. The
-frozen `s_gt_6_pre_rolling_negative` control has `n=11` and `lag_window=3`,
-while the approved formula yields `n_min(3)=13`; applying the boundary as
-written would turn an accepted Q6 `baseline_only` control into a 422. Do not
-change that fixture or add an exemption. Lifecycle and presentation are
-complete; H-8 needs an owner decision before the boundary and G8 can resume.
+M4-B's implementation scope is complete locally. T13 resolved H-8 by moving
+`max(L+9, 2L+7)` from a rejected-input boundary to the rolling-lifecycle entry
+condition. The frozen `s_gt_6_pre_rolling_negative` control remains a valid
+`n=11`, `baseline_only` result; `n=12` now follows the same non-rolling path
+instead of returning 422. No fixture exemption or data rewrite was used.
 
 ### M4-B scope
 
@@ -396,13 +396,14 @@ complete; H-8 needs an owner decision before the boundary and G8 can resume.
    zero selections. The independent version move is
    `s10.sha256.fbcf60d3506d` -> `s10.sha256.ab759b2231a4`; no gate threshold
    changed.
-2. **Minimum sample boundary — H-6 / H-7 / W-5; paused by H-8.** Implement
-   `n_min(L) = max(L+9, 2L+7)` in `_audit_blocks()`, with `L = lag_window`, so
-   `audit == ok_to_analyze` implies analyze does not return 422 for this
-   short-sample path. Put the formula and derivation in code comments and governing
-   documentation, and return a readable 422 stating required periods, current
-   periods, and why. This also gets its own commit and its own
-   `pipeline_version` move.
+2. **Rolling entry correction — complete (2026-08-31).** T13 replaced the
+   incomplete input-rejection plan with one rolling-lifecycle predicate:
+   `n >= max(L+9, 2L+7)`. Inputs below it remain analyzable, publish null
+   stability and `effective_window`, and carry the structured
+   `stability_not_evaluated` warning. Commit `70e858f` moved
+   `pipeline_version` from `s10.sha256.ab759b2231a4` to
+   `s10.sha256.7fed154a44bf`; the rolling-window formula and all gate thresholds
+   are unchanged.
 3. **P0 answer order — complete.** The page renders run status, gate result,
    selected/rejected counts, direction/lag/strength, then gate reasons. The
    13-word Evidence Gate explanation sits immediately below the headline;
@@ -411,9 +412,10 @@ complete; H-8 needs an owner decision before the boundary and G8 can resume.
 4. **W-12 Analyst table guard — complete.** `sample support` is present and
    `noise floor (diagnostic)` is the rightmost column; both clean and in-memory
    drift controls are recorded in `docs/DEFECT_LEDGER.md`.
-5. **G8 audit/analyze consistency.** Cover `n = 11 / 12 / 13 / 14` and assert
-   `audit == ok_to_analyze` implies `analyze != 422`; record both positive and
-   negative controls under G6.
+5. **G8 audit/analyze consistency — complete.** `L=3` covers
+   `n = 11 / 12 / 13 / 14`; `L=6` covers gap point `n=16` and first rolling
+   point `n=19`. The legacy predicate is an in-memory positive control, and the
+   six clean cases are the zero-false-positive negative control under G6.
 
 Do not default to billing, To B / To C positioning, organization workspaces,
 enterprise tenancy, or a complete SaaS account system.
@@ -425,10 +427,9 @@ reliability-is-not-veracity wording boundary) are closed with evidence. Q3
 redeploy race, with the temporary manual deployment gate above. Q4
 (`ledger.durable`) is closed. Q6 is closed with rolling-window boundary
 ground-truth fixtures on both the positive and negative sides, plus explicit
-`effect.score` scope assertions. Q3.1, Q5, Q7, and the Q8 algorithm repair are
-B-class work, remain registered, and do not thaw until M5 is complete. M4-B
-addresses Q8's Demo-facing risk only through the independently justified input
-boundary; it does not repair Q8's rolling algorithm.
+`effect.score` scope assertions. T13 completed only Q8's A-class rolling-entry
+repair; the rest of Q8, plus Q3.1, Q5, and Q7, remains B-class and does not thaw
+until M5 is complete.
 
 ## Resume Checklist
 
