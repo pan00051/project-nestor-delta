@@ -169,6 +169,7 @@ G0 / C 系列 / V1。
 | W-22 | 缺月报错只说工具不做什么，未给用户动作 | W | A | 已关闭；缺月文案改为要求补上该月行并重新上传 |
 | W-23 | 审计屏未提及被忽略的多余列；加测已确认拼错的候选列名会被明确拒绝，无静默吞噬风险 | W | B | 登记为可选；M5 前不派发，不阻塞 M4-C |
 | W-24 | 服务端 `high_persistence_requires_transform` 错误响应有信号名、实测 ACF 与阈值，但没有修复动作 | W | B | UI 已用声明瞬间阻断、`diff` / `log_diff` 动作提示和禁用 Run 补偿；直接调用 API 的消费者仍看不到动作建议，登记为残余，不阻塞 M4-C |
+| W-25 | 缺月新文案补上了用户动作，但删除了“不插值或填补”的产品纪律声明 | W | B | 不阻塞 M4-C；下一批文案改为 `Month 2020-02 is missing. The runner does not interpolate or impute — add the missing row and upload again.`，且因位于 pipeline hash 内必须独立记录版本移动 |
 
 本轮四条新用户可见文案原文：
 
@@ -199,6 +200,50 @@ audit 与 analyze 对 `hicp: none` 均返回 HTTP 422、`error.code=high_persist
 `s10.sha256.7fed154a44bf` 移至 `s10.sha256.787a1ed72a9b`；CSV 文案修复提交
 `bb8f7a1`，`pipeline_version` 从 `s10.sha256.787a1ed72a9b` 移至
 `s10.sha256.4a80f8e13657`。哈希外 web 字段显示映射随第二批提交，不单独移动版本。
+
+### T17 部署复核与 M4-C 待验收项（2026-09-01）
+
+生产公网复核与发布报告一致：API 与 web 均为 `source_revision=71d2d38eaacc`，
+`pipeline_version=s10.sha256.4a80f8e13657`。新 API 进程启动后 capabilities 返回
+`ledger.last_write_ok=null`、`ledger.lines=23`：前者表示该进程尚未观察到写入结果，没有沿用旧进程
+的 `true`；后者与启动日志中的 `lines=23` 一致，证明 ledger 文件跨部署存活。Q4 的真实探测语义
+在生产上按设计工作。
+
+T17 首次完整抓到 Q3 部署传播竞态，部署脚本原始输出为：
+
+```text
+attempt 1: source_revision=096262e08c79 (expected 71d2d38eaacc)
+attempt 2: source_revision=096262e08c79 (expected 71d2d38eaacc)
+OK  live source_revision=71d2d38eaacc matches 71d2d38eaacc
+```
+
+Railway 运行日志补足时序：旧 deployment 分别在 `2026-08-31T17:48:35.157085521Z` 与
+`2026-08-31T17:48:38.121508743Z` 响应前两次 `/health`；新 deployment 首次在
+`2026-08-31T17:48:48.978750481Z` 响应。源码 deployment 的 `createdAt` 为
+`2026-08-31T17:48:24.609Z`，因此从 deployment 创建到观察到 revision 翻转为 `24.370s`。
+Railway 未提供 SUCCESS 状态变更的时间戳，故不得把该值表述成“SUCCESS 到翻转”的精确耗时。
+
+这组证据证明 cache-buster 只能排除缓存命中，不能保证请求已经路由到新进程；只看 deployment
+`SUCCESS` 仍可能发布旧代码。W-4 人工门槛新增以下规则，Q3.1 实施前持续生效：
+
+1. revision 核验允许轮询，因为它检查部署传播状态；部署前必须声明固定的最大墙钟等待时间与
+   轮询间隔，逐次保留 revision 与时间戳。达到超时即失败，不得延长等待。
+2. 行为探针检查发布特有行为，不是传播状态；每个指定行为探针只允许执行一次，失败不得重试到绿。
+3. “等待传播”和“刷到绿”以预先声明的期限、固定间隔和完整逐次记录区分，不以最终结果区分。
+4. 当前 `deploy-railway.sh` 虽有 30 次、10 秒的名义循环，但单次 `curl` 没有硬超时，尚不能形成
+   严格最大墙钟时间；此项保留在 Q3.1，不得在记录中把名义循环误写成硬上限。
+
+M4-C 尚未 accepted。线上已是修复版本，但以下四项必须由负责人在实例上复测，自动化与本轮
+BOM 生产探针不能替代人工验收：
+
+| 项目 | 人工期望 |
+|---|---|
+| 4b BOM | 正常通过审计，不再返回“缺少 date 列” |
+| 4a GBK | `This file is not UTF-8 encoded...` |
+| 8 图片改名 | `This file does not look like a CSV...` |
+| 2 重复月 | `CSV has duplicate months: 2019-12...` |
+
+四项全部对上后，M4-C 方可标记 accepted。
 
 ### H.4 / lifecycle 事实补记
 
@@ -504,7 +549,7 @@ M5 完成后解冻。相同根因的缺陷、防线和处置项合并在一行�
 | 项目 | 级别 | A/B | 未决内容 | 归属里程碑 | 解冻时刻 |
 |---|---|---|---|---|---|
 | W-2 | W | A | 10 状态记录范围与 4 状态 M3 验收范围必须并存 | M4-C | M4-B 完成后进入 M4-C 时 |
-| W-4 | W | A | Q3 部署竞态仍需人工 Deploy sequence 门槛 | 每次部署验收 | Q3.1 实施前持续生效 |
+| W-4 | W | A | Q3 部署竞态仍需人工 Deploy sequence 门槛；revision 可按预先声明的固定期限与间隔轮询，行为探针只执行一次 | 每次部署验收 | Q3.1 实施前持续生效 |
 | W-6 | W | A | I.1 / I.3 限制必须进入对外已知限制，不能升级成数据结论 | M5 | M5 已知限制整理时 |
 | W-15 | W | A | warning 已区分 stability 未评估，但短 CSV 的完整文案与视觉层级尚未人工验收 | M4-C | M4-C CSV 八项验收时 |
 
@@ -591,3 +636,5 @@ H-6、H-7 与 G8。剩余 A 类事项均有明确归属；Q8 除本次单一进�
   H-1 关闭，公开 URL 解除禁发。完整套件 214/214 通过，pipeline version 未移动。
 - 2026-08-31 T16 M4-C CSV 修复：关闭 H-9 与 W-19 至 W-22，登记 W-23 为可选 W/B；
   新增 BOM、GBK、图片伪装 CSV 与 web 字段映射测试，完整套件 218/218 通过。
+- 2026-09-01 T17 部署复核：登记 W-25 缺月纪律文案残余；记录 Q3 revision 传播竞态的三次
+  原始输出与可证实时序，固化 revision 轮询和单次行为探针边界；M4-C 保持等待负责人四项复测。
