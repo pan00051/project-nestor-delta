@@ -440,7 +440,7 @@ def render_report(body: Mapping[str, Any]) -> None:
         st.info("Out-of-sample evaluation is not available for this report. No interval or chart is inferred.")
 
     for warning in body.get("warnings") or []:
-        st.warning(str(warning))
+        st.warning(rl.warning_text(warning))
 
     with st.expander("Analyst table"):
         st.dataframe(

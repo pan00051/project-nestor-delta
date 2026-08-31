@@ -82,6 +82,13 @@ def is_error_view(view: str) -> bool:
 _NULL_TEXT = "insufficient / not evaluated"
 
 
+def warning_text(warning: Any) -> str:
+    """Return the user-facing message from a Report warning."""
+    if isinstance(warning, Mapping):
+        return str(warning.get("message") or warning.get("code") or warning)
+    return str(warning)
+
+
 def is_null(value: Any) -> bool:
     return value is None
 

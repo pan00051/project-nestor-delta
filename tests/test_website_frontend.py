@@ -109,6 +109,18 @@ class NullNeverZero(unittest.TestCase):
 
 
 class NoFabrication(unittest.TestCase):
+    def test_structured_warning_renders_its_message(self):
+        warning = {
+            "code": "stability_not_evaluated",
+            "message": "Temporal stability was not evaluated.",
+        }
+
+        self.assertEqual(
+            rl.warning_text(warning),
+            "Temporal stability was not evaluated.",
+        )
+        self.assertEqual(rl.warning_text("Legacy warning."), "Legacy warning.")
+
     def test_trajectory_shown_only_when_present(self):
         ok_rels = MOCKS["ok__with_selection"]["relations"]
         has = [r for r in ok_rels if rl.should_show_trajectory(r)]

@@ -273,6 +273,27 @@ Eurostat provenance when data is fetched through the adapter. M3 adds
 `configuration` so reports publish the effective parameters and rules that can
 change conclusions. `evaluation` may still be null.
 
+### Rolling stability availability
+
+Let `n` be `configuration.inputs.train_observations` and `L` be `lag_window`.
+The rolling window remains `W = min(36, max(L+6, n//3))`; this remediation does
+not change that formula. The first rolling step is `W+L+1`, and `W` is at least
+`L+6` across the supported website lag range, so a non-empty trajectory needs
+`n >= 2L+7`. Combining that requirement with the established non-rolling branch
+through `n <= L+8` gives one entry condition:
+
+```text
+n <= L+8                         no rolling stability evaluation
+L+8 < n < 2L+7                  no rolling stability evaluation (former gap)
+n >= max(L+9, 2L+7)             rolling stability evaluation
+```
+
+The two non-rolling regions remain valid analyses; they are not rejected as bad
+input. Their Report returns `stability: null`, `effective_window: null`, and a
+structured warning with `code: stability_not_evaluated`. This distinguishes
+"no relation cleared the gate" from "temporal stability was not evaluated"
+without changing any Evidence Gate threshold.
+
 ## RelationView
 
 One object per candidate relation from source to target:

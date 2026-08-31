@@ -216,7 +216,7 @@ def build_report(analysis_input: AnalysisInput) -> dict[str, Any]:
         },
         "prediction_confidence": _prediction_confidence_block(gate),
         "narrative": _narrative(outcome, gate, len(relation_views)),
-        "warnings": [],
+        "warnings": _report_warnings(analysis_input, train_rows),
     }
 
 
@@ -742,7 +742,7 @@ def _s9_relation_objects(
     train_rows: Sequence[Mapping[str, float]],
     ranking: Sequence[RelationWeight],
 ) -> list[RelationWeight]:
-    if len(train_rows) <= analysis_input.lag_window + 8:
+    if not _rolling_lifecycle_available(analysis_input, train_rows):
         return list(ranking)
     window_size = _rolling_window_size(analysis_input, train_rows)
     if window_size <= analysis_input.lag_window:
@@ -786,7 +786,7 @@ def _lifecycle_block(
     train_rows: Sequence[Mapping[str, float]],
     source: str,
 ) -> dict[str, Any]:
-    if len(train_rows) <= analysis_input.lag_window + 8:
+    if not _rolling_lifecycle_available(analysis_input, train_rows):
         return {"state": "insufficient_evidence", "points": None}
     window_size = _rolling_window_size(analysis_input, train_rows)
     steps = range(window_size + analysis_input.lag_window + 1, len(train_rows) + 1, 6)
@@ -813,7 +813,7 @@ def _trajectory_block(
     train_rows: Sequence[Mapping[str, float]],
     source: str,
 ) -> list[dict[str, Any]] | None:
-    if len(train_rows) <= analysis_input.lag_window + 8:
+    if not _rolling_lifecycle_available(analysis_input, train_rows):
         return None
     window_size = _rolling_window_size(analysis_input, train_rows)
     steps = range(window_size + analysis_input.lag_window + 1, len(train_rows) + 1, 6)
@@ -879,7 +879,7 @@ def _configuration_block(
             "window_rule": "min(36, max(lag_window + 6, train_observations // 3))",
             "effective_window": (
                 _rolling_window_size(analysis_input, train_rows)
-                if len(train_rows) > analysis_input.lag_window + 8
+                if _rolling_lifecycle_available(analysis_input, train_rows)
                 else None
             ),
             "step_interval": 6,
@@ -909,6 +909,46 @@ def _rolling_window_size(
     train_rows: Sequence[Mapping[str, float]],
 ) -> int:
     return min(36, max(analysis_input.lag_window + 6, len(train_rows) // 3))
+
+
+def _rolling_lifecycle_min_observations(lag_window: int) -> int:
+    # Let n be train observations and L be lag_window. The established
+    # non-rolling branch covers n <= L+8. Once rolling starts, the first step
+    # is W+L+1 and W is at least L+6, so a trajectory needs n >= 2L+7.
+    # Therefore:
+    #   n <= L+8                  -> do not roll
+    #   L+8 < n < 2L+7           -> do not roll (the former empty gap)
+    #   n >= max(L+9, 2L+7)      -> rolling can produce a trajectory
+    return max(lag_window + 9, 2 * lag_window + 7)
+
+
+def _rolling_lifecycle_available(
+    analysis_input: AnalysisInput,
+    train_rows: Sequence[Mapping[str, float]],
+) -> bool:
+    return len(train_rows) >= _rolling_lifecycle_min_observations(
+        analysis_input.lag_window
+    )
+
+
+def _report_warnings(
+    analysis_input: AnalysisInput,
+    train_rows: Sequence[Mapping[str, float]],
+) -> list[dict[str, str]]:
+    if _rolling_lifecycle_available(analysis_input, train_rows):
+        return []
+    observed = len(train_rows)
+    required = _rolling_lifecycle_min_observations(analysis_input.lag_window)
+    return [
+        {
+            "code": "stability_not_evaluated",
+            "message": (
+                "Temporal stability was not evaluated: this run has "
+                f"{observed} observations; at least {required} are required "
+                f"when lag_window={analysis_input.lag_window}."
+            ),
+        }
+    ]
 
 
 def _apply_gate_decisions(
