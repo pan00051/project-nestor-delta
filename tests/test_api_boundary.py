@@ -93,6 +93,10 @@ class ApiBoundaryV1Tests(unittest.TestCase):
             },
         )
         self.assertTrue(body["inputs"]["csv_upload"])
+        self.assertIn(
+            "synthetic_ground_truth_calibration_control",
+            body["inputs"]["bundled_cases"],
+        )
         self.assertIn("spain_retail_eurostat_2008_2025", body["inputs"]["bundled_cases"])
         self.assertEqual(body["eurostat"]["dataset_search"], False)
         self.assertEqual(

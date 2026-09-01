@@ -381,6 +381,7 @@ class Presets(unittest.TestCase):
         self.assertEqual(
             presets.BUNDLED_CASES,
             (
+                "synthetic_ground_truth_calibration_control",
                 "spain_retail_eurostat_2008_2025",
                 "spain_retail_eurostat_expanded_2008_2025",
                 "spain_industrial_production_eurostat_2008_2023",

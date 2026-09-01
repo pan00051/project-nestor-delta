@@ -368,6 +368,17 @@ known by construction. This is the return on doing M0 before M1.
   labelled as a synthetic ground-truth calibration control. Per §A.5 this is provisional —
   the search for a real case remains worthwhile.
 
+**Dated follow-up, 2026-08-31 (historical record preserved).** A direct run of
+`spain_industrial_shock_2008_2021` through the current Report path returned `outcome: ok` and
+selected `employment_expectations` at lag 2 with positive full-window sign. The run used all
+15 declared candidates, `diff` transforms, `train_end=2017-12`, and `lag_window=3`. That lag
+was not independently pre-registered: it came from a validation-MAE search over lags 1-6 on
+the same case (`validation=2018-01..2019-12`; test remained `2020-01..2021-12`). Under G.6 and
+I.5-7 this overturns the historical factual phrase "No real `ok` case yet" but only as a
+calibration result; it may not be presented as independent evidence and is not adopted as the
+bundled positive demo case. The original M0 acceptance sentence above remains unchanged under
+the historical-record rule in §10.3-2.
+
 ### A.4 Carried forward — M3 blockers
 
 **1. Lifecycle states are wrong on two of five drift profiles.**

@@ -46,6 +46,10 @@ EVIDENCE_GATE_CONFIG = {
     "min_sample_support": 0.50,
 }
 SUPPORTED_CASES = {
+    "synthetic_ground_truth_calibration_control": REPO_ROOT
+    / "cases"
+    / "synthetic_ground_truth_calibration_control"
+    / "case.json",
     "spain_retail_eurostat_2008_2025": REPO_ROOT
     / "cases"
     / "spain_retail_eurostat_2008_2025"

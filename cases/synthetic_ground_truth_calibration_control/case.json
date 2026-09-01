@@ -1,0 +1,27 @@
+{
+  "case_name": "synthetic_ground_truth_calibration_control",
+  "csv": "data.csv",
+  "date_column": "date",
+  "target": "synthetic_target",
+  "candidate_signals": [
+    "true_driver",
+    "decoy_1",
+    "decoy_2",
+    "decoy_3"
+  ],
+  "frequency": "monthly",
+  "lag_window": 3,
+  "train_end": "2023-12",
+  "test_start": "2024-01",
+  "max_selected_signals": 4,
+  "output_dir": "../../reports/synthetic_ground_truth_calibration_control",
+  "seasonal_period": 0,
+  "notes": "Synthetic ground-truth calibration control built with a known answer to calibrate and demonstrate detection. Injected true driver: true_driver; injected lag: 2 months; injected sign: negative (-1). It is not evidence of any real-world relationship and does not establish causality. Construction: 216 monthly observations starting 2008-01; differenced-domain injected correlation -0.55; injected beta -0.658553; seed 20260823; data-property screen max spurious |r| 0.13, true |r| 0.50-0.62, runner-up max |r| 0.25. lag_window=3 is the frozen ground-truth setting so injected lag 2 is interior rather than pinned to the search boundary; train_end=2023-12 matches the frozen fixture request. Data copied byte-for-byte from tests/ground_truth/fixtures/s_gt_1_positive.csv; source SHA-256: 823ffad12aa0e30bcfb51a38f673f76727a37cd7dc426827367dcec944521a43.",
+  "transform_declarations": {
+    "synthetic_target": "diff",
+    "true_driver": "diff",
+    "decoy_1": "diff",
+    "decoy_2": "diff",
+    "decoy_3": "diff"
+  }
+}

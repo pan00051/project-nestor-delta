@@ -163,6 +163,8 @@ G0 / C 系列 / V1。
 | ID | 内容 | 级别 | A/B | 状态与防线 |
 |---|---|---|---|---|
 | H-9 | UTF-8 BOM 上传失败，报错误导用户（“缺少 date 列”而列存在）。Excel 导出默认路径，直接违反 Demo DoD 第 3 条 | H | A | 已关闭；CSV 字节解码改为 `utf-8-sig`，BOM 正控制和无 BOM 负控制通过 |
+| H-10 | Demo DoD 第 1 条在部署实例上不成立：三个 bundled case 全部 `baseline_only`；M0 branch (b) 已决定提升 S-GT-1，却从未把它接入访客可达的 case 列表 | H | A | 已关闭；S-GT-1 以明确标注的 synthetic ground-truth calibration control 打包，G9 常驻断言至少一个 bundled case 产出 `ok` 且选中注入关系 |
+| H-11 | 全窗口 `effect.sign` 可与滚动轨迹多数符号相反，而 `stability` 与 `lifecycle` 均不反映矛盾；标题结论可能与下载 JSON 中的原始证据相反 | H | A | 非 demo-blocking，已登记、M5 后解冻；shock calibration case 报 `+1/stable/0.4737`，但 14 点中 11 点为负、最后 7 点连续为负；候选修法为纳入符号一致性或禁止 `stable` 并显式警告 |
 | W-19 | `csv_base64` 系列内部术语进入用户文案；GBK 与非 CSV 文件共用同一条报错，无法区分 | W | A | 已关闭；非 UTF-8 与图片伪装 CSV 拆成独立错误码与动作建议 |
 | W-20 | `Field: <内部字段名>` 出现在每一个 422；这是 H-7 后同类缺陷第二次出现 | W | A | 已关闭；web 错误显示把 `csv_base64` 映射为 `uploaded CSV`，并由前端测试固定。规则：内部标识符（字段名、变量名、实现细节）不得进入用户可见文案 |
 | W-21 | 重复月份报错未点名具体月份，与相邻检查（缺月）的详细程度不一致 | W | A | 已关闭；重复月份文案列出具体月份，超过 5 个时截断并说明总数 |
@@ -249,6 +251,37 @@ Railway 未提供 SUCCESS 状态变更的时间戳，故不得把该值表述成
 剥离而不是进入规范化数据后被容忍；同一份数据的 snapshot 身份唯一，`API_BOUNDARY_V1.md` P2
 可复现性主张不受影响。H-9 与 W-19、W-20、W-21、W-22 至此均关闭。W-25 仍为 W / B，
 不随 M4-C accepted 实施，按 M5 冻结规则之后统一解冻。Next Decision 为 M5。
+
+### T18 / H-10 bundled positive case 与 G9
+
+H-10 根因属于附录 B.4 的“决定读起来已完成，实际没有接线”：M0 §A.3 已选择 branch (b)，
+但 S-GT-1 一直只存在于 `tests/ground_truth/`，三个已注册 bundled case 均为
+`baseline_only`，访客无法到达一个选中关系的页面。三个已注册真实 Eurostat case 均拒绝关系
+不是缺陷，而是产品纪律；缺陷是已校准的正向控制没有放到访客够得着的位置。
+
+S-GT-1 现以 `synthetic_ground_truth_calibration_control` 注册。名称与 `case.json.notes`
+均明确它是按已知答案构造的合成校准控制，不构成真实世界关系证据；数据与冻结 fixture
+逐字节相同，双方 SHA-256 均为
+`823ffad12aa0e30bcfb51a38f673f76727a37cd7dc426827367dcec944521a43`。实际 Report 为
+`outcome=ok`、`selected_count=1`，仅选 `true_driver`，lag `2`、sign `-1`、
+`effect.score=0.5844220533473201`、stability `0.6512167274486128`。
+
+G9 常驻运行所有注册 case，并要求至少一个 `outcome=ok` 且有选中关系；正向 case 另钉住
+注入 source、lag 与 sign。正控制把新 case 临时移出 `cases/` 后，G9 为 `1 failed`；恢复后的
+干净实现为 `1 passed`。完整套件从基线 `218 passed` 增加 3 条到 `221 passed`，假阳性
+`0/221`。三个旧 case 的去 `pipeline_version` 规范化 Report SHA-256 前后分别保持：
+industrial `9641dc6d...b983`、retail `90e81b3f...ed92`、expanded retail
+`274489cd...6759`；outcome 与 selected_count 均保持 `baseline_only/0`。
+
+唯一版本移动原因为 `register a new bundled case`：
+`s10.sha256.4a80f8e13657 -> s10.sha256.67ef4520c674`。未改 gate 阈值、fixture 或现有
+case 数据。H-10 由 G9 关闭，Demo DoD 第 1 条恢复为机械可验。
+
+H-11 同轮只登记不修：shock calibration case 的全窗口标题为 sign `+1`、lag `2`、
+`lifecycle=stable`、stability `0.4737`，但 14 个轨迹点中 11 个为负，最后 7 个连续为负；
+其强度从 `0.178` 总体升至 `0.571`，中间有 `0.478 -> 0.437` 回落，并非严格单调。
+10/14 的滚动 argmax lag 为 `3`。页面可下载完整 Report JSON，因此该矛盾属于过度声称方向；
+按负责人裁决为非 demo-blocking，M5 后解冻评估。
 
 ### H.4 / lifecycle 事实补记
 
@@ -646,3 +679,6 @@ H-6、H-7 与 G8。剩余 A 类事项均有明确归属；Q8 除本次单一进�
 - 2026-09-01 M4-C accepted：负责人在部署实例完成 BOM、GBK、图片改名与重复月份四项复测，
   H-9 与 W-19 至 W-22 全部关闭；BOM 正、负文件产出相同 snapshot hash。Next Decision 转为 M5，
   W-25 保持登记不实施。
+- 2026-09-01 T18：新增 3 条 G9/bundled control 测试，完整基线由 218/218 更新为 221/221；
+  S-GT-1 注册为明确标注的 synthetic calibration control，H-10 关闭。H-11 与 shock case
+  校准污染/近门槛限制只登记，M5 后解冻。

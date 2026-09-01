@@ -23,7 +23,9 @@ from this file.
   source revision includes the documentation and reproducibility-metadata
   correction recorded in `docs/DEMO_MILESTONES_V1.md` Appendix K.
 - Milestones M0-M3, M4-A, M4-B, and M4-C are accepted. G-1 is closed. T17
-  deployed and verified the M4-C repairs; M5 is the active next decision.
+  deployed and verified the M4-C repairs. T18 closes H-10 by registering the
+  explicitly synthetic S-GT-1 calibration control and adding G9; M5 is the
+  active next decision.
 - Analysis pipeline S1-S10: complete and independently reviewed.
 - Website W0-W5: complete.
 - Product direction: non-commercial portfolio and personal-analysis system.
@@ -45,10 +47,11 @@ from this file.
   role of the noise floor, and the transform/sample inputs.
 - `pipeline_version` is a SHA-256 over `versioning.py`, `adapter.py`, and every
   module under `src/nestor_delta/`, rendered `s10.sha256.<12 hex>`. It is never
-  hand-written. Current value: `s10.sha256.4a80f8e13657`. The M4-C version moves
-  accepted UTF-8 BOM input and clarified CSV validation errors without changing
-  any threshold. Earlier rolling-entry, lifecycle, and narrative moves are
-  recorded in `docs/DEFECT_LEDGER.md`.
+  hand-written. Current local value: `s10.sha256.67ef4520c674`. T18 moved it
+  once, solely because `adapter.py` now registers the S-GT-1 bundled case; no
+  threshold or algorithm changed. The prior M4-C value was
+  `s10.sha256.4a80f8e13657`. Earlier version moves are recorded in
+  `docs/DEFECT_LEDGER.md`.
 - **What that field covers, and what it does not.** It identifies the
   implementation that produced a Report. It moves for any change to the hashed
   files, including a corrected metadata string — that is correct, not noise, and
