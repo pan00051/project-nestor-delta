@@ -26,6 +26,9 @@ st.set_page_config(
     layout="wide",
 )
 
+_LOGO = Path(__file__).parent / "assets" / "delta_logo.png"
+st.logo(str(_LOGO))
+
 _CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -61,10 +64,10 @@ h1{font-size:2.15rem!important;line-height:1.12!important;margin-bottom:.45rem!i
 h2{font-size:1.25rem!important;margin-top:2.25rem!important}
 h3{font-size:1rem!important}
 [data-testid="stMarkdownContainer"] h1,[data-testid="stMarkdownContainer"] h2,[data-testid="stMarkdownContainer"] h3{color:var(--delta-ink)!important}
-.delta-brandline{display:block;max-width:100%;overflow:visible;white-space:normal;min-height:1.45em;padding:.08rem 0 .75rem;margin:0 0 1.15rem;border-bottom:1px solid var(--delta-water-soft);font-size:.76rem;line-height:1.45;text-transform:uppercase;color:var(--delta-faint);font-weight:650}
-.delta-wordmark{font-family:"Space Grotesk",system-ui,sans-serif;font-weight:700;color:var(--delta-ink)}
-.delta-brandline span{display:inline;white-space:nowrap}
-.delta-brandline .sep{display:inline-block;margin:0 .35rem}
+.delta-head{display:flex;align-items:center;gap:14px;margin:.2rem 0 1rem;padding-bottom:.75rem;border-bottom:1px solid var(--delta-water-soft)}
+.delta-mark{height:34px;width:auto;display:block}
+.delta-wordmark{font-family:"Space Grotesk",system-ui,sans-serif;font-weight:600;font-size:1.02rem;letter-spacing:.14em;color:var(--delta-ink);white-space:nowrap}
+.delta-head-tag{font-size:.78rem;color:var(--delta-faint);border-left:1px solid var(--delta-line);padding-left:14px;white-space:nowrap}
 .delta-lede{max-width:760px;color:var(--delta-muted);font-size:.95rem;line-height:1.6;margin-bottom:1.4rem}
 .delta-section{border-top:1px solid var(--delta-line);padding-top:1.1rem;margin-top:1.8rem}
 .delta-section-kicker{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--delta-faint);font-weight:700}
@@ -121,9 +124,7 @@ h3{font-size:1rem!important}
 [data-testid="stBaseButton-primary"]{background:var(--delta-accent);border-color:var(--delta-accent);color:var(--delta-primary-ink)}
 @media(max-width:720px){
   [data-testid="stMainBlockContainer"]{padding-left:1rem;padding-right:1rem;padding-top:3.5rem}
-  .delta-brandline{display:block;line-height:1.4}
-  .delta-brandline span{display:block;white-space:normal}
-  .delta-brandline .sep{display:none}
+  .delta-head{gap:10px}.delta-head-tag{display:none}.delta-mark{height:30px}.delta-wordmark{font-size:.92rem}
   h1{font-size:1.75rem!important}.delta-decision .headline{font-size:1.85rem}.delta-steps{grid-template-columns:1fr}.delta-step{border-right:0;border-bottom:1px solid var(--delta-line)}
   .delta-step:last-child{border-bottom:0}.delta-relation-head{display:block}.delta-gates{grid-template-columns:1fr 1fr}.delta-life{grid-template-columns:repeat(3,minmax(0,1fr))}.delta-life span{font-size:.58rem}
 }
@@ -153,26 +154,6 @@ def _display_value(value: Any, formatter: Any = rl.fmt_number) -> str:
     if rl.is_null(value):
         return _chip("insufficient evidence", "insufficient")
     return _fig(formatter(value))
-
-
-def _first_existing_path(candidates: tuple[str, ...]) -> Path | None:
-    for candidate in candidates:
-        path = Path(candidate)
-        if path.exists():
-            return path
-    return None
-
-
-_LOGO = _first_existing_path(
-    (
-        "assets/nestor-delta-logo.png",
-        "assets/logo.png",
-        "static/nestor-delta-logo.png",
-        "static/logo.png",
-    )
-)
-if _LOGO is not None:
-    st.logo(str(_LOGO))
 
 
 def render_section(number: str, title: str, copy: str) -> None:
@@ -600,8 +581,12 @@ def show_result(result: "api.ApiResult") -> str:
     return view
 
 
+_logo_b64 = base64.b64encode(_LOGO.read_bytes()).decode("ascii")
 st.markdown(
-    "<div class='delta-brandline'><span class='delta-wordmark'>Nestor Delta</span><span class='sep'>·</span><span>evidence before certainty</span></div>",
+    f'<div class="delta-head"><img class="delta-mark" '
+    f'src="data:image/png;base64,{_logo_b64}" alt="Nestor Delta">'
+    f'<span class="delta-wordmark">NESTOR&nbsp;DELTA</span>'
+    f'<span class="delta-head-tag">relationship reliability</span></div>',
     unsafe_allow_html=True,
 )
 st.title("Relationship Reliability Workbench")
