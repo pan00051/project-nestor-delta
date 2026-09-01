@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import html
 import json
+from pathlib import Path
 from typing import Any, Mapping
 
 import pandas as pd
@@ -27,15 +28,18 @@ st.set_page_config(
 
 _CSS = """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 :root{
-  --delta-bg:light-dark(#f4f4f1,#0B0F14);
+  --delta-bg:light-dark(#F1F3F4,#0B0F14);
   --delta-surface:light-dark(#fcfcfb,#121820);
   --delta-soft:light-dark(#eeeee9,#18212B);
   --delta-ink:light-dark(#11110f,#E6EDF3);
   --delta-muted:light-dark(#66645f,#8B949E);
   --delta-faint:light-dark(#8b8982,#8B949E);
   --delta-line:light-dark(#dcdad3,rgba(255,255,255,0.08));
-  --delta-accent:#1769c2;
+  --delta-line-strong:light-dark(#C6CDD0,rgba(255,255,255,.14));
+  --delta-accent:#35617F;
+  --delta-water-soft:rgba(53,97,127,.10);
   --delta-good:light-dark(#1f7438,#7bc88b);
   --delta-warn:light-dark(#9a6800,#d8a847);
   --delta-serious:light-dark(#b44924,#e07b62);
@@ -49,15 +53,16 @@ _CSS = """
   --delta-status-serious-line:light-dark(#dfb39f,rgba(224,123,98,.38));
 }
 [data-testid="stAppViewContainer"], [data-testid="stHeader"]{background:var(--delta-bg);color:var(--delta-ink)}
-[data-testid="stMainBlockContainer"]{max-width:1040px;padding-top:4.25rem;padding-bottom:5rem}
+[data-testid="stAppViewContainer"]{font-family:"Inter",system-ui,sans-serif;overflow-x:hidden}
+.block-container,[data-testid="stMainBlockContainer"]{max-width:1040px;padding-top:2.6rem!important;padding-bottom:5rem}
 [data-testid="stSidebar"]{background:var(--delta-sidebar);border-right:1px solid var(--delta-line)}
-[data-testid="stAppViewContainer"]{overflow-x:hidden}
 h1,h2,h3,p,div{letter-spacing:0}
 h1{font-size:2.15rem!important;line-height:1.12!important;margin-bottom:.45rem!important;color:var(--delta-ink)}
 h2{font-size:1.25rem!important;margin-top:2.25rem!important}
 h3{font-size:1rem!important}
 [data-testid="stMarkdownContainer"] h1,[data-testid="stMarkdownContainer"] h2,[data-testid="stMarkdownContainer"] h3{color:var(--delta-ink)!important}
-.delta-brandline{display:block;max-width:100%;overflow:visible;white-space:normal;min-height:1.45em;padding-top:.08rem;margin:0 0 1.15rem;font-size:.76rem;line-height:1.45;letter-spacing:.08em;text-transform:uppercase;color:var(--delta-faint);font-weight:650}
+.delta-brandline{display:block;max-width:100%;overflow:visible;white-space:normal;min-height:1.45em;padding:.08rem 0 .75rem;margin:0 0 1.15rem;border-bottom:1px solid var(--delta-water-soft);font-size:.76rem;line-height:1.45;text-transform:uppercase;color:var(--delta-faint);font-weight:650}
+.delta-wordmark{font-family:"Space Grotesk",system-ui,sans-serif;font-weight:700;color:var(--delta-ink)}
 .delta-brandline span{display:inline;white-space:nowrap}
 .delta-brandline .sep{display:inline-block;margin:0 .35rem}
 .delta-lede{max-width:760px;color:var(--delta-muted);font-size:.95rem;line-height:1.6;margin-bottom:1.4rem}
@@ -68,28 +73,42 @@ h3{font-size:1rem!important}
 .delta-steps{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--delta-line);border-bottom:1px solid var(--delta-line);margin:1.25rem 0 1.6rem}
 .delta-step{padding:.72rem .8rem;color:var(--delta-faint);font-size:.78rem;border-right:1px solid var(--delta-line)}
 .delta-step:last-child{border-right:0}.delta-step b{display:block;color:inherit;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.12rem}
-.delta-step.active{color:var(--delta-accent);background:rgba(23,105,194,.055)}
+.delta-step.active{color:var(--delta-accent);background:rgba(53,97,127,.06)}
 .delta-step.done{color:var(--delta-muted)}
-.delta-decision{border-left:4px solid var(--delta-accent);padding:1.05rem 1.2rem;background:var(--delta-surface);margin:.8rem 0 1.3rem}
-.delta-decision.baseline{border-left-color:var(--delta-warn)}
-.delta-decision.selected{border-left-color:var(--delta-good)}
+.delta-decision{border-left:4px solid var(--delta-accent);padding:1.25rem 1.35rem;background:var(--delta-surface);margin:.8rem 0 1rem}
+.delta-decision.baseline{border-left-color:var(--delta-ink)}
+.delta-decision.selected{border-left-color:var(--delta-accent)}
 .delta-decision .eyebrow{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--delta-faint);font-weight:700}
-.delta-decision .headline{font-size:1.35rem;line-height:1.25;font-weight:720;margin:.25rem 0;color:var(--delta-ink)}
+.delta-decision .headline{font-family:"Space Grotesk",system-ui,sans-serif;font-size:2.4rem;line-height:1.05;font-weight:700;margin:.3rem 0;color:var(--delta-ink)}
 .delta-decision .summary{font-size:.9rem;line-height:1.55;color:var(--delta-muted);max-width:800px}
 .delta-decision .gate-explanation{font-size:.83rem;line-height:1.5;color:var(--delta-muted);max-width:800px;margin-top:.35rem}
-.delta-decision .success-statement{font-size:.84rem;line-height:1.5;color:var(--delta-good);font-weight:650;max-width:800px;margin-top:.45rem}
+.delta-decision .success-statement{font-size:.84rem;line-height:1.5;color:var(--delta-ink);font-weight:650;max-width:800px;margin-top:.45rem}
 .delta-context{font-size:.78rem;color:var(--delta-muted);padding:.55rem 0;border-bottom:1px solid var(--delta-line);overflow-wrap:anywhere}
+.delta-scoreboard{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:.82rem;color:var(--delta-muted);padding:.15rem 0 1.05rem}
+.delta-keycard{border-top:1px solid var(--delta-line-strong);border-bottom:1px solid var(--delta-line);padding:1rem 0 1.1rem;margin:1rem 0 1.35rem}
+.delta-keycard.fix{border-left:4px solid var(--delta-accent);border-top:0;background:var(--delta-surface);padding:1rem 1.15rem}
+.delta-reason{font-size:.92rem;color:var(--delta-ink);font-weight:650;margin:.85rem 0 .2rem}
+.delta-supporting{border-top:1px solid var(--delta-line);padding-top:.65rem;margin:1.1rem 0;color:var(--delta-muted);font-size:.82rem}
+.delta-plain-section{margin:1.25rem 0 .55rem;font-size:.76rem;text-transform:uppercase;color:var(--delta-faint);font-weight:700}
 .delta-status{display:inline-flex;align-items:center;border:1px solid var(--delta-line);border-radius:999px;padding:.16rem .55rem;font-size:.72rem;font-weight:650;color:var(--delta-muted)}
 .delta-status.good{color:var(--delta-good);border-color:var(--delta-status-good-line);background:var(--delta-status-good-bg)}
 .delta-status.warn{color:var(--delta-warn);border-color:var(--delta-status-warn-line);background:var(--delta-status-warn-bg)}
 .delta-status.serious{color:var(--delta-serious);border-color:var(--delta-status-serious-line);background:var(--delta-status-serious-bg)}
 .delta-status.muted{color:var(--delta-faint)}
+.delta-chip{display:inline-flex;align-items:center;border:1px solid var(--delta-line-strong);border-radius:999px;padding:.08rem .45rem;font-size:.72rem;color:var(--delta-muted);background:var(--delta-surface)}
+.delta-chip.insufficient{background:repeating-linear-gradient(135deg,var(--delta-surface),var(--delta-surface) 5px,var(--delta-water-soft) 5px,var(--delta-water-soft) 9px)}
+.fig{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .delta-relation{border-top:1px solid var(--delta-line);padding:.9rem 0 .25rem;margin-top:.45rem}
 .delta-relation-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
-.delta-relation-name{font-weight:700;font-size:1rem;overflow-wrap:anywhere}.delta-relation-meta{font-size:.78rem;color:var(--delta-muted);margin-top:.16rem}
+.delta-relation-name,.rel-name{font-family:"Space Grotesk",system-ui,sans-serif;font-weight:700;font-size:1.12rem;overflow-wrap:anywhere}.delta-relation-meta{font-size:.78rem;color:var(--delta-muted);margin-top:.16rem}
+.delta-gates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--delta-line);border:1px solid var(--delta-line);margin:.9rem 0 .45rem}
+.delta-gate{background:var(--delta-surface);padding:.72rem .75rem;min-width:0}
+.delta-gate.binding{background:var(--delta-water-soft)}
+.delta-gate .label{font-size:.67rem;text-transform:uppercase;color:var(--delta-faint);font-weight:700}
+.delta-gate .value{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:1.05rem;color:var(--delta-ink);margin-top:.18rem}
 .delta-life{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:.8rem 0}
-.delta-life span{border-top:3px solid var(--delta-line);padding-top:.3rem;font-size:.66rem;color:var(--delta-faint);text-align:center;overflow-wrap:anywhere}
-.delta-life span.active{border-top-color:var(--delta-accent);color:var(--delta-ink);font-weight:700}
+.delta-life span{border-top:3px dashed var(--delta-line-strong);padding-top:.3rem;font-size:.66rem;color:var(--delta-faint);text-align:center;overflow-wrap:anywhere}
+.delta-life span.active{border-top-style:solid;border-top-color:var(--delta-accent);color:var(--delta-ink);font-weight:700}
 .tone-good{color:var(--delta-good);font-weight:650}.tone-warn{color:var(--delta-warn);font-weight:650}
 .tone-serious{color:var(--delta-serious);font-weight:650}.tone-muted{color:var(--delta-faint);font-weight:650}.tone-neutral{color:var(--delta-muted);font-weight:650}
 .small{color:var(--delta-muted);font-size:.78rem}
@@ -105,8 +124,8 @@ h3{font-size:1rem!important}
   .delta-brandline{display:block;line-height:1.4}
   .delta-brandline span{display:block;white-space:normal}
   .delta-brandline .sep{display:none}
-  h1{font-size:1.75rem!important}.delta-steps{grid-template-columns:1fr}.delta-step{border-right:0;border-bottom:1px solid var(--delta-line)}
-  .delta-step:last-child{border-bottom:0}.delta-relation-head{display:block}.delta-life{grid-template-columns:repeat(3,minmax(0,1fr))}.delta-life span{font-size:.58rem}
+  h1{font-size:1.75rem!important}.delta-decision .headline{font-size:1.85rem}.delta-steps{grid-template-columns:1fr}.delta-step{border-right:0;border-bottom:1px solid var(--delta-line)}
+  .delta-step:last-child{border-bottom:0}.delta-relation-head{display:block}.delta-gates{grid-template-columns:1fr 1fr}.delta-life{grid-template-columns:repeat(3,minmax(0,1fr))}.delta-life span{font-size:.58rem}
 }
 </style>
 """
@@ -119,6 +138,41 @@ def _e(value: Any) -> str:
 
 def _tone(text: str, tone: str) -> str:
     return f'<span class="tone-{_e(tone)}">{_e(text)}</span>'
+
+
+def _fig(value: Any) -> str:
+    return f'<span class="fig">{_e(value)}</span>'
+
+
+def _chip(text: str, extra_class: str = "") -> str:
+    classes = f"delta-chip {extra_class}".strip()
+    return f'<span class="{classes}">{_e(text)}</span>'
+
+
+def _display_value(value: Any, formatter: Any = rl.fmt_number) -> str:
+    if rl.is_null(value):
+        return _chip("insufficient evidence", "insufficient")
+    return _fig(formatter(value))
+
+
+def _first_existing_path(candidates: tuple[str, ...]) -> Path | None:
+    for candidate in candidates:
+        path = Path(candidate)
+        if path.exists():
+            return path
+    return None
+
+
+_LOGO = _first_existing_path(
+    (
+        "assets/nestor-delta-logo.png",
+        "assets/logo.png",
+        "static/nestor-delta-logo.png",
+        "static/logo.png",
+    )
+)
+if _LOGO is not None:
+    st.logo(str(_LOGO))
 
 
 def render_section(number: str, title: str, copy: str) -> None:
@@ -174,6 +228,28 @@ def render_error(view: str, result: "api.ApiResult") -> None:
             st.code(result.raw[:1000])
         return
     err = rl.error_display(body)
+    if view == "validation_error":
+        detail = err.get("detail")
+        detail_text = json.dumps(detail, sort_keys=True) if isinstance(detail, Mapping) else detail
+        technical = " · ".join(
+            _e(value)
+            for value in (err.get("field"), err.get("code") or "validation_error", detail_text)
+            if value
+        )
+        st.markdown(
+            "<div class='delta-decision baseline'>"
+            "<div class='eyebrow'>Input needs a fix</div>"
+            f"<div class='headline'>{_e(err.get('message') or 'The input could not be analysed')}</div>"
+            "<div class='gate-explanation'>Delta refused this request before analysis because an input rule was not met.</div>"
+            "</div>"
+            "<div class='delta-keycard fix'>"
+            "<div class='delta-plain-section'>How to fix</div>"
+            f"<div class='delta-reason'>{_e(err.get('message') or 'Correct the highlighted input and run the audit again.')}</div>"
+            f"<div class='small'>{technical}</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        return
     titles = {
         "validation_error": "Input rejected",
         "not_found": "Case not found",
@@ -309,29 +385,69 @@ def render_lifecycle(state: Any) -> None:
     st.markdown(f"<div class='delta-life'>{spans}</div>", unsafe_allow_html=True)
 
 
+def _binding_gate(view: Mapping[str, Any]) -> str:
+    code = view.get("reason_code")
+    if code == "insufficient_stability":
+        return "stability"
+    if code == "excess_relationship_uncertainty":
+        return "uncertainty"
+    if code == "insufficient_sample_support":
+        return "sample_support"
+    if code == "below_fdr_corrected_effect":
+        return "score"
+    if code == "selected":
+        return "all"
+    if rl.is_null(view.get("stability")):
+        return "stability"
+    if rl.is_null(view.get("uncertainty")):
+        return "uncertainty"
+    if rl.is_null(view.get("sample_support")):
+        return "sample_support"
+    return ""
+
+
+def _gate_cell(label: str, value: Any, key: str, binding: str) -> str:
+    classes = "delta-gate"
+    if binding in (key, "all"):
+        classes += " binding"
+    return (
+        f"<div class='{classes}'><div class='label'>{_e(label)}</div>"
+        f"<div class='value'>{_display_value(value)}</div></div>"
+    )
+
+
 def render_relation_detail(view: Mapping[str, Any], raw: Mapping[str, Any]) -> None:
     st.markdown(
+        f"<div class='rel-name'>{_e(view['source'])} → {_e(view['target'])}</div>"
         f"<div class='delta-relation-meta'>{_e(view['direction'])} direction · "
-        f"lag {_e(view['lag'])} · {_e(view['transform'])} · "
-        f"weight {_e(rl.fmt_signed(view['weight']))}</div>",
+        f"lag {_fig(view['lag'])} · {_e(view['transform'])} · "
+        f"weight {_fig(rl.fmt_signed(view['weight']))}</div>",
         unsafe_allow_html=True,
     )
-    evidence = st.columns(4)
-    render_metric(evidence[0], "Score", rl.fmt_number(view["score"]))
-    render_metric(evidence[1], "Stability", rl.fmt_number(view["stability"]), "insufficient" if view["stability"] is None else None)
-    render_metric(evidence[2], "Uncertainty", rl.fmt_number(view["uncertainty"]), "insufficient" if view["uncertainty"] is None else None)
-    render_metric(evidence[3], "Sample support", rl.fmt_number(view["sample_support"]), "insufficient" if view["sample_support"] is None else None)
-    st.caption(
-        f"p={rl.fmt_p_value(view['p_value'])} · FDR threshold={rl.fmt_p_value(view['fdr_threshold'])} · "
-        f"clears FDR={'—' if view['clears_fdr'] is None else ('yes' if view['clears_fdr'] else 'no')}"
+    binding = _binding_gate(view)
+    st.markdown(
+        "<div class='delta-gates'>"
+        f"{_gate_cell('Score', view['score'], 'score', binding)}"
+        f"{_gate_cell('Stability', view['stability'], 'stability', binding)}"
+        f"{_gate_cell('Uncertainty', view['uncertainty'], 'uncertainty', binding)}"
+        f"{_gate_cell('Sample support', view['sample_support'], 'sample_support', binding)}"
+        "</div>",
+        unsafe_allow_html=True,
     )
-    st.markdown(_tone(view["reason_text"], view["lifecycle"]["tone"]), unsafe_allow_html=True)
+    clears = "—" if view["clears_fdr"] is None else ("yes" if view["clears_fdr"] else "no")
+    st.markdown(
+        f"<div class='delta-reason'>{_e(view['reason_text'])}</div>"
+        f"<div class='small'>FDR p={_fig(rl.fmt_p_value(view['p_value']))} vs threshold "
+        f"{_fig(rl.fmt_p_value(view['fdr_threshold']))} · clears {_e(clears)}</div>",
+        unsafe_allow_html=True,
+    )
     render_lifecycle(view["lifecycle"]["state"])
-    st.caption(
-        "Diagnostic comparison scale: "
-        f"noise floor {rl.fmt_number(view['noise_floor'])}; "
-        f"effect/noise {rl.fmt_number(view['effect_size'])}. "
-        "This scale is not part of the evidence gate."
+    st.markdown(
+        f"<div class='small'>{_e(view['lifecycle']['label'])} / stability "
+        f"{_fig(rl.fmt_number(view.get('stability')))} · lifecycle label is paired with its stability value.</div>"
+        f"<div class='small'>Noise-floor diagnostic: noise floor {_fig(rl.fmt_number(view['noise_floor']))}; "
+        f"effect/noise {_fig(rl.fmt_number(view['effect_size']))}. This scale is not part of the evidence gate.</div>",
+        unsafe_allow_html=True,
     )
     if view["has_trajectory"]:
         trajectory = raw.get("trajectory") or []
@@ -362,7 +478,7 @@ def render_report(body: Mapping[str, Any]) -> None:
     decision = rl.report_decision(body)
     p0 = rl.report_p0_answers(body)
     context = rl.report_context(body)
-    context_html = " · ".join(
+    context_html = " / ".join(
         f"<b>{_e(item['label'])}</b> {_e(item['value'])}"
         for item in rl.context_bar_items(body)
     )
@@ -374,7 +490,6 @@ def render_report(body: Mapping[str, Any]) -> None:
         else ""
     )
     st.markdown(
-        f"<div class='delta-section'><div class='delta-section-kicker'>03 · Report</div></div>"
         f"<div class='delta-context'>{context_html}</div>"
         f"<div class='delta-decision {tone}'><div class='eyebrow'>{_e(p0['run_status'])}</div>"
         f"<div class='headline'>{_e(gate['headline'])}</div>"
@@ -384,82 +499,97 @@ def render_report(body: Mapping[str, Any]) -> None:
     )
 
     selection = p0["selection"]
-    selection_metrics = st.columns(3)
-    selection_metrics[0].metric("Candidates", selection["candidate_count"])
-    selection_metrics[1].metric(
-        "Selected",
-        selection["selected_count"] if selection["selected_count"] is not None else "—",
-    )
-    selection_metrics[2].metric(
-        "Rejected",
-        selection["rejected_count"] if selection["rejected_count"] is not None else "—",
-    )
-
-    st.markdown("### Relationship evidence")
     views = p0["relation_evidence"]
     raw_relations = body.get("relations") or []
+    tail = decision["fit_status"] or decision["final_mode"] or "past-only evaluation"
+    st.markdown(
+        "<div class='delta-scoreboard'>"
+        f"{_e(selection['candidate_count'])} candidates tested · "
+        f"{_e(selection['selected_count'] if selection['selected_count'] is not None else '—')} cleared the gate · "
+        f"{_e(tail)}</div>",
+        unsafe_allow_html=True,
+    )
+
     if not views:
         st.info("The report contains no candidate relationship rows.")
-    for index, view in enumerate(views):
-        raw = raw_relations[index] if index < len(raw_relations) else {}
-        with st.expander(rl.relation_expander_label(view), expanded=view["selected"] is True):
-            render_relation_detail(view, raw)
+    else:
+        selected_index = next((index for index, view in enumerate(views) if view["selected"] is True), None)
+        if selected_index is None:
+            scored = [(index, view.get("score")) for index, view in enumerate(views) if view.get("score") is not None]
+            selected_index = max(scored, key=lambda item: float(item[1]))[0] if scored else 0
+        key_view = views[selected_index]
+        key_raw = raw_relations[selected_index] if selected_index < len(raw_relations) else {}
+        st.markdown("<div class='delta-plain-section'>Key relation</div><div class='delta-keycard'>", unsafe_allow_html=True)
+        render_relation_detail(key_view, key_raw)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        other_views = [(index, view) for index, view in enumerate(views) if index != selected_index]
+        if other_views:
+            st.markdown("<div class='delta-plain-section'>Other candidates</div>", unsafe_allow_html=True)
+            for index, view in other_views:
+                raw = raw_relations[index] if index < len(raw_relations) else {}
+                label = (
+                    f"{view['source']} → {view['target']} · "
+                    f"{view['direction']} · lag {view['lag']} · "
+                    f"{view['reason_text']}"
+                )
+                with st.expander(label, expanded=False):
+                    render_relation_detail(view, raw)
 
     narrative_lines = decision["lines"] or [decision["summary"]]
     if narrative_lines:
-        with st.expander("Report narrative"):
+        if tone == "baseline":
+            st.markdown("<div class='delta-plain-section'>Narrative</div>", unsafe_allow_html=True)
             for line in narrative_lines:
-                st.markdown(f"- {line}")
+                st.markdown(f"<div class='small'>{_e(line)}</div>", unsafe_allow_html=True)
+        else:
+            with st.expander("Report narrative"):
+                for line in narrative_lines:
+                    st.markdown(f"- {line}")
 
     confidence = decision["confidence"]
-    supporting = st.columns(3)
-    supporting[0].metric("Final mode", decision["final_mode"] or "—")
-    render_metric(
-        supporting[1],
-        "Confidence",
-        confidence["text"] if not confidence["is_null"] else "—",
-        "insufficient" if confidence["is_null"] else None,
-    )
     baseline = body.get("baseline") or {}
-    render_metric(
-        supporting[2],
-        "Baseline MAE",
-        rl.fmt_number(baseline.get("mae")),
-        baseline.get("name") or "persistence",
+    st.markdown(
+        "<div class='delta-supporting'>"
+        f"final mode {_fig(decision['final_mode'] or '—')} · "
+        f"baseline MAE {_fig(rl.fmt_number(baseline.get('mae')))} · "
+        f"report confidence {_display_value(confidence['value'], lambda value: confidence['text'])}"
+        "</div>",
+        unsafe_allow_html=True,
     )
-
-    evaluation = rl.evaluation_interval(body)
-    if evaluation:
-        resolution = "resolves" if evaluation["resolves"] else "unresolved · interval spans zero"
-        st.markdown(
-            f"**Rolling-origin skill:** median {rl.fmt_percent(evaluation['median'])} · "
-            f"90% interval [{rl.fmt_percent(evaluation['low'])}, {rl.fmt_percent(evaluation['high'])}] · "
-            f"{evaluation['folds']} folds · {resolution}"
-        )
-    else:
-        st.info("Out-of-sample evaluation is not available for this report. No interval or chart is inferred.")
 
     for warning in body.get("warnings") or []:
         st.warning(rl.warning_text(warning))
 
-    with st.expander("Analyst table"):
+    with st.expander("Analyst detail"):
         st.dataframe(
             rl.analyst_table_rows(body),
             width="stretch",
             hide_index=True,
         )
-
-    render_configuration(body)
-
-    st.download_button(
-        "Download Report JSON",
-        data=json.dumps(body, indent=2, sort_keys=True),
-        file_name=rl.report_filename(body),
-        mime="application/json",
-    )
+        rows = rl.configuration_rows(body)
+        if rows:
+            st.markdown("#### Effective configuration")
+            st.dataframe(rows, width="stretch", hide_index=True)
+        evaluation = rl.evaluation_interval(body)
+        if evaluation:
+            resolution = "resolves" if evaluation["resolves"] else "unresolved · interval spans zero"
+            st.markdown(
+                f"**Rolling-origin:** median {rl.fmt_percent(evaluation['median'])} · "
+                f"90% interval [{rl.fmt_percent(evaluation['low'])}, {rl.fmt_percent(evaluation['high'])}] · "
+                f"{evaluation['folds']} folds · {resolution}"
+            )
+        else:
+            st.info("Out-of-sample evaluation is not available for this report. No interval or chart is inferred.")
+        st.download_button(
+            "Download Report JSON",
+            data=json.dumps(body, indent=2, sort_keys=True),
+            file_name=rl.report_filename(body),
+            mime="application/json",
+        )
     st.caption(
         f"Snapshot {_e(context['snapshot_source'])} · SHA-256 {_e(context['snapshot_hash'])} · "
-        f"schema {body.get('schema_version', '—')}"
+        f"schema {body.get('schema_version', '—')} · pipeline {_e(context['pipeline_version'])}"
     )
 
 
@@ -471,7 +601,7 @@ def show_result(result: "api.ApiResult") -> str:
 
 
 st.markdown(
-    "<div class='delta-brandline'><span>Nestor Delta</span><span class='sep'>·</span><span>evidence before certainty</span></div>",
+    "<div class='delta-brandline'><span class='delta-wordmark'>Nestor Delta</span><span class='sep'>·</span><span>evidence before certainty</span></div>",
     unsafe_allow_html=True,
 )
 st.title("Relationship Reliability Workbench")
@@ -523,7 +653,7 @@ if mode == "Bundled case":
             declarations, allowed = render_audit_and_declarations(ss["audit"].body, key_prefix="case")
             current_request = {"case_name": case, "transform_declarations": declarations}
             if st.button("Run analysis", disabled=not allowed, type="primary", key="analyze_case"):
-                with st.spinner("Analyzing relationships..."):
+                with st.spinner("Analysing — running the frozen S1-S10 pipeline"):
                     ss["report"] = api.analyze(current_request)
                 ss["report_request"] = current_request
                 st.rerun()
@@ -569,7 +699,7 @@ elif mode == "Upload CSV":
                 current_upload_request = dict(payload)
                 current_upload_request["transform_declarations"] = declarations
                 if st.button("Run analysis", disabled=not allowed, type="primary", key="analyze_upload"):
-                    with st.spinner("Analyzing relationships..."):
+                    with st.spinner("Analysing — running the frozen S1-S10 pipeline"):
                         ss["report_up"] = api.analyze(current_upload_request)
                     ss["report_up_request"] = current_upload_request
                     st.rerun()
@@ -657,7 +787,7 @@ else:
             current_euro_request = dict(frozen_payload)
             current_euro_request["transform_declarations"] = declarations
             if st.button("Run analysis", disabled=not allowed, type="primary", key="analyze_eurostat"):
-                with st.spinner("Analyzing the frozen snapshot..."):
+                with st.spinner("Analysing — running the frozen S1-S10 pipeline"):
                     ss["report_e"] = api.analyze(current_euro_request)
                 ss["report_e_request"] = current_euro_request
                 st.rerun()
