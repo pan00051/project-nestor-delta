@@ -22,8 +22,8 @@ from this file.
 - Branch `main`. M3 acceptance facts below describe `ad77fd3`; the current
   source revision includes the documentation and reproducibility-metadata
   correction recorded in `docs/DEMO_MILESTONES_V1.md` Appendix K.
-- Milestones M0-M3, M4-A, and M4-B are accepted. G-1 is closed. T14 deployment
-  verification passed on 2026-08-31; M4-C is the active next decision.
+- Milestones M0-M3, M4-A, M4-B, and M4-C are accepted. G-1 is closed. T17
+  deployed and verified the M4-C repairs; M5 is the active next decision.
 - Analysis pipeline S1-S10: complete and independently reviewed.
 - Website W0-W5: complete.
 - Product direction: non-commercial portfolio and personal-analysis system.
@@ -45,12 +45,10 @@ from this file.
   role of the noise floor, and the transform/sample inputs.
 - `pipeline_version` is a SHA-256 over `versioning.py`, `adapter.py`, and every
   module under `src/nestor_delta/`, rendered `s10.sha256.<12 hex>`. It is never
-  hand-written. Current value: `s10.sha256.7fed154a44bf`. The immediately prior
-  value was `s10.sha256.ab759b2231a4`; this M4-B move closes the empty rolling
-  trajectory gap and adds an honest stability-not-evaluated warning without
-  changing selection, the rolling-window formula, or any Evidence Gate
-  threshold. The earlier lifecycle and T3 narrative moves are recorded in
-  `docs/DEFECT_LEDGER.md`.
+  hand-written. Current value: `s10.sha256.4a80f8e13657`. The M4-C version moves
+  accepted UTF-8 BOM input and clarified CSV validation errors without changing
+  any threshold. Earlier rolling-entry, lifecycle, and narrative moves are
+  recorded in `docs/DEFECT_LEDGER.md`.
 - **What that field covers, and what it does not.** It identifies the
   implementation that produced a Report. It moves for any change to the hashed
   files, including a corrected metadata string — that is correct, not noise, and
@@ -77,10 +75,10 @@ from this file.
   variable by hand in the Railway dashboard. Use the temporary manual gate
   below until the script is repaired.
 
-> **PUBLIC-SHARING RELEASED (2026-08-31):** API and web both run source revision
-> `096262e08c79`, the API reports `pipeline_version=s10.sha256.7fed154a44bf`,
-> and T14 passed the complete deployment sequence plus release-specific behavior
-> probes. H-1 is closed and the public URL may be shared externally. Future
+> **PUBLIC-SHARING RELEASED:** API and web both run source revision
+> `71d2d38eaacc`, the API reports `pipeline_version=s10.sha256.4a80f8e13657`,
+> and T17 passed the complete deployment sequence plus the one-shot UTF-8 BOM
+> behavior probe. M4-C was accepted by the product owner on 2026-09-01. Future
 > deployments must still repeat the sequence below until Q3.1 is implemented.
 
 ### Deploy sequence
@@ -165,14 +163,14 @@ implemented. See `docs/evidence/Q3_VARIABLE_REDEPLOY_2026-08-29.md`.
 
 ### Last recorded acceptance
 
-T14 deployed source revision `096262e08c79` to both API and web. The deployed
-API reports `pipeline_version=s10.sha256.7fed154a44bf`; the local suite is
-**214 passed**. The API release probe returned `200 baseline_only` plus
-`stability_not_evaluated` for a 12-observation, `lag_window=3` upload. The web
-rendered the new evidence-gate headline, P1 pipeline context, `ok`,
-`baseline_only`, `validation_error`, nullable stability, and the warning. The
-deployment IDs and Q3-race gate evidence are recorded in
-`docs/DEFECT_LEDGER.md` under the T14 deployment record.
+T17 deployed source revision `71d2d38eaacc` to both API and web. The deployed
+API reports `pipeline_version=s10.sha256.4a80f8e13657`; the local suite is
+**218 passed**. The product owner accepted M4-C after production retests of
+UTF-8 BOM, GBK, image-as-CSV, and duplicate-month inputs. BOM and no-BOM forms
+of the same data produced the identical snapshot hash
+`fda3e4367a5530976238acb2a3ab79b2d5a32ae305e3f079f3965e06adac0db0`.
+Deployment IDs, the Q3 propagation evidence, and all four visible responses are
+recorded in `docs/DEFECT_LEDGER.md`.
 
 **Q6 local acceptance, 2026-08-29.** Added three ground-truth boundary fixtures:
 `s_gt_6_pre_rolling_negative` (`train_observations=11`, no rolling,
@@ -362,9 +360,9 @@ Full detail and rationale live in `docs/DEMO_MILESTONES_V1.md` Appendix J.
 
 ## Next Decision
 
-**M4-C: 8-item CSV manual acceptance, executed by the product owner; see T15.**
-M4-A and M4-B are accepted, and T14 deployment verification passed. G0, the C
-series, and V1 are B-class work and remain frozen until M5 is complete.
+**M5: rehearsal, freeze, and portfolio delivery.** M4-A, M4-B, and M4-C are
+accepted, and T17 deployment verification passed. G0, the C series, V1, W-25,
+and all other non-demo-blocking work remain frozen until M5 is complete.
 
 M4-B was accepted in T14 after a complete kickoff-instruction self-check. T13 resolved H-8 by moving
 `max(L+9, 2L+7)` from a rejected-input boundary to the rolling-lifecycle entry

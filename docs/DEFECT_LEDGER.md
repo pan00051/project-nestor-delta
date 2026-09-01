@@ -233,17 +233,22 @@ Railway 未提供 SUCCESS 状态变更的时间戳，故不得把该值表述成
 4. 当前 `deploy-railway.sh` 虽有 30 次、10 秒的名义循环，但单次 `curl` 没有硬超时，尚不能形成
    严格最大墙钟时间；此项保留在 Q3.1，不得在记录中把名义循环误写成硬上限。
 
-M4-C 尚未 accepted。线上已是修复版本，但以下四项必须由负责人在实例上复测，自动化与本轮
-BOM 生产探针不能替代人工验收：
+**M4-C accepted（2026-09-01）。** 负责人在部署实例
+`source_revision=71d2d38eaacc`、`pipeline_version=s10.sha256.4a80f8e13657` 上完成四项复测，
+自动化与生产探针未替代本次人工验收：
 
-| 项目 | 人工期望 |
+| 项目 | 生产复测结果 |
 |---|---|
-| 4b BOM | 正常通过审计，不再返回“缺少 date 列” |
-| 4a GBK | `This file is not UTF-8 encoded...` |
-| 8 图片改名 | `This file does not look like a CSV...` |
-| 2 重复月 | `CSV has duplicate months: 2019-12...` |
+| 4b BOM | 正常出报告，不再返回“缺少 date 列” |
+| 4a GBK | `invalid_csv_encoding`；`This file is not UTF-8 encoded. Re-save it as CSV UTF-8 (Excel: Save As → CSV UTF-8) and upload again.` |
+| 8 图片改名 | `invalid_csv_file_type`；`This file does not look like a CSV (it appears to be an image). Upload a monthly CSV instead.` |
+| 2 重复月 | `duplicate_month`；`CSV has duplicate months: 2019-12. Keep one row per month and upload again.` |
 
-四项全部对上后，M4-C 方可标记 accepted。
+带 BOM 与不带 BOM 的同一份数据均产出 snapshot hash
+`fda3e4367a5530976238acb2a3ab79b2d5a32ae305e3f079f3965e06adac0db0`。这证明 BOM 在入口被
+剥离而不是进入规范化数据后被容忍；同一份数据的 snapshot 身份唯一，`API_BOUNDARY_V1.md` P2
+可复现性主张不受影响。H-9 与 W-19、W-20、W-21、W-22 至此均关闭。W-25 仍为 W / B，
+不随 M4-C accepted 实施，按 M5 冻结规则之后统一解冻。Next Decision 为 M5。
 
 ### H.4 / lifecycle 事实补记
 
@@ -638,3 +643,6 @@ H-6、H-7 与 G8。剩余 A 类事项均有明确归属；Q8 除本次单一进�
   新增 BOM、GBK、图片伪装 CSV 与 web 字段映射测试，完整套件 218/218 通过。
 - 2026-09-01 T17 部署复核：登记 W-25 缺月纪律文案残余；记录 Q3 revision 传播竞态的三次
   原始输出与可证实时序，固化 revision 轮询和单次行为探针边界；M4-C 保持等待负责人四项复测。
+- 2026-09-01 M4-C accepted：负责人在部署实例完成 BOM、GBK、图片改名与重复月份四项复测，
+  H-9 与 W-19 至 W-22 全部关闭；BOM 正、负文件产出相同 snapshot hash。Next Decision 转为 M5，
+  W-25 保持登记不实施。
